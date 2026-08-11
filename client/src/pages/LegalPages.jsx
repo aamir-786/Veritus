@@ -165,15 +165,15 @@ export default function LegalPages() {
                 </div>
               </div>
 
-              {/* Product 4: Maturity1 */}
+              {/* Product 4: MaturityOne */}
               <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-extrabold text-indigo-900 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200">
-                    Maturity1
+                    MaturityOne
                   </span>
                   <ExternalLink className="w-4 h-4 text-slate-400" />
                 </div>
-                <h3 className="font-display text-lg font-bold text-slate-900">Maturity1 Benchmarking</h3>
+                <h3 className="font-display text-lg font-bold text-slate-900">MaturityOne Benchmarking</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Benchmarking risk maturity scores across peer industry sectors and regulatory jurisdictions.
                 </p>

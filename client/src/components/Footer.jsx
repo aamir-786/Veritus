@@ -107,7 +107,7 @@ export default function Footer() {
               <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-blue-300 border border-slate-700 hover:bg-slate-700">EffectiveRM</Link>
               <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-emerald-300 border border-slate-700 hover:bg-slate-700">Wahid AI</Link>
               <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700">RiskBridge</Link>
-              <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700 hover:bg-slate-700">Maturity1</Link>
+              <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700 hover:bg-slate-700">MaturityOne</Link>
             </div>
           </div>
 
