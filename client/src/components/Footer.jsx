@@ -7,10 +7,10 @@ export default function Footer() {
   return (
     <footer className="relative bg-slate-950 text-slate-300 border-t border-slate-800 overflow-hidden">
       
-      {/* Background Architectural Cityscape / Glass Tower Image Overlay */}
+      {/* Background Architectural Cityscape / Executive Geometry Image Overlay */}
       <div 
-        className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none mix-blend-luminosity"
-        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=80')` }}
+        className="absolute inset-0 bg-cover bg-center opacity-25 pointer-events-none mix-blend-luminosity"
+        style={{ backgroundImage: `url('/images/footer_bg.png')` }}
       />
 
       {/* Subtle Dot Matrix Overlay */}

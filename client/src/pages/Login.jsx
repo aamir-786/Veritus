@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShieldAlert, ArrowRight } from 'lucide-react';
+import { ShieldAlert, ArrowRight, Lock, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -99,11 +99,19 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 bg-[#F8FAFC]">
-      <div className="glass-card rounded-2xl p-8 max-w-md w-full border border-slate-200 space-y-5 shadow-lg bg-white">
+    <div 
+      className="min-h-[82vh] flex items-center justify-center px-4 py-16 bg-cover bg-center bg-no-repeat relative"
+      style={{
+        backgroundImage: `linear-gradient(to bottom, rgba(11, 19, 43, 0.78), rgba(15, 23, 42, 0.88)), url('/images/login_bg.png')`
+      }}
+    >
+      {/* Background Ambient Glow Accent */}
+      <div className="absolute inset-0 bg-radial-gradient from-blue-900/20 via-transparent to-transparent pointer-events-none" />
+
+      <div className="relative z-10 glass-card rounded-2xl p-8 max-w-md w-full border border-slate-200/80 shadow-2xl bg-white/95 backdrop-blur-xl space-y-5">
         
         <div className="text-center space-y-1.5">
-          <div className="w-10 h-10 rounded-xl bg-blue-900 text-white flex items-center justify-center mx-auto shadow-sm">
+          <div className="w-11 h-11 rounded-xl bg-blue-900 text-white flex items-center justify-center mx-auto shadow-md ring-4 ring-blue-900/10">
             <ShieldAlert className="w-6 h-6 stroke-[2.5]" />
           </div>
           <h2 className="font-display text-2xl font-extrabold text-slate-900">Sign In to Veritus</h2>
@@ -111,8 +119,9 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-            {error}
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -121,7 +130,7 @@ export default function Login() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-2xs cursor-pointer"
+          className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-xs cursor-pointer hover:border-slate-400"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
@@ -134,7 +143,7 @@ export default function Login() {
 
         <div className="flex items-center my-2">
           <div className="flex-1 border-t border-slate-200"></div>
-          <span className="px-3 text-[10px] text-slate-400 uppercase tracking-wider font-mono font-medium">or email login</span>
+          <span className="px-3 text-[10px] text-slate-400 uppercase tracking-wider font-mono font-semibold">or email login</span>
           <div className="flex-1 border-t border-slate-200"></div>
         </div>
 
@@ -146,7 +155,7 @@ export default function Login() {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 focus:border-blue-900 text-xs"
+              className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 text-xs"
             />
           </div>
 
@@ -157,21 +166,23 @@ export default function Login() {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 focus:border-blue-900 text-xs"
+              className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 text-xs"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs hover:bg-blue-800 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs hover:bg-blue-800 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? 'Authenticating...' : 'Sign In'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
         <div className="pt-3 border-t border-slate-100 text-center text-xs text-slate-500 space-y-1.5">
-          <div className="font-medium">Quick Seed Accounts:</div>
+          <div className="font-medium flex items-center justify-center gap-1 text-slate-600">
+            <Lock className="w-3 h-3 text-slate-400" /> Executive Access Credentials:
+          </div>
           <div className="flex justify-center gap-3 font-mono text-[11px]">
             <button onClick={() => { setEmail('admin@veritus.com'); setPassword('admin123'); }} className="text-blue-900 font-bold hover:underline cursor-pointer">Admin Account</button>
             <span>•</span>
