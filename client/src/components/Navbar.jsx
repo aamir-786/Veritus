@@ -23,7 +23,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           
           {/* Brand Logo - Effective RM + Veritus Hybrid Logo */}
           <Link to="/" className="flex items-center gap-2 group">
