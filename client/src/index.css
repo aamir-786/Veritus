@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #0B0F17;
+    color: #F1F5F9;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Glassmorphism Card Style */
+.glass-card {
+  background: rgba(20, 28, 46, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(245, 158, 11, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.5), 0 0 20px -4px rgba(245, 158, 11, 0.15);
+}
+
+/* Taxonomy Badges */
+.badge-tag {
+  @apply px-2.5 py-1 rounded-md text-xs font-medium tracking-wide inline-flex items-center gap-1 border;
+}
+
+.badge-domain {
+  @apply bg-indigo-950/60 text-indigo-300 border-indigo-800/50;
+}
+
+.badge-effort {
+  @apply bg-slate-800/80 text-slate-300 border-slate-700/60;
+}
+
+.badge-cost {
+  @apply bg-emerald-950/60 text-emerald-300 border-emerald-800/50;
+}
+
+.badge-regulator-high {
+  @apply bg-rose-950/70 text-rose-300 border-rose-800/50;
+}
+
+.badge-regulator-medium {
+  @apply bg-amber-950/70 text-amber-300 border-amber-800/50;
+}
+
+.badge-payback {
+  @apply bg-amber-950/50 text-amber-200 border-amber-700/40;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0F17;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A3654;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D97706;
+}
