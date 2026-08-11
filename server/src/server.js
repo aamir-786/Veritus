@@ -32,10 +32,23 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(` Veritus Platform Backend API running on port ${PORT}`);
-  console.log(` Health Check: http://localhost:${PORT}/api/health`);
-  console.log(` API Endpoint: http://localhost:${PORT}/api/v1/questions`);
-  console.log(`====================================================`);
-});
+const startServer = (portToTry) => {
+  const server = app.listen(portToTry, () => {
+    console.log(`====================================================`);
+    console.log(` Veritus Platform Backend API running on port ${portToTry}`);
+    console.log(` Health Check: http://localhost:${portToTry}/api/health`);
+    console.log(` API Endpoint: http://localhost:${portToTry}/api/v1/questions`);
+    console.log(`====================================================`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[Port Alert] Port ${portToTry} is occupied. Retrying on port ${portToTry + 1}...`);
+      startServer(portToTry + 1);
+    } else {
+      console.error('Server Listen Error:', err);
+    }
+  });
+};
+
+startServer(PORT);
