@@ -106,10 +106,18 @@ export default function Footer() {
               Aligned with the Effective RM family of products:
             </p>
             <div className="flex flex-wrap gap-1.5 text-[11px] font-mono">
-              <Link to="/legal/ecosystem" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-blue-300 border border-slate-700/80 hover:bg-slate-800 transition-all backdrop-blur-xs">EffectiveRM</Link>
-              <Link to="/legal/ecosystem" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-emerald-300 border border-slate-700/80 hover:bg-slate-800 transition-all backdrop-blur-xs">Wahid AI</Link>
-              <Link to="/legal/ecosystem" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-amber-300 border border-slate-700/80 hover:bg-slate-800 transition-all backdrop-blur-xs">RiskBridge</Link>
-              <Link to="/legal/ecosystem" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-indigo-300 border border-slate-700/80 hover:bg-slate-800 transition-all backdrop-blur-xs">MaturityOne</Link>
+              <a href="https://effectiverm.com/" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-blue-300 border border-slate-700/80 hover:bg-slate-800 hover:text-white transition-all backdrop-blur-xs flex items-center gap-1">
+                EffectiveRM <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+              </a>
+              <a href="https://wahidai.com/" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-emerald-300 border border-slate-700/80 hover:bg-slate-800 hover:text-white transition-all backdrop-blur-xs flex items-center gap-1">
+                Wahid AI <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+              </a>
+              <a href="https://riskbridge.com.au/" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-amber-300 border border-slate-700/80 hover:bg-slate-800 hover:text-white transition-all backdrop-blur-xs flex items-center gap-1">
+                RiskBridge <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+              </a>
+              <a href="https://maturityone.com/" target="_blank" rel="noopener noreferrer" className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-indigo-300 border border-slate-700/80 hover:bg-slate-800 hover:text-white transition-all backdrop-blur-xs flex items-center gap-1">
+                MaturityOne <ExternalLink className="w-2.5 h-2.5 opacity-70" />
+              </a>
             </div>
           </div>
 

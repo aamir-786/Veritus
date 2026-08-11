@@ -115,72 +115,92 @@ export default function LegalPages() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Product 1: EffectiveRM */}
-              <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6">
+              <a 
+                href="https://effectiverm.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6 hover:shadow-md hover:border-blue-300 transition-all group block"
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-extrabold text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
                     EffectiveRM
                   </span>
-                  <ExternalLink className="w-4 h-4 text-slate-400" />
+                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-900 transition-colors" />
                 </div>
-                <h3 className="font-display text-lg font-bold text-slate-900">Effective RM Core Platform</h3>
+                <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-blue-900 transition-colors">Effective RM Core Platform</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Enterprise risk management methodologies, key risk indicators (KRIs), and board oversight frameworks.
                 </p>
                 <div className="pt-2 text-xs font-bold text-blue-900 flex items-center gap-1">
-                  Learn More <ArrowRight className="w-3.5 h-3.5" />
+                  Visit Platform <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
-              </div>
+              </a>
 
               {/* Product 2: Wahid AI */}
-              <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6">
+              <a 
+                href="https://wahidai.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6 hover:shadow-md hover:border-emerald-300 transition-all group block"
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-extrabold text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
                     Wahid AI
                   </span>
-                  <ExternalLink className="w-4 h-4 text-slate-400" />
+                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-emerald-700 transition-colors" />
                 </div>
-                <h3 className="font-display text-lg font-bold text-slate-900">Wahid AI Assistant</h3>
+                <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">Wahid AI Assistant</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Contextual AI risk decision model designed specifically for CROs, compliance leaders, and risk committees.
                 </p>
                 <div className="pt-2 text-xs font-bold text-emerald-700 flex items-center gap-1">
-                  Learn More <ArrowRight className="w-3.5 h-3.5" />
+                  Visit Platform <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
-              </div>
+              </a>
 
               {/* Product 3: RiskBridge */}
-              <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6">
+              <a 
+                href="https://riskbridge.com.au/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6 hover:shadow-md hover:border-amber-300 transition-all group block"
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-extrabold text-amber-900 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
                     RiskBridge
                   </span>
-                  <ExternalLink className="w-4 h-4 text-slate-400" />
+                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-amber-800 transition-colors" />
                 </div>
-                <h3 className="font-display text-lg font-bold text-slate-900">RiskBridge Integration</h3>
+                <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-amber-800 transition-colors">RiskBridge Integration</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Bridging third-party technology vendor assessment with real-time operational risk telemetry.
                 </p>
                 <div className="pt-2 text-xs font-bold text-amber-800 flex items-center gap-1">
-                  Learn More <ArrowRight className="w-3.5 h-3.5" />
+                  Visit Platform <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
-              </div>
+              </a>
 
               {/* Product 4: MaturityOne */}
-              <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6">
+              <a 
+                href="https://maturityone.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="glass-card rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xs space-y-4 p-6 hover:shadow-md hover:border-indigo-300 transition-all group block"
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-extrabold text-indigo-900 bg-indigo-50 px-2.5 py-1 rounded border border-indigo-200">
                     MaturityOne
                   </span>
-                  <ExternalLink className="w-4 h-4 text-slate-400" />
+                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-800 transition-colors" />
                 </div>
-                <h3 className="font-display text-lg font-bold text-slate-900">MaturityOne Benchmarking</h3>
+                <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-indigo-800 transition-colors">MaturityOne Benchmarking</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Benchmarking risk maturity scores across peer industry sectors and regulatory jurisdictions.
                 </p>
                 <div className="pt-2 text-xs font-bold text-indigo-800 flex items-center gap-1">
-                  Learn More <ArrowRight className="w-3.5 h-3.5" />
+                  Visit Platform <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
-              </div>
+              </a>
 
             </div>
           </div>
