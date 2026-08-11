@@ -20,7 +20,7 @@ import LegalPages from './pages/LegalPages';
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="py-20 text-center text-slate-400">Verifying security token...</div>;
+  if (loading) return <div className="py-20 text-center text-slate-600 font-medium">Verifying security token...</div>;
   if (!user) return <Navigate to="/login" replace />;
   if (requireAdmin && user.role !== 'admin') return <Navigate to="/dashboard" replace />;
   return children;
@@ -29,7 +29,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
 export default function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-[#0B0F17] text-slate-100 flex flex-col justify-between">
+      <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col justify-between selection:bg-amber-400 selection:text-black">
         <div>
           <Navbar />
           <main>

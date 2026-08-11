@@ -8,81 +8,78 @@ import {
   LayoutDashboard, 
   ShieldAlert, 
   LogOut, 
-  User, 
   Menu, 
   X,
-  Sparkles,
-  Bot
+  Sparkles
 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
 
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="sticky top-0 z-40 bg-[#0B0F17]/90 backdrop-blur-md border-b border-slate-800/80">
+    <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Brand Logo */}
+          {/* Brand Logo - Effective RM Theme */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-              <ShieldAlert className="w-6 h-6 text-black stroke-[2.5]" />
+            <div className="w-9 h-9 rounded-lg bg-blue-900 text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <ShieldAlert className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div>
-              <span className="font-display text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
-                VERITUS <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-sans font-medium">Platform</span>
+              <span className="font-display text-lg font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5">
+                VERITUS <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-sans font-semibold">Platform</span>
               </span>
-              <span className="text-[10px] text-slate-400 font-medium block -mt-1 tracking-wider uppercase">
+              <span className="text-[10px] text-slate-500 font-medium block -mt-1 tracking-wider uppercase">
                 Deciding in the Dark
               </span>
             </div>
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1.5">
             <Link 
               to="/questions" 
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                isActive('/questions') ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                isActive('/questions') ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <Compass className="w-4 h-4 text-amber-400" />
+              <Compass className="w-3.5 h-3.5 text-blue-600" />
               100 Risk Questions
             </Link>
 
             <Link 
               to="/courses" 
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                isActive('/courses') ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                isActive('/courses') ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <BookOpen className="w-4 h-4 text-indigo-400" />
+              <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
               Masterclasses
             </Link>
 
             <Link 
               to="/templates" 
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                isActive('/templates') ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                isActive('/templates') ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <FileText className="w-4 h-4 text-emerald-400" />
+              <FileText className="w-3.5 h-3.5 text-emerald-600" />
               Template Hub
             </Link>
 
             {user && (
               <Link 
                 to="/dashboard" 
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                  isActive('/dashboard') ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                  isActive('/dashboard') ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                <LayoutDashboard className="w-4 h-4 text-cyan-400" />
+                <LayoutDashboard className="w-3.5 h-3.5 text-sky-600" />
                 My Dashboard
               </Link>
             )}
@@ -90,11 +87,11 @@ export default function Navbar() {
             {isAdmin && (
               <Link 
                 to="/admin" 
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide uppercase transition-colors flex items-center gap-1.5 border ${
-                  isActive('/admin') ? 'bg-amber-500 text-black border-amber-400' : 'bg-slate-800 text-amber-400 border-amber-500/30 hover:bg-slate-700'
+                className={`px-3 py-1 rounded-lg text-[11px] font-bold tracking-wider uppercase transition-colors flex items-center gap-1 border ${
+                  isActive('/admin') ? 'bg-amber-500 text-black border-amber-600' : 'bg-slate-100 text-amber-800 border-amber-300 hover:bg-slate-200'
                 }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3 h-3 text-amber-600" />
                 Admin Studio
               </Link>
             )}
@@ -103,14 +100,14 @@ export default function Navbar() {
           {/* User Auth Actions */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-3 border-l border-slate-800 pl-4">
+              <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
                 <div className="text-right">
-                  <div className="text-xs font-medium text-white">{user.full_name}</div>
-                  <div className="text-[11px] text-amber-400 font-mono capitalize">{user.role}</div>
+                  <div className="text-xs font-bold text-slate-900">{user.full_name}</div>
+                  <div className="text-[10px] text-blue-700 font-mono capitalize font-medium">{user.role}</div>
                 </div>
                 <button
                   onClick={logout}
-                  className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                   title="Log Out"
                 >
                   <LogOut className="w-4 h-4" />
@@ -120,13 +117,13 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-amber-500 to-amber-600 text-black hover:from-amber-400 hover:to-amber-500 shadow-md shadow-amber-500/20 transition-all font-semibold"
+                  className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white hover:bg-blue-800 shadow-sm transition-all"
                 >
                   Get Access
                 </Link>
@@ -138,9 +135,9 @@ export default function Navbar() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             >
-              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -148,25 +145,25 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#141C2E] border-b border-slate-800 px-4 pt-2 pb-4 space-y-2">
+        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-2 text-xs font-medium">
           <Link
             to="/questions"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
+            className="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100"
           >
             100 Risk Questions Matrix
           </Link>
           <Link
             to="/courses"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
+            className="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100"
           >
             Masterclasses & Courses
           </Link>
           <Link
             to="/templates"
             onClick={() => setMobileOpen(false)}
-            className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
+            className="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100"
           >
             Template Library
           </Link>
@@ -174,7 +171,7 @@ export default function Navbar() {
             <Link
               to="/dashboard"
               onClick={() => setMobileOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
+              className="block px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100"
             >
               My Dashboard
             </Link>
@@ -183,36 +180,36 @@ export default function Navbar() {
             <Link
               to="/admin"
               onClick={() => setMobileOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-amber-400 hover:bg-slate-800"
+              className="block px-3 py-2 rounded-md text-amber-800 font-bold hover:bg-amber-50"
             >
               Admin Studio
             </Link>
           )}
 
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+          <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
             {user ? (
               <div className="flex items-center justify-between w-full">
-                <span className="text-sm font-medium text-slate-300">{user.full_name}</span>
+                <span className="text-xs font-bold text-slate-800">{user.full_name}</span>
                 <button
                   onClick={() => { logout(); setMobileOpen(false); }}
-                  className="px-3 py-1 text-xs bg-rose-500/10 text-rose-400 rounded-md border border-rose-500/20"
+                  className="px-3 py-1 text-xs bg-rose-50 text-rose-600 rounded-md border border-rose-200"
                 >
                   Log Out
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 w-full">
+              <div className="flex items-center gap-2 w-full">
                 <Link
                   to="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center py-2 text-sm text-slate-300 border border-slate-700 rounded-lg"
+                  className="flex-1 text-center py-1.5 text-xs font-semibold text-slate-700 border border-slate-300 rounded-lg"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center py-2 text-sm bg-amber-500 text-black font-semibold rounded-lg"
+                  className="flex-1 text-center py-1.5 text-xs bg-blue-900 text-white font-bold rounded-lg"
                 >
                   Get Access
                 </Link>

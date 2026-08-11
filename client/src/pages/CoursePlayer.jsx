@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { PlayCircle, CheckCircle2, Lock, FileText, ArrowLeft, ChevronRight, ShieldAlert, Download } from 'lucide-react';
+import { PlayCircle, CheckCircle2, Lock, ArrowLeft, ChevronRight, ShieldAlert, Download } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import VideoPlayer from '../components/VideoPlayer';
@@ -36,7 +36,7 @@ export default function CoursePlayer() {
         if (lRes.success) {
           setActiveLesson(lRes.lesson);
         } else {
-          setGatedError(lRes.error || 'Access Gated: You do not have permission to view this lesson.');
+          setGatedError(lRes.error || 'Access Gated: You must purchase this course to view this lesson.');
         }
       } catch (err) {
         setGatedError('An error occurred loading the lesson stream.');
@@ -61,19 +61,19 @@ export default function CoursePlayer() {
     }
   };
 
-  if (loading) return <div className="py-20 text-center text-slate-400">Loading learning environment...</div>;
+  if (loading) return <div className="py-16 text-center text-slate-500 text-xs">Loading learning environment...</div>;
 
   if (gatedError) {
     return (
-      <div className="max-w-xl mx-auto my-20 p-8 glass-card rounded-2xl border border-rose-500/30 text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/20">
-          <ShieldAlert className="w-6 h-6" />
+      <div className="max-w-xl mx-auto my-16 p-8 glass-card rounded-2xl border border-rose-200 text-center space-y-3 shadow-xs">
+        <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-700 flex items-center justify-center mx-auto border border-rose-200">
+          <ShieldAlert className="w-6 h-6 stroke-[2.5]" />
         </div>
-        <h2 className="font-display text-2xl font-bold text-white">Access Gated Content</h2>
-        <p className="text-sm text-slate-300">{gatedError}</p>
+        <h2 className="font-display text-xl font-bold text-slate-900">Access Gated Content</h2>
+        <p className="text-xs text-slate-600 font-medium">{gatedError}</p>
         <Link
           to={`/courses/${courseSlug}`}
-          className="inline-block px-6 py-2.5 rounded-xl bg-amber-500 text-black font-extrabold text-sm"
+          className="inline-block px-5 py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs shadow-xs"
         >
           View Course & Purchase Access
         </Link>
@@ -82,26 +82,26 @@ export default function CoursePlayer() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row text-slate-900">
       
       {/* Sidebar Navigation */}
-      <div className="w-full md:w-80 bg-[#141C2E] border-r border-slate-800 p-4 space-y-6 shrink-0">
-        <Link to="/dashboard" className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 font-medium">
-          <ArrowLeft className="w-4 h-4" /> Back to My Dashboard
+      <div className="w-full md:w-80 bg-white border-r border-slate-200 p-4 space-y-5 shrink-0">
+        <Link to="/dashboard" className="text-xs text-blue-900 hover:underline flex items-center gap-1 font-bold">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to My Dashboard
         </Link>
 
         <div>
-          <div className="text-[10px] uppercase font-mono text-slate-400 tracking-wider">Course Player</div>
-          <h2 className="font-display text-base font-bold text-white line-clamp-2 mt-0.5">{course.title}</h2>
+          <div className="text-[10px] uppercase font-mono text-slate-500 font-bold tracking-wider">Course Player</div>
+          <h2 className="font-display text-base font-extrabold text-slate-900 line-clamp-2 mt-0.5">{course.title}</h2>
         </div>
 
         <div className="space-y-4 text-xs">
           {course.modules.map(mod => (
-            <div key={mod.id} className="space-y-2">
-              <div className="font-semibold text-slate-400 uppercase tracking-wider text-[11px] px-2">
+            <div key={mod.id} className="space-y-1.5">
+              <div className="font-bold text-slate-500 uppercase tracking-wider text-[10px] px-2">
                 Module {mod.order_index}: {mod.title}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 font-medium">
                 {mod.lessons.map(l => {
                   const isActive = activeLesson && activeLesson.id === l.id;
                   return (
@@ -109,11 +109,11 @@ export default function CoursePlayer() {
                       key={l.id}
                       to={`/learn/${courseSlug}/lesson/${l.id}`}
                       className={`w-full p-2.5 rounded-xl text-left flex items-center justify-between transition-colors block ${
-                        isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold' : 'text-slate-300 hover:bg-slate-800/60'
+                        isActive ? 'bg-blue-50 text-blue-900 border border-blue-200 font-bold shadow-xs' : 'text-slate-700 hover:bg-slate-100'
                       }`}
                     >
                       <div className="flex items-center gap-2 line-clamp-1">
-                        <PlayCircle className="w-4 h-4 shrink-0" />
+                        <PlayCircle className="w-3.5 h-3.5 shrink-0 text-blue-900" />
                         <span>{l.title}</span>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 opacity-50 shrink-0" />
@@ -127,22 +127,22 @@ export default function CoursePlayer() {
       </div>
 
       {/* Main Content & Player */}
-      <div className="flex-1 p-6 md:p-10 space-y-6 max-w-5xl">
+      <div className="flex-1 p-6 md:p-8 space-y-6 max-w-5xl">
         
         {/* Lesson Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
-            <span className="text-xs text-amber-400 font-mono uppercase font-semibold">Active Lesson</span>
-            <h1 className="font-display text-2xl font-bold text-white mt-1">{activeLesson.title}</h1>
+            <span className="text-xs text-blue-900 font-mono uppercase font-bold">Active Lesson</span>
+            <h1 className="font-display text-2xl font-extrabold text-slate-900 mt-0.5">{activeLesson.title}</h1>
           </div>
 
           <button
             onClick={handleMarkComplete}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              isCompleted ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 hover:bg-slate-700 text-white'
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+              isCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
             }`}
           >
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             {isCompleted ? 'Completed' : 'Mark as Complete'}
           </button>
         </div>
@@ -156,18 +156,18 @@ export default function CoursePlayer() {
             onCompleted={handleMarkComplete}
           />
         ) : activeLesson.type === 'document' ? (
-          <div className="glass-card rounded-2xl p-8 border border-slate-800 space-y-4">
-            <h3 className="font-display text-lg font-bold text-white">Downloadable Framework Resource</h3>
-            <p className="text-sm text-slate-300">{activeLesson.content}</p>
+          <div className="glass-card rounded-2xl p-6 border border-slate-200 space-y-3">
+            <h3 className="font-display text-base font-bold text-slate-900">Downloadable Framework Resource</h3>
+            <p className="text-xs text-slate-600">{activeLesson.content}</p>
             <a
               href={activeLesson.resource_url}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-amber-500 text-black font-extrabold text-sm hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 transition-colors shadow-xs"
             >
               <Download className="w-4 h-4" /> Download Resource File
             </a>
           </div>
         ) : (
-          <div className="glass-card rounded-2xl p-8 border border-slate-800 prose prose-invert max-w-none text-slate-300 leading-relaxed">
+          <div className="glass-card rounded-2xl p-6 border border-slate-200 text-xs text-slate-700 leading-relaxed font-medium">
             {activeLesson.content}
           </div>
         )}

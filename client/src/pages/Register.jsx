@@ -53,19 +53,19 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="glass-card rounded-2xl p-8 max-w-md w-full border border-slate-800 space-y-6 shadow-2xl">
+    <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 bg-[#F8FAFC]">
+      <div className="glass-card rounded-2xl p-8 max-w-md w-full border border-slate-200 space-y-5 shadow-lg bg-white">
         
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-black flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20">
-            <ShieldAlert className="w-7 h-7 stroke-[2.5]" />
+        <div className="text-center space-y-1.5">
+          <div className="w-10 h-10 rounded-xl bg-blue-900 text-white flex items-center justify-center mx-auto shadow-sm">
+            <ShieldAlert className="w-6 h-6 stroke-[2.5]" />
           </div>
-          <h2 className="font-display text-2xl font-extrabold text-white">Create Practitioner Account</h2>
-          <p className="text-xs text-slate-400 font-medium">Join Veritus Risk Decision Platform</p>
+          <h2 className="font-display text-2xl font-extrabold text-slate-900">Create Practitioner Account</h2>
+          <p className="text-xs text-slate-500 font-medium">Join Veritus Risk Decision Platform</p>
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium">
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
             {error}
           </div>
         )}
@@ -75,7 +75,7 @@ export default function Register() {
           type="button"
           onClick={handleGoogleSignUp}
           disabled={loading}
-          className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-semibold text-xs transition-all flex items-center justify-center gap-3 shadow-md"
+          className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-2xs"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
@@ -86,60 +86,60 @@ export default function Register() {
           <span>Continue with Google</span>
         </button>
 
-        <div className="flex items-center my-3">
-          <div className="flex-1 border-t border-slate-800"></div>
-          <span className="px-3 text-[10px] text-slate-500 uppercase tracking-wider font-mono">or register with email</span>
-          <div className="flex-1 border-t border-slate-800"></div>
+        <div className="flex items-center my-2">
+          <div className="flex-1 border-t border-slate-200"></div>
+          <span className="px-3 text-[10px] text-slate-400 uppercase tracking-wider font-mono font-medium">or register with email</span>
+          <div className="flex-1 border-t border-slate-200"></div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3 text-xs font-medium">
           <div>
-            <label className="block text-slate-300 mb-1 font-medium">Full Name</label>
+            <label className="block text-slate-700 mb-1 font-bold">Full Name</label>
             <input
               type="text"
               required
               value={fullName}
               onChange={e => setFullName(e.target.value)}
               placeholder="e.g. Alex Vance"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-amber-500 text-sm"
+              className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 focus:border-blue-900 text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-slate-300 mb-1 font-medium">Email Address</label>
+            <label className="block text-slate-700 mb-1 font-bold">Email Address</label>
             <input
               type="email"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="cro@enterprise.com"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-amber-500 text-sm"
+              className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 focus:border-blue-900 text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-slate-300 mb-1 font-medium">Password</label>
+            <label className="block text-slate-700 mb-1 font-bold">Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-amber-500 text-sm"
+              className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 focus:border-blue-900 text-xs"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold text-sm hover:from-amber-400 hover:to-amber-500 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs hover:bg-blue-800 transition-all shadow-xs flex items-center justify-center gap-2"
           >
             {loading ? 'Creating Account...' : 'Register Account'} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <div className="pt-4 border-t border-slate-800 text-center text-xs text-slate-400">
-          Already have an account? <Link to="/login" className="text-amber-400 font-semibold hover:underline">Sign In</Link>
+        <div className="pt-3 border-t border-slate-100 text-center text-xs text-slate-500">
+          Already have an account? <Link to="/login" className="text-blue-900 font-bold hover:underline">Sign In</Link>
         </div>
 
       </div>

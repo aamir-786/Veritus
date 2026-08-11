@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Lock, Search, Filter, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { FileText, Download, Lock, Search, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import CheckoutModal from '../components/CheckoutModal';
@@ -40,41 +40,41 @@ export default function TemplateStore() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 text-slate-900 bg-[#F8FAFC]">
       
       {/* Page Header */}
-      <div className="space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
-          <FileText className="w-4 h-4" /> Digital Risk Framework Library
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-100/80 text-emerald-900 border border-emerald-200 text-xs font-bold uppercase">
+          <FileText className="w-3.5 h-3.5 text-emerald-700" /> Digital Risk Framework Library
         </div>
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-white">
+        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">
           Paid Templates & Free Lead Magnets
         </h1>
-        <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-          Battle-tested spreadsheets, presentation decks, and audit checklists used by Fortune 500 risk practitioners.
+        <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+          Battle-tested spreadsheets, presentation decks, and audit checklists used by Fortune 500 risk leaders.
         </p>
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-card rounded-2xl p-6 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="glass-card rounded-2xl p-4 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search templates by title or category..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-amber-500"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs focus:border-blue-900 font-medium"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {['All', 'Frameworks & Spreadsheets', 'Board Reporting', 'Regulatory Templates'].map(cat => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                category === cat ? 'bg-amber-500 text-black font-semibold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                category === cat ? 'bg-blue-900 text-white shadow-2xs' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               {cat}
@@ -85,43 +85,43 @@ export default function TemplateStore() {
 
       {/* Templates Grid */}
       {loading ? (
-        <div className="py-20 text-center text-slate-400">Loading digital library...</div>
+        <div className="py-16 text-center text-slate-500 text-xs">Loading digital library...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {templates.map(tpl => (
-            <div key={tpl.id} className="glass-card glass-card-hover rounded-2xl p-6 border border-slate-800 flex flex-col justify-between">
-              <div className="space-y-3">
+            <div key={tpl.id} className="glass-card glass-card-hover rounded-2xl p-5 border border-slate-200 flex flex-col justify-between shadow-xs">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
+                  <span className="text-[11px] font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                     {tpl.category}
                   </span>
                   {tpl.is_free ? (
-                    <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">Free Entry-Point</span>
+                    <span className="text-[10px] uppercase font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Free Entry-Point</span>
                   ) : (
-                    <span className="text-xs font-extrabold text-white">${tpl.price} USD</span>
+                    <span className="text-xs font-extrabold text-emerald-800">${tpl.price} USD</span>
                   )}
                 </div>
 
-                <h3 className="font-display font-bold text-lg text-white leading-snug">{tpl.title}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">{tpl.description}</p>
+                <h3 className="font-display font-bold text-base text-slate-900 leading-snug">{tpl.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed font-normal">{tpl.description}</p>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-slate-800/80 flex items-center justify-between">
-                <div className="text-[11px] text-slate-400">
+              <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 font-medium">
                   {tpl.downloads_count} Downloads
                 </div>
 
                 <button
                   onClick={() => handleDownload(tpl)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                     tpl.can_download 
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-md shadow-emerald-500/20' 
-                      : 'bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20'
+                      ? 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-xs' 
+                      : 'bg-amber-500 hover:bg-amber-400 text-black shadow-xs'
                   }`}
                 >
                   {tpl.can_download ? (
                     <>
-                      <Download className="w-4 h-4" /> Download File
+                      <Download className="w-3.5 h-3.5" /> Download File
                     </>
                   ) : (
                     <>

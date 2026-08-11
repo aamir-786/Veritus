@@ -8,15 +8,18 @@ export default {
     extend: {
       colors: {
         brand: {
-          dark: '#0B0F17',
-          surface: '#141C2E',
-          card: '#1B253B',
-          border: '#2A3654',
-          gold: '#F59E0B',
-          amber: '#D97706',
-          cyan: '#06B6D4',
-          emerald: '#10B981',
-          accent: '#6366F1'
+          bg: '#F8FAFC',
+          surface: '#FFFFFF',
+          card: '#FFFFFF',
+          border: '#E2E8F0',
+          navy: '#0F172A',
+          primary: '#1E3A8A',
+          blue: '#2563EB',
+          gold: '#D97706',
+          amber: '#F59E0B',
+          cyan: '#0284C7',
+          emerald: '#059669',
+          rose: '#DC2626'
         }
       },
       fontFamily: {
