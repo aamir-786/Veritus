@@ -1,54 +1,140 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, Lock, BookOpen, ExternalLink } from 'lucide-react';
+import { ShieldAlert, Lock, BookOpen, ExternalLink, Compass, FileText, LayoutDashboard, Sparkles, Layers } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="relative bg-slate-950 text-slate-300 border-t border-slate-800 overflow-hidden">
+      
+      {/* Background Architectural Cityscape / Glass Tower Image Overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none mix-blend-luminosity"
+        style={{ backgroundImage: `url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=80')` }}
+      />
+
+      {/* Subtle Dot Matrix Overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px] opacity-30 pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 relative z-10 space-y-12">
         
-        <div className="space-y-3 md:col-span-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold">
-              <ShieldAlert className="w-5 h-5 stroke-[2.5]" />
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
+          
+          {/* Brand & Platform Intro */}
+          <div className="space-y-4 md:col-span-1">
+            <Link to="/" className="flex items-center gap-2.5 group w-fit">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 text-white flex items-center justify-center font-bold shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                <ShieldAlert className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div>
+                <span className="font-display font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
+                  VERITUS <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-sans font-semibold">Platform</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium block -mt-1 tracking-wider uppercase">
+                  Deciding in the Dark
+                </span>
+              </div>
+            </Link>
+
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Executive Knowledge & Decision Platform built on <em>Deciding in the Dark</em>'s 100 structured risk questions and 7-way taxonomy.
+            </p>
+
+            <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold bg-emerald-950/60 px-3 py-1.5 rounded-lg border border-emerald-800/60 w-fit">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Strict Gating & Access Control Verified</span>
             </div>
-            <span className="font-display font-extrabold text-lg text-white">VERITUS</span>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Executive Knowledge & Decision Platform built on <em>Deciding in the Dark</em>'s 100 structured risk questions and 7-way taxonomy.
-          </p>
-          <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-medium pt-1">
-            <Lock className="w-3.5 h-3.5" />
-            <span>Strict Gating & Access Control Verified</span>
+
+          {/* Platform Modules */}
+          <div className="space-y-3">
+            <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" /> Platform Modules
+            </h4>
+            <ul className="space-y-2 text-xs text-slate-400">
+              <li>
+                <Link to="/questions" className="hover:text-blue-300 transition-colors flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-blue-400" /> 100 Risk Questions Matrix
+                </Link>
+              </li>
+              <li>
+                <Link to="/courses" className="hover:text-blue-300 transition-colors flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-400" /> Executive Masterclasses
+                </Link>
+              </li>
+              <li>
+                <Link to="/templates" className="hover:text-blue-300 transition-colors flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-emerald-400" /> Digital Framework Library
+                </Link>
+              </li>
+              <li>
+                <Link to="/dashboard" className="hover:text-blue-300 transition-colors flex items-center gap-1.5">
+                  <LayoutDashboard className="w-3.5 h-3.5 text-sky-400" /> Member Learning Dashboard
+                </Link>
+              </li>
+            </ul>
           </div>
+
+          {/* Legal & Governance */}
+          <div className="space-y-3">
+            <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-emerald-400" /> Legal & Governance
+            </h4>
+            <ul className="space-y-2 text-xs text-slate-400">
+              <li>
+                <Link to="/legal/terms" className="hover:text-white transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/privacy" className="hover:text-white transition-colors">
+                  Privacy & Data Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/refunds" className="hover:text-white transition-colors">
+                  Refund & Access Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/ecosystem" className="hover:text-white transition-colors">
+                  Ecosystem Governance
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Effective RM Ecosystem */}
+          <div className="space-y-3">
+            <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-amber-400" /> Effective RM Ecosystem
+            </h4>
+            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+              Aligned with the Effective RM family of products:
+            </p>
+            <div className="flex flex-wrap gap-1.5 text-[11px] font-mono">
+              <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-blue-300 border border-slate-700 hover:bg-slate-700">EffectiveRM</Link>
+              <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-emerald-300 border border-slate-700 hover:bg-slate-700">Wahid AI</Link>
+              <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700">RiskBridge</Link>
+              <Link to="/legal/ecosystem" className="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700 hover:bg-slate-700">Maturity1</Link>
+            </div>
+          </div>
+
         </div>
 
-        <div>
-          <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider mb-3">Platform Modules</h4>
-          <ul className="space-y-2 text-xs">
-            <li><Link to="/questions" className="hover:text-white transition-colors">100 Risk Questions Matrix</Link></li>
-            <li><Link to="/courses" className="hover:text-white transition-colors">Executive Masterclasses</Link></li>
-            <li><Link to="/templates" className="hover:text-white transition-colors">Digital Framework Library</Link></li>
-            <li><Link to="/dashboard" className="hover:text-white transition-colors">Member Learning Dashboard</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider mb-3">Legal & Governance</h4>
-          <ul className="space-y-2 text-xs">
-            <li><Link to="/legal/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-            <li><Link to="/legal/privacy" className="hover:text-white transition-colors">Privacy & Data Policy</Link></li>
-            <li><Link to="/legal/refunds" className="hover:text-white transition-colors">Refund & Access Policy</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider mb-3">Effective RM Ecosystem</h4>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Aligned with the Effective RM family of products: EffectiveRM, Wahid AI, RiskBridge, and Maturity1.
-          </p>
-          <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-500">
-            © {new Date().getFullYear()} Veritus Platform. All rights reserved.
+        {/* Bottom Copyright Bar */}
+        <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <div>
+            © {new Date().getFullYear()} Veritus Platform. All rights reserved. Built on <em>Deciding in the Dark</em> author IP.
+          </div>
+          <div className="flex items-center gap-4 text-[11px]">
+            <Link to="/legal/terms" className="hover:text-slate-300">Terms</Link>
+            <span>•</span>
+            <Link to="/legal/privacy" className="hover:text-slate-300">Privacy</Link>
+            <span>•</span>
+            <Link to="/legal/refunds" className="hover:text-slate-300">Refunds</Link>
+            <span>•</span>
+            <Link to="/legal/ecosystem" className="hover:text-slate-300">Ecosystem</Link>
           </div>
         </div>
 
