@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Lock, Search, CheckCircle2 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import CheckoutModal from '../components/CheckoutModal';
 
@@ -36,7 +36,7 @@ export default function TemplateStore() {
       return;
     }
     // Direct file download stream trigger
-    window.open(`/api/v1/templates/download/${tpl.id}`, '_blank');
+    window.open(`${API_BASE}/templates/download/${tpl.id}`, '_blank');
   };
 
   return (

@@ -1,6 +1,5 @@
-// api.js - API client service for Veritus React application
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/+$/, '');
 
-const API_BASE = '/api/v1';
 
 const getHeaders = () => {
   const token = localStorage.getItem('veritus_token');

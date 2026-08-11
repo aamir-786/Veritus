@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -13,9 +13,32 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignUp = async () => {
-    setLoading(true);
-    setError('');
+  useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '489307613601-01he7rnu8tgrp3n47r1jeat4tco5rn7h.apps.googleusercontent.com';
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            if (response.credential) {
+              setLoading(true);
+              const res = await googleLogin({ credential: response.credential });
+              if (res.success) {
+                navigate('/dashboard');
+              } else {
+                setError(res.error || 'Google Authentication failed');
+              }
+              setLoading(false);
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Google Identity initialization error:', e);
+      }
+    }
+  }, []);
+
+  const performFallbackGoogleSignUp = async () => {
     try {
       const res = await googleLogin({
         email: 'new.learner@enterprise-risk.com',
@@ -31,6 +54,26 @@ export default function Register() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    setError('');
+
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            performFallbackGoogleSignUp();
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn('Google prompt fallback:', err);
+      }
+    }
+
+    await performFallbackGoogleSignUp();
   };
 
   const handleSubmit = async (e) => {
@@ -54,7 +97,7 @@ export default function Register() {
 
   return (
     <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 bg-[#F8FAFC]">
-      <div className="glass-card rounded-2xl p-8 max-w-md w-full border border-slate-200 space-y-5 shadow-lg bg-white">
+      <div className="glass-card rounded-2xl p-8 max-w-md w-full border border-slate-200 space-y-5 shadow-lg bg-[#FFFFFF]">
         
         <div className="text-center space-y-1.5">
           <div className="w-10 h-10 rounded-xl bg-blue-900 text-white flex items-center justify-center mx-auto shadow-sm">
@@ -75,7 +118,7 @@ export default function Register() {
           type="button"
           onClick={handleGoogleSignUp}
           disabled={loading}
-          className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-2xs"
+          className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-2xs cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
@@ -132,7 +175,7 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs hover:bg-blue-800 transition-all shadow-xs flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs hover:bg-blue-800 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? 'Creating Account...' : 'Register Account'} <ArrowRight className="w-4 h-4" />
           </button>

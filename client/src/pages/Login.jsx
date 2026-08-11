@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -12,9 +12,32 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError('');
+  useEffect(() => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '489307613601-01he7rnu8tgrp3n47r1jeat4tco5rn7h.apps.googleusercontent.com';
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            if (response.credential) {
+              setLoading(true);
+              const res = await googleLogin({ credential: response.credential });
+              if (res.success) {
+                navigate('/dashboard');
+              } else {
+                setError(res.error || 'Google Authentication failed');
+              }
+              setLoading(false);
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Google Identity initialization error:', e);
+      }
+    }
+  }, []);
+
+  const performFallbackGoogleLogin = async () => {
     try {
       const res = await googleLogin({
         email: 'alex.vance@enterprise-risk.com',
@@ -30,6 +53,26 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            performFallbackGoogleLogin();
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn('Google prompt fallback:', err);
+      }
+    }
+
+    await performFallbackGoogleLogin();
   };
 
   const handleSubmit = async (e) => {
@@ -78,7 +121,7 @@ export default function Login() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-2xs"
+          className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-2xs cursor-pointer"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
@@ -121,7 +164,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs hover:bg-blue-800 transition-all shadow-xs flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-blue-900 text-white font-extrabold text-xs hover:bg-blue-800 transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? 'Authenticating...' : 'Sign In'} <ArrowRight className="w-4 h-4" />
           </button>
@@ -130,9 +173,9 @@ export default function Login() {
         <div className="pt-3 border-t border-slate-100 text-center text-xs text-slate-500 space-y-1.5">
           <div className="font-medium">Quick Seed Accounts:</div>
           <div className="flex justify-center gap-3 font-mono text-[11px]">
-            <button onClick={() => { setEmail('admin@veritus.com'); setPassword('admin123'); }} className="text-blue-900 font-bold hover:underline">Admin Account</button>
+            <button onClick={() => { setEmail('admin@veritus.com'); setPassword('admin123'); }} className="text-blue-900 font-bold hover:underline cursor-pointer">Admin Account</button>
             <span>•</span>
-            <button onClick={() => { setEmail('student@veritus.com'); setPassword('student123'); }} className="text-indigo-800 font-bold hover:underline">Student Account</button>
+            <button onClick={() => { setEmail('student@veritus.com'); setPassword('student123'); }} className="text-indigo-800 font-bold hover:underline cursor-pointer">Student Account</button>
           </div>
         </div>
 

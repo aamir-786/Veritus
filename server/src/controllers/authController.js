@@ -79,8 +79,24 @@ exports.register = (req, res) => {
 
 exports.googleLogin = (req, res) => {
   const { credential, email, name } = req.body;
-  const userEmail = (email || 'google.learner@veritus.com').toLowerCase();
-  const userName = name || 'Google Risk Practitioner';
+  let userEmail = (email || '').toLowerCase();
+  let userName = name || 'Google Risk Practitioner';
+
+  if (credential) {
+    try {
+      const decoded = jwt.decode(credential);
+      if (decoded && decoded.email) {
+        userEmail = decoded.email.toLowerCase();
+        userName = decoded.name || decoded.given_name || userName;
+      }
+    } catch (err) {
+      console.warn('[Google Auth] Could not decode credential payload:', err.message);
+    }
+  }
+
+  if (!userEmail) {
+    userEmail = 'google.learner@veritus.com';
+  }
 
   let user = db.users.find(u => u.email.toLowerCase() === userEmail);
 

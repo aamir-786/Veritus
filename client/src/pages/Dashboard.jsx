@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PlayCircle, FileText, Download, Award, ShieldCheck } from 'lucide-react';
-import { api } from '../services/api';
+import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function Dashboard() {
@@ -121,7 +121,7 @@ export default function Dashboard() {
                 <div className="text-[10px] text-slate-500 font-medium">{tpl.category}</div>
               </div>
               <a
-                href={`/api/v1/templates/download/${tpl.id}`}
+                href={`${API_BASE}/templates/download/${tpl.id}`}
                 target="_blank"
                 rel="noreferrer"
                 className="p-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 border border-emerald-200"
