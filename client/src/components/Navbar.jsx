@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Compass, 
   BookOpen, 
   FileText, 
   LayoutDashboard, 
-  ShieldAlert, 
   LogOut, 
   Menu, 
   X,
   Sparkles
 } from 'lucide-react';
+import EffectiveVeritusLogo from './EffectiveVeritusLogo';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
@@ -25,19 +25,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Brand Logo - Effective RM Theme */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-lg bg-blue-900 text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-              <ShieldAlert className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <div>
-              <span className="font-display text-lg font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5">
-                VERITUS <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-sans font-semibold">Platform</span>
-              </span>
-              <span className="text-[10px] text-slate-500 font-medium block -mt-1 tracking-wider uppercase">
-                Deciding in the Dark
-              </span>
-            </div>
+          {/* Brand Logo - Effective RM + Veritus Hybrid Logo */}
+          <Link to="/" className="flex items-center gap-2 group">
+            <EffectiveVeritusLogo subtitle={true} />
           </Link>
 
           {/* Desktop Nav Links */}
@@ -123,7 +113,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-900 text-white hover:bg-blue-800 shadow-sm transition-all"
+                  className="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition-all"
                 >
                   Get Access
                 </Link>
@@ -209,7 +199,7 @@ export default function Navbar() {
                 <Link
                   to="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center py-1.5 text-xs bg-blue-900 text-white font-bold rounded-lg"
+                  className="flex-1 text-center py-1.5 text-xs bg-slate-900 text-white font-bold rounded-lg"
                 >
                   Get Access
                 </Link>
