@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "Veritus - Deciding in the Dark Knowledge & Decision Platform",
   "main": "server/src/server.js",
+  "license": "MIT",
+  "author": "Veritus",
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
