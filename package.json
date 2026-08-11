@@ -4,10 +4,10 @@
   "description": "Veritus - Deciding in the Dark Knowledge & Decision Platform",
   "main": "server/src/server.js",
   "scripts": {
-    "start": "node server/src/server.js",
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/src/server.js",
     "client": "npm run dev --prefix client",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "cd client && npm install && npm run build",
     "postinstall": "cd server && npm install && cd ../client && npm install && npm run build"
   },
