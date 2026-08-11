@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldAlert, Lock, BookOpen, ExternalLink, Compass, FileText, LayoutDashboard, Sparkles, Layers } from 'lucide-react';
+import EffectiveVeritusLogo from './EffectiveVeritusLogo';
 
 export default function Footer() {
   return (
@@ -20,23 +21,13 @@ export default function Footer() {
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-12">
           
-          {/* Brand & Platform Intro */}
+          {/* Brand & Platform Intro with Light Logo Variant */}
           <div className="space-y-4 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2.5 group w-fit">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 text-white flex items-center justify-center font-bold shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                <ShieldAlert className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div>
-                <span className="font-display font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
-                  VERITUS <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-sans font-semibold">Platform</span>
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block -mt-1 tracking-wider uppercase">
-                  Deciding in the Dark
-                </span>
-              </div>
+            <Link to="/" className="block group w-fit">
+              <EffectiveVeritusLogo variant="light" subtitle={true} />
             </Link>
 
-            <p className="text-xs text-slate-400 leading-relaxed font-normal">
+            <p className="text-xs text-slate-400 leading-relaxed font-normal pt-1">
               Executive Knowledge & Decision Platform built on <em>Deciding in the Dark</em>'s 100 structured risk questions and 7-way taxonomy.
             </p>
 
