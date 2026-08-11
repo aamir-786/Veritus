@@ -36,6 +36,7 @@ router.get('/templates/download/:templateId', optionalToken, templatesController
 // --- Commerce & Payment Routes ---
 router.post('/checkout/create-session', optionalToken, commerceController.createCheckoutSession);
 router.post('/checkout/complete', commerceController.completeCheckout);
+router.post('/checkout/webhook', commerceController.handleStripeWebhook);
 router.get('/orders', authenticateToken, commerceController.getUserOrders);
 
 // --- Dashboard & Learning Progress Routes ---

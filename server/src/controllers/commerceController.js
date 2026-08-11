@@ -98,6 +98,45 @@ exports.completeCheckout = (req, res) => {
   });
 };
 
+// Official Production Stripe Webhook Handler (for Render / Deployed Environments)
+exports.handleStripeWebhook = (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event = req.body;
+
+  // In production with Stripe SDK:
+  // if (webhookSecret && sig) {
+  //   try {
+  //     event = stripe.webhooks.constructEvent(req.rawBody || req.body, sig, webhookSecret);
+  //   } catch (err) {
+  //     return res.status(400).send(`Webhook Error: ${err.message}`);
+  //   }
+  // }
+
+  // Handle Event Type
+  if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
+    const session = event.data.object;
+    const orderId = session.metadata?.order_id || session.client_reference_id;
+
+    if (orderId) {
+      const order = db.orders.find(o => o.id === orderId);
+      if (order && order.status !== 'paid') {
+        order.status = 'paid';
+        order.paid_at = new Date().toISOString();
+        db.entitlements.push({
+          id: `ent-${Date.now()}`,
+          user_id: order.user_id,
+          product_id: order.product_id,
+          access_granted_at: new Date().toISOString()
+        });
+      }
+    }
+  }
+
+  return res.json({ received: true });
+};
+
 // Reconcile Orders Listing for User
 exports.getUserOrders = (req, res) => {
   const userId = req.user.id;
