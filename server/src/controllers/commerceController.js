@@ -1,5 +1,6 @@
 // commerceController.js - Stripe Payments, Checkout & Entitlement Provisioning
 const db = require('../data/dbStore');
+const emailService = require('../services/emailService');
 
 // Initiate Checkout Session (Course or Template)
 exports.createCheckoutSession = (req, res) => {
@@ -90,9 +91,16 @@ exports.completeCheckout = (req, res) => {
     access_granted_at: new Date().toISOString()
   });
 
+  // Dispatch Order Receipt & Entitlement Access Email
+  emailService.sendOrderReceiptEmail({
+    email: order.user_email,
+    name: targetUser.full_name,
+    order
+  }).catch(err => console.warn('[Commerce] Order receipt email error:', err.message));
+
   return res.json({
     success: true,
-    message: 'Payment completed successfully. Entitlement unlocked.',
+    message: 'Payment completed successfully. Entitlement unlocked & receipt email dispatched.',
     order,
     receipt_sent_to: order.user_email
   });
@@ -104,15 +112,6 @@ exports.handleStripeWebhook = (req, res) => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let event = req.body;
-
-  // In production with Stripe SDK:
-  // if (webhookSecret && sig) {
-  //   try {
-  //     event = stripe.webhooks.constructEvent(req.rawBody || req.body, sig, webhookSecret);
-  //   } catch (err) {
-  //     return res.status(400).send(`Webhook Error: ${err.message}`);
-  //   }
-  // }
 
   // Handle Event Type
   if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
@@ -130,12 +129,19 @@ exports.handleStripeWebhook = (req, res) => {
           product_id: order.product_id,
           access_granted_at: new Date().toISOString()
         });
+
+        emailService.sendOrderReceiptEmail({
+          email: order.user_email,
+          name: order.card_holder_name || 'Valued Buyer',
+          order
+        }).catch(err => console.warn('[Stripe Webhook] Receipt email error:', err.message));
       }
     }
   }
 
   return res.json({ received: true });
 };
+
 
 // Reconcile Orders Listing for User
 exports.getUserOrders = (req, res) => {

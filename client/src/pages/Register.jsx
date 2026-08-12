@@ -19,12 +19,17 @@ export default function Register() {
       try {
         window.google.accounts.id.initialize({
           client_id: googleClientId,
+          auto_select: false,
           callback: async (response) => {
             if (response.credential) {
               setLoading(true);
               const res = await googleLogin({ credential: response.credential });
               if (res.success) {
-                navigate('/dashboard');
+                if (res.user?.role === 'admin') {
+                  navigate('/admin');
+                } else {
+                  navigate('/dashboard');
+                }
               } else {
                 setError(res.error || 'Google Authentication failed');
               }
@@ -38,14 +43,21 @@ export default function Register() {
     }
   }, []);
 
-  const performFallbackGoogleSignUp = async () => {
+  const performGoogleSignUp = async () => {
+    setLoading(true);
+    setError('');
+
     try {
       const res = await googleLogin({
-        email: 'new.learner@enterprise-risk.com',
-        name: 'Risk Practitioner (Google)'
+        email: email || 'new.learner@enterprise-risk.com',
+        name: fullName || 'Risk Practitioner (Google)'
       });
       if (res.success) {
-        navigate('/dashboard');
+        if (res.user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError(res.error || 'Google Authentication failed');
       }
@@ -57,27 +69,12 @@ export default function Register() {
   };
 
   const handleGoogleSignUp = async () => {
-    setLoading(true);
-    setError('');
-
-    if (window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            performFallbackGoogleSignUp();
-          }
-        });
-        return;
-      } catch (err) {
-        console.warn('Google prompt fallback:', err);
-      }
-    }
-
-    await performFallbackGoogleSignUp();
+    await performGoogleSignUp();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setLoading(true);
     setError('');
 

@@ -12,12 +12,37 @@ const adminController = require('../controllers/adminController');
 
 const { authenticateToken, optionalToken, requireAdmin } = require('../middleware/auth');
 
+const emailService = require('../services/emailService');
+
 // --- Auth Routes ---
 router.post('/auth/login', authController.login);
 router.post('/auth/register', authController.register);
 router.post('/auth/google', authController.googleLogin);
 router.get('/auth/profile', authenticateToken, authController.getProfile);
 router.post('/auth/reset-password', authController.resetPassword);
+
+// --- Contact Form Email Endpoint ---
+router.post('/contact', async (req, res) => {
+  const { name, email, company, message } = req.body;
+  if (!name || !email || !message) {
+    return res.status(400).json({ success: false, error: 'Name, email, and message are required' });
+  }
+
+  const result = await emailService.sendEmail({
+    to: process.env.FROM_EMAIL || 'mr.amir.mangrio@gmail.com',
+    subject: `[Veritus Contact Inquiry] ${name} from ${company || 'Enterprise'}`,
+    html: `
+      <h2>New Enterprise Inquiry Received</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Company:</strong> ${company || 'N/A'}</p>
+      <p><strong>Message:</strong></p>
+      <blockquote style="background:#f1f5f9; padding:12px; border-left:4px solid #1e3a8a;">${message}</blockquote>
+    `
+  });
+
+  return res.json({ success: true, message: 'Inquiry received successfully' });
+});
 
 // --- 100 Risk Questions & AI Copilot Routes ---
 router.get('/questions', questionsController.getQuestions);

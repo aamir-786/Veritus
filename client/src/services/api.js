@@ -45,6 +45,15 @@ export const api = {
     return res.json();
   },
 
+  sendContactInquiry: async (formData) => {
+    const res = await fetch(`${API_BASE}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    return res.json();
+  },
+
   // 100 Questions Taxonomy API
   getQuestions: async (filters = {}) => {
     const params = new URLSearchParams(filters).toString();

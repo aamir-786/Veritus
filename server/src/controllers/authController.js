@@ -2,6 +2,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../data/dbStore');
 const { JWT_SECRET } = require('../middleware/auth');
+const emailService = require('../services/emailService');
 
 exports.login = (req, res) => {
   const { email, password } = req.body;
@@ -58,6 +59,10 @@ exports.register = (req, res) => {
 
   db.users.push(newUser);
 
+  // Dispatch Welcome Email asynchronously
+  emailService.sendWelcomeEmail({ email: newUser.email, name: newUser.full_name })
+    .catch(err => console.warn('[Auth] Welcome email async warning:', err.message));
+
   const token = jwt.sign(
     { id: newUser.id, email: newUser.email, role: newUser.role },
     JWT_SECRET,
@@ -66,7 +71,7 @@ exports.register = (req, res) => {
 
   return res.status(201).json({
     success: true,
-    message: 'Registration successful',
+    message: 'Registration successful. Welcome email dispatched.',
     token,
     user: {
       id: newUser.id,
@@ -99,18 +104,24 @@ exports.googleLogin = (req, res) => {
   }
 
   let user = db.users.find(u => u.email.toLowerCase() === userEmail);
+  let isNewUser = false;
 
   if (!user) {
-    // Provision new Risk Learner account automatically via Google OAuth
+    isNewUser = true;
     user = {
       id: `u-google-${Date.now()}`,
       email: userEmail,
       password: 'google_oauth_protected',
       full_name: userName,
-      role: 'student', // Risk Learner
+      role: 'student',
       created_at: new Date().toISOString()
     };
     db.users.push(user);
+  }
+
+  if (isNewUser) {
+    emailService.sendWelcomeEmail({ email: user.email, name: user.full_name })
+      .catch(err => console.warn('[Google Auth] Welcome email async warning:', err.message));
   }
 
   const token = jwt.sign(
@@ -149,9 +160,16 @@ exports.resetPassword = (req, res) => {
   const { email } = req.body;
   const user = db.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
   
+  if (user) {
+    const resetToken = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+    emailService.sendPasswordResetEmail({ email: user.email, resetToken })
+      .catch(err => console.warn('[Auth] Password reset email error:', err.message));
+  }
+
   // Always return success for security privacy
   return res.json({
     success: true,
     message: 'If an account exists for this email, password reset instructions have been sent.'
   });
 };
+

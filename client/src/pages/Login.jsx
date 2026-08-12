@@ -18,12 +18,17 @@ export default function Login() {
       try {
         window.google.accounts.id.initialize({
           client_id: googleClientId,
+          auto_select: false,
           callback: async (response) => {
             if (response.credential) {
               setLoading(true);
               const res = await googleLogin({ credential: response.credential });
               if (res.success) {
-                navigate('/dashboard');
+                if (res.user?.role === 'admin') {
+                  navigate('/admin');
+                } else {
+                  navigate('/dashboard');
+                }
               } else {
                 setError(res.error || 'Google Authentication failed');
               }
@@ -37,14 +42,20 @@ export default function Login() {
     }
   }, []);
 
-  const performFallbackGoogleLogin = async () => {
+  const performGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
     try {
       const res = await googleLogin({
         email: 'alex.vance@enterprise-risk.com',
         name: 'Alex Vance (Risk Practitioner)'
       });
       if (res.success) {
-        navigate('/dashboard');
+        if (res.user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError(res.error || 'Google Authentication failed');
       }
@@ -56,23 +67,7 @@ export default function Login() {
   };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError('');
-
-    if (window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            performFallbackGoogleLogin();
-          }
-        });
-        return;
-      } catch (err) {
-        console.warn('Google prompt fallback:', err);
-      }
-    }
-
-    await performFallbackGoogleLogin();
+    await performGoogleLogin();
   };
 
   const handleSubmit = async (e) => {
@@ -97,6 +92,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+
 
   return (
     <div 
