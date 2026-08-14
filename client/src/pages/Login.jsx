@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShieldAlert, ArrowRight, Lock, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import { api } from '../services/api';
 
 export default function Login() {
   const { login, supabaseGoogleLogin } = useAuth();
+  const { cartItems } = useCart();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,6 +37,20 @@ export default function Login() {
     try {
       const res = await login(email, password);
       if (res.success) {
+        // Check if we need to redirect directly to checkout
+        if (searchParams.get('redirect') === 'checkout' && cartItems.length > 0) {
+          try {
+            const checkoutRes = await api.createMultiCheckoutSession({ items: cartItems });
+            if (checkoutRes.success && checkoutRes.checkout_url) {
+              window.location.href = checkoutRes.checkout_url;
+              return; // Halt further execution
+            }
+          } catch (checkoutErr) {
+            console.error('Checkout failed after login:', checkoutErr);
+            // Fallback to dashboard if checkout initialization fails
+          }
+        }
+
         if (res.user.role === 'admin') {
           navigate('/admin');
         } else {
@@ -138,7 +156,7 @@ export default function Login() {
 
         <div className="text-center pt-2">
           <p className="text-xs text-slate-500 font-medium">
-            Don't have an account? <Link to="/register" className="text-blue-700 hover:text-blue-900 font-bold hover:underline">Apply for Access</Link>
+            Don't have an account? <Link to={searchParams.get('redirect') ? `/register?redirect=${searchParams.get('redirect')}` : '/register'} className="text-blue-700 hover:text-blue-900 font-bold hover:underline">Apply for Access</Link>
           </p>
         </div>
 

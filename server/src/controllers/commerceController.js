@@ -132,7 +132,7 @@ exports.createMultiCheckoutSession = async (req, res) => {
       metadata: {
         order_ids: orderIds.join(',') // We store a comma-separated list of order IDs
       },
-      success_url: `${req.headers.origin || 'http://localhost:3000'}/dashboard?payment=success`,
+      success_url: `${req.headers.origin || 'http://localhost:3000'}/payment-verification?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/cart?payment=cancelled`,
     });
 
@@ -143,6 +143,59 @@ exports.createMultiCheckoutSession = async (req, res) => {
   } catch (err) {
     console.error('createMultiCheckoutSession Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to create checkout session' });
+  }
+};
+
+// Verify Stripe Checkout Session (for Payment Verification page)
+exports.verifySession = async (req, res) => {
+  const { sessionId } = req.params;
+  
+  if (!sessionId) {
+    return res.status(400).json({ success: false, error: 'Session ID is required' });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === 'paid') {
+      const metadataOrderIds = session.metadata?.order_ids || session.client_reference_id;
+      
+      if (metadataOrderIds) {
+        const orderIdList = metadataOrderIds.split(',');
+        for (const orderId of orderIdList) {
+          const { data: order } = await supabase.from('orders').select('*').eq('id', orderId.trim()).single();
+          
+          if (order && order.status !== 'paid') {
+            // Fulfill the order if it hasn't been fulfilled by webhook yet
+            const { data: updatedOrder } = await supabase
+              .from('orders')
+              .update({ status: 'paid', paid_at: new Date().toISOString() })
+              .eq('id', orderId.trim())
+              .select()
+              .single();
+
+            if (order.user_id || session.client_reference_id) {
+              await supabase.from('entitlements').upsert({
+                user_id: order.user_id || session.client_reference_id,
+                product_id: order.product_id
+              });
+            }
+
+            emailService.sendOrderReceiptEmail({
+              email: order.user_email || session.customer_details?.email,
+              name: session.customer_details?.name || 'Valued Buyer',
+              order: updatedOrder || order
+            }).catch(err => console.warn('[Verification] Receipt email error:', err.message));
+          }
+        }
+      }
+      return res.json({ success: true, verified: true });
+    } else {
+      return res.json({ success: true, verified: false });
+    }
+  } catch (err) {
+    console.error('verifySession Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to verify session' });
   }
 };
 

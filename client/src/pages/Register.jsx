@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShieldAlert, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
   const { register, supabaseGoogleLogin } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -152,7 +153,7 @@ export default function Register() {
         </form>
 
         <div className="pt-3 border-t border-slate-100 text-center text-xs text-slate-500">
-          Already have an account? <Link to="/login" className="text-blue-900 font-bold hover:underline">Sign In</Link>
+          Already have an account? <Link to={searchParams.get('redirect') ? `/login?redirect=${searchParams.get('redirect')}` : '/login'} className="text-blue-900 font-bold hover:underline">Sign In</Link>
         </div>
 
       </div>

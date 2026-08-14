@@ -61,6 +61,7 @@ router.get('/templates/download/:templateId', optionalToken, templatesController
 router.post('/checkout/create-session', optionalToken, commerceController.createCheckoutSession);
 router.post('/checkout/session/multi', optionalToken, commerceController.createMultiCheckoutSession);
 router.post('/checkout/complete', commerceController.completeCheckout);
+router.get('/checkout/verify-session/:sessionId', commerceController.verifySession);
 router.post('/checkout/webhook', commerceController.handleStripeWebhook);
 router.get('/orders', authenticateToken, commerceController.getUserOrders);
 

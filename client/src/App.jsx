@@ -14,6 +14,7 @@ import CourseDetail from './pages/CourseDetail';
 import CoursePlayer from './pages/CoursePlayer';
 import TemplateStore from './pages/TemplateStore';
 import Dashboard from './pages/Dashboard';
+import PaymentVerification from './pages/PaymentVerification';
 import AdminStudio from './pages/AdminStudio';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -63,6 +64,7 @@ const AppContent = () => {
             <Route path="/courses/:identifier" element={<CourseDetail />} />
             <Route path="/learn/:courseSlug/lesson/:lessonId" element={<CoursePlayer />} />
             <Route path="/templates" element={<TemplateStore />} />
+            <Route path="/payment-verification" element={<PaymentVerification />} />
             
             <Route path="/dashboard" element={
               <ProtectedRoute>

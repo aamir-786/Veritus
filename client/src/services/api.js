@@ -116,6 +116,14 @@ export const api = {
     return res.json();
   },
 
+  verifySession: async (sessionId) => {
+    const res = await fetch(`${API_BASE}/checkout/verify-session/${sessionId}`, {
+      method: 'GET',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
   // Dashboard API
   getDashboardSummary: async () => {
     const res = await fetch(`${API_BASE}/dashboard/summary`, { headers: await getHeaders() });

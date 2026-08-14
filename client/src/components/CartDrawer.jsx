@@ -1,13 +1,24 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { ShoppingCart, X, Trash2, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function CartDrawer() {
   const { cartItems, removeFromCart, cartTotal, isCartOpen, closeCart, clearCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
+    
+    if (!user) {
+      closeCart();
+      navigate('/login?redirect=checkout');
+      return;
+    }
+
     try {
       const res = await api.createMultiCheckoutSession({ items: cartItems });
       if (res.success && res.checkout_url) {
