@@ -6,16 +6,12 @@ require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 let googleCredentials = null;
 
 try {
-  // Option 2: Production Parsing via Environment Variable
-  if (process.env.GOOGLE_CREDS_JSON) {
-    googleCredentials = JSON.parse(process.env.GOOGLE_CREDS_JSON);
-    console.log('[Google Config] Loaded Google credentials from GOOGLE_CREDS_JSON environment variable');
-  } 
-  // Fallback: Local Development via File
-  else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH) {
     const keyPath = path.resolve(__dirname, '../../', process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH);
     googleCredentials = require(keyPath);
     console.log('[Google Config] Loaded Google credentials from local file:', keyPath);
+  } else {
+    console.warn('[Google Config] Warning: GOOGLE_SERVICE_ACCOUNT_KEY_PATH is not set in environment variables.');
   }
 } catch (error) {
   console.warn('[Google Config] Warning: Failed to parse Google credentials -', error.message);
