@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { PlayCircle, FileText, Download, Award, ShieldCheck } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { cartItems, removeFromCart } = useCart();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -15,6 +17,18 @@ export default function Dashboard() {
         const res = await api.getDashboardSummary();
         if (res.success) {
           setData(res);
+          
+          // Auto-remove any already purchased items from the local cart
+          const ownedIds = [
+            ...res.enrolled_courses.map(c => c.id),
+            ...res.accessible_templates.map(t => t.id)
+          ];
+          
+          cartItems.forEach(item => {
+            if (ownedIds.includes(item.id)) {
+              removeFromCart(item.id);
+            }
+          });
         }
       } catch (err) {
         console.error(err);
@@ -23,7 +37,7 @@ export default function Dashboard() {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [cartItems, removeFromCart]);
 
   if (loading) return <div className="py-16 text-center text-slate-500 text-xs">Loading your member dashboard...</div>;
   if (!data) return <div className="py-16 text-center text-rose-600 text-xs font-semibold">Unable to load dashboard data.</div>;
