@@ -8,10 +8,25 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
   const { user } = useAuth();
   if (!question) return null;
 
-  // Split guidance text into teaser snippet vs locked body
-  const lines = question.guidance_text ? question.guidance_text.split('\n\n') : [];
-  const teaserSnippet = lines.slice(0, 2).join('\n\n');
-  const lockedBody = lines.slice(2).join('\n\n');
+  // Prepare text based on auth state
+  let fullText = question.guidance_text || '';
+  fullText = fullText.replace(/^###\s*(Answer|Guidance|Response)\s*\n+/i, ''); // Strip explicit header if present
+
+  let teaserSnippet = '';
+  let lockedBody = '';
+
+  if (!user) {
+    const firstPeriod = fullText.indexOf('. ');
+    if (firstPeriod !== -1) {
+      teaserSnippet = fullText.slice(0, firstPeriod + 1);
+      lockedBody = fullText.slice(firstPeriod + 1).trim();
+    } else {
+      teaserSnippet = fullText.slice(0, 100) + '...';
+      lockedBody = fullText.slice(100).trim();
+    }
+  } else {
+    teaserSnippet = fullText;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm">
@@ -86,67 +101,57 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
             </div>
           </div>
 
-          {/* Visible Teaser Snippet */}
+          {/* Answer Content */}
           <div>
             <h3 className="font-display text-base font-bold text-slate-900 mb-2">
-              Executive Preview Guidance
+              Answer
             </h3>
             <div className="prose prose-slate prose-sm max-w-none text-slate-700 leading-relaxed font-medium">
               <ReactMarkdown>{teaserSnippet}</ReactMarkdown>
             </div>
           </div>
 
-          {/* Locked / Blurred Remaining Guidance (If not logged in or restricted) */}
-          <div className="relative mt-6">
-            {/* Blurred Content */}
-            <div className="filter blur-md select-none opacity-30 pointer-events-none prose prose-slate prose-sm max-w-none text-slate-900 leading-relaxed">
-              <ReactMarkdown>{lockedBody || `### Actionable 3-Step Strategy:\n1. Immediate Baseline (Week 1): Map current key risk indicators across governance assets.\n2. Targeted Controls (Weeks 2-3): Deploy automated monitoring attestation.\n3. Regulator Alignment (Week 4): Document control effectiveness before audit.`}</ReactMarkdown>
-            </div>
-
-            {/* Lock Overlay Card */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white/90 backdrop-blur-xs border border-slate-200 rounded-2xl shadow-lg space-y-3">
-              <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center shadow-xs">
-                <Lock className="w-6 h-6 stroke-[2.5]" />
-              </div>
-              <div>
-                <h4 className="font-display text-lg font-extrabold text-slate-900">
-                  Full Guidance & Implementation Steps Gated
-                </h4>
-                <p className="text-xs text-slate-600 max-w-md mt-1">
-                  To read the complete 20,000+ words guidance text, step-by-step regulator playbook, and custom framework downloads, please log in to your account.
-                </p>
+          {/* Locked / Blurred Remaining Guidance (If not logged in) */}
+          {!user && (
+            <div className="relative mt-2">
+              {/* Blurred Content */}
+              <div className="filter blur-md select-none opacity-40 pointer-events-none prose prose-slate prose-sm max-w-none text-slate-900 leading-relaxed overflow-hidden" style={{ maxHeight: '200px' }}>
+                <ReactMarkdown>{lockedBody || `This is a sample locked body that demonstrates the blurred effect...`}</ReactMarkdown>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                {!user ? (
-                  <>
-                    <Link
-                      to="/login"
-                      onClick={onClose}
-                      className="px-5 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 shadow-sm transition-all flex items-center gap-1.5"
-                    >
-                      Sign In to Read Full Guidance <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <Link
-                      to="/register"
-                      onClick={onClose}
-                      className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-300 hover:bg-slate-200 transition-all"
-                    >
-                      Create Free Account
-                    </Link>
-                  </>
-                ) : (
+              {/* Lock Overlay Card */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white/60 backdrop-blur-[2px] border border-slate-200 rounded-2xl shadow-lg space-y-3">
+                <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center shadow-xs">
+                  <Lock className="w-6 h-6 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="font-display text-lg font-extrabold text-slate-900">
+                    Login to Read Full Answer
+                  </h4>
+                  <p className="text-xs text-slate-600 max-w-md mt-1">
+                    Please log in to your account to read the complete answer and guidance text.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                   <Link
-                    to="/courses"
+                    to="/login"
                     onClick={onClose}
                     className="px-5 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 shadow-sm transition-all flex items-center gap-1.5"
                   >
-                    Unlock Executive Masterclass Access <ArrowRight className="w-4 h-4" />
+                    Sign In to Read Full Answer <ArrowRight className="w-4 h-4" />
                   </Link>
-                )}
+                  <Link
+                    to="/register"
+                    onClick={onClose}
+                    className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-300 hover:bg-slate-200 transition-all"
+                  >
+                    Create Free Account
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           </div>
 
         </div>
