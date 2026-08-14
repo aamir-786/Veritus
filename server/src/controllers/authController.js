@@ -1,175 +1,41 @@
-// authController.js - Auth logic for login, registration, and user profiles
-const jwt = require('jsonwebtoken');
-const db = require('../data/dbStore');
-const { JWT_SECRET } = require('../middleware/auth');
+// authController.js - Handle Post-Login Welcome Emails
+const supabase = require('../config/supabase');
 const emailService = require('../services/emailService');
 
-exports.login = (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Email and password are required' });
-  }
-
-  const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-  if (!user || user.password !== password) {
-    return res.status(401).json({ success: false, error: 'Invalid email or password' });
-  }
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-
-  return res.json({
-    success: true,
-    message: 'Login successful',
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      role: user.role
+exports.checkAndSendWelcome = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Fetch the auth user to check metadata
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
+    
+    if (userError || !user) {
+      return res.status(404).json({ success: false, error: 'User not found in Auth system' });
     }
-  });
-};
 
-exports.register = (req, res) => {
-  const { email, password, full_name } = req.body;
+    const hasReceivedWelcome = user.user_metadata?.welcome_email_sent === true;
 
-  if (!email || !password || !full_name) {
-    return res.status(400).json({ success: false, error: 'All fields (email, password, full name) are required' });
-  }
+    if (!hasReceivedWelcome) {
+      // Send the Welcome Email
+      await emailService.sendWelcomeEmail({
+        email: user.email,
+        name: req.user.full_name || user.email.split('@')[0]
+      });
 
-  const existing = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (existing) {
-    return res.status(400).json({ success: false, error: 'Account with this email already exists' });
-  }
+      // Mark as sent in user_metadata
+      await supabase.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          ...user.user_metadata,
+          welcome_email_sent: true
+        }
+      });
 
-  const newUser = {
-    id: `u-${Date.now()}`,
-    email: email.toLowerCase(),
-    password: password,
-    full_name: full_name,
-    role: 'student',
-    created_at: new Date().toISOString()
-  };
-
-  db.users.push(newUser);
-
-  // Dispatch Welcome Email asynchronously
-  emailService.sendWelcomeEmail({ email: newUser.email, name: newUser.full_name })
-    .catch(err => console.warn('[Auth] Welcome email async warning:', err.message));
-
-  const token = jwt.sign(
-    { id: newUser.id, email: newUser.email, role: newUser.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-
-  return res.status(201).json({
-    success: true,
-    message: 'Registration successful. Welcome email dispatched.',
-    token,
-    user: {
-      id: newUser.id,
-      email: newUser.email,
-      full_name: newUser.full_name,
-      role: newUser.role
+      return res.json({ success: true, message: 'Welcome email sent.' });
     }
-  });
+
+    return res.json({ success: true, message: 'Welcome email already sent previously.' });
+  } catch (err) {
+    console.error('Welcome Email Check Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to process welcome email' });
+  }
 };
-
-exports.googleLogin = (req, res) => {
-  const { credential, email, name } = req.body;
-  let userEmail = (email || '').toLowerCase();
-  let userName = name || 'Google Risk Practitioner';
-
-  if (credential) {
-    try {
-      const decoded = jwt.decode(credential);
-      if (decoded && decoded.email) {
-        userEmail = decoded.email.toLowerCase();
-        userName = decoded.name || decoded.given_name || userName;
-      }
-    } catch (err) {
-      console.warn('[Google Auth] Could not decode credential payload:', err.message);
-    }
-  }
-
-  if (!userEmail) {
-    userEmail = 'google.learner@veritus.com';
-  }
-
-  let user = db.users.find(u => u.email.toLowerCase() === userEmail);
-  let isNewUser = false;
-
-  if (!user) {
-    isNewUser = true;
-    user = {
-      id: `u-google-${Date.now()}`,
-      email: userEmail,
-      password: 'google_oauth_protected',
-      full_name: userName,
-      role: 'student',
-      created_at: new Date().toISOString()
-    };
-    db.users.push(user);
-  }
-
-  if (isNewUser) {
-    emailService.sendWelcomeEmail({ email: user.email, name: user.full_name })
-      .catch(err => console.warn('[Google Auth] Welcome email async warning:', err.message));
-  }
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-
-  return res.json({
-    success: true,
-    message: 'Google Sign-In successful',
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      role: user.role
-    }
-  });
-};
-
-exports.getProfile = (req, res) => {
-  return res.json({
-    success: true,
-    user: {
-      id: req.user.id,
-      email: req.user.email,
-      full_name: req.user.full_name,
-      role: req.user.role,
-      created_at: req.user.created_at
-    }
-  });
-};
-
-exports.resetPassword = (req, res) => {
-  const { email } = req.body;
-  const user = db.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
-  
-  if (user) {
-    const resetToken = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-    emailService.sendPasswordResetEmail({ email: user.email, resetToken })
-      .catch(err => console.warn('[Auth] Password reset email error:', err.message));
-  }
-
-  // Always return success for security privacy
-  return res.json({
-    success: true,
-    message: 'If an account exists for this email, password reset instructions have been sent.'
-  });
-};
-

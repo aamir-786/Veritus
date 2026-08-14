@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Lock, Search, CheckCircle2 } from 'lucide-react';
+import { FileText, Download, Lock, Search, CheckCircle2, ShoppingCart } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import CheckoutModal from '../components/CheckoutModal';
+import { useCart } from '../context/CartContext';
 
 export default function TemplateStore() {
   const { user } = useAuth();
@@ -10,7 +10,7 @@ export default function TemplateStore() {
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [checkoutItem, setCheckoutItem] = useState(null);
+  const { addToCart } = useCart();
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -32,7 +32,7 @@ export default function TemplateStore() {
 
   const handleDownload = (tpl) => {
     if (!tpl.can_download) {
-      setCheckoutItem(tpl);
+      addToCart({ ...tpl, type: 'Template' });
       return;
     }
     // Direct file download stream trigger
@@ -47,10 +47,10 @@ export default function TemplateStore() {
         <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-100/80 text-emerald-900 border border-emerald-200 text-xs font-bold uppercase">
           <FileText className="w-3.5 h-3.5 text-emerald-700" /> Digital Risk Framework Library
         </div>
-        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">
+        <h1 className="font-display text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
           Paid Templates & Free Lead Magnets
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+        <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed mt-4">
           Battle-tested spreadsheets, presentation decks, and audit checklists used by Fortune 500 risk leaders.
         </p>
       </div>
@@ -125,7 +125,7 @@ export default function TemplateStore() {
                     </>
                   ) : (
                     <>
-                      <Lock className="w-3.5 h-3.5" /> Unlock — ${tpl.price}
+                      <ShoppingCart className="w-3.5 h-3.5" /> Add to Cart — ${tpl.price}
                     </>
                   )}
                 </button>
@@ -135,19 +135,7 @@ export default function TemplateStore() {
         </div>
       )}
 
-      {/* Checkout Modal for Templates */}
-      {checkoutItem && (
-        <CheckoutModal
-          item={checkoutItem}
-          itemType="template"
-          onClose={() => setCheckoutItem(null)}
-          onSuccess={() => {
-            setCheckoutItem(null);
-            fetchTemplates();
-          }}
-        />
-      )}
-
+      {/* Checkout Modal Removed in favor of CartDrawer */}
     </div>
   );
 }

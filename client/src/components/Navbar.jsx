@@ -9,12 +9,15 @@ import {
   LogOut, 
   Menu, 
   X,
-  Sparkles
+  Sparkles,
+  ShoppingCart
 } from 'lucide-react';
 import EffectiveVeritusLogo from './EffectiveVeritusLogo';
+import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
+  const { cartItems, toggleCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
@@ -119,10 +122,34 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+            
+            {/* Desktop Cart Button */}
+            <button 
+              onClick={toggleCart}
+              className="relative p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors ml-2"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartItems.length > 0 && (
+                <span className="absolute 0 right-0 -translate-y-1 translate-x-1 flex items-center justify-center w-4 h-4 text-[9px] font-bold text-white bg-indigo-600 rounded-full border-2 border-white">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile Menu Toggle & Cart */}
+          <div className="md:hidden flex items-center gap-2">
+            <button 
+              onClick={toggleCart}
+              className="relative p-2 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartItems.length > 0 && (
+                <span className="absolute 0 right-0 -translate-y-1 translate-x-1 flex items-center justify-center w-4 h-4 text-[9px] font-bold text-white bg-indigo-600 rounded-full border-2 border-white">
+                  {cartItems.length}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"

@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Sparkles, ShieldAlert, Clock, DollarSign, Zap, Layers, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 
 export default function QuestionDetailModal({ question, onClose, onAskCopilot }) {
   const { user } = useAuth();
@@ -13,11 +14,11 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
   const lockedBody = lines.slice(2).join('\n\n');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative text-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm">
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative text-slate-900">
         
         {/* Header */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 p-6 flex items-start justify-between z-10">
+        <div className="shrink-0 bg-white border-b border-slate-100 px-6 py-5 flex items-start justify-between rounded-t-2xl z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="font-mono text-xs font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
@@ -37,30 +38,33 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
           </button>
         </div>
 
-        {/* 7-Tag Taxonomy Bar */}
-        <div className="p-6 bg-slate-50 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
+        {/* Scrollable Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          
+          {/* 7-Tag Taxonomy Bar */}
+          <div className="p-6 bg-slate-50 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] border-b border-slate-100">
+            <div className="p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
             <div className="text-slate-500 flex items-center gap-1.5 mb-1 font-medium">
               <ShieldAlert className="w-3.5 h-3.5 text-rose-600" /> Regulator Scrutiny
             </div>
             <div className="font-bold text-slate-900">{question.regulator_pressure} Pressure</div>
           </div>
 
-          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
+            <div className="p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
             <div className="text-slate-500 flex items-center gap-1.5 mb-1 font-medium">
               <Zap className="w-3.5 h-3.5 text-amber-600" /> Payback Window
             </div>
             <div className="font-bold text-amber-800">{question.payback}</div>
           </div>
 
-          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
+            <div className="p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
             <div className="text-slate-500 flex items-center gap-1.5 mb-1 font-medium">
               <DollarSign className="w-3.5 h-3.5 text-emerald-600" /> Cost Band
             </div>
             <div className="font-bold text-emerald-800">{question.cost}</div>
           </div>
 
-          <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
+            <div className="p-2.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
             <div className="text-slate-500 flex items-center gap-1.5 mb-1 font-medium">
               <Clock className="w-3.5 h-3.5 text-blue-600" /> Duration
             </div>
@@ -68,8 +72,8 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
           </div>
         </div>
 
-        {/* Body Content */}
-        <div className="p-6 space-y-6 text-slate-700 text-sm leading-relaxed">
+          {/* Body Content */}
+          <div className="p-6 space-y-6 text-slate-700 text-sm leading-relaxed">
           
           <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
             <div>
@@ -87,16 +91,16 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
             <h3 className="font-display text-base font-bold text-slate-900 mb-2">
               Executive Preview Guidance
             </h3>
-            <div className="prose max-w-none text-slate-700 whitespace-pre-line leading-relaxed font-medium">
-              {teaserSnippet}
+            <div className="prose prose-slate prose-sm max-w-none text-slate-700 leading-relaxed font-medium">
+              <ReactMarkdown>{teaserSnippet}</ReactMarkdown>
             </div>
           </div>
 
           {/* Locked / Blurred Remaining Guidance (If not logged in or restricted) */}
-          <div className="relative">
+          <div className="relative mt-6">
             {/* Blurred Content */}
-            <div className="filter blur-md select-none opacity-30 pointer-events-none prose max-w-none text-slate-900 whitespace-pre-line leading-relaxed">
-              {lockedBody || `Actionable 3-Step Strategy:\n1. Immediate Baseline (Week 1): Map current key risk indicators across governance assets.\n2. Targeted Controls (Weeks 2-3): Deploy automated monitoring attestation.\n3. Regulator Alignment (Week 4): Document control effectiveness before audit.`}
+            <div className="filter blur-md select-none opacity-30 pointer-events-none prose prose-slate prose-sm max-w-none text-slate-900 leading-relaxed">
+              <ReactMarkdown>{lockedBody || `### Actionable 3-Step Strategy:\n1. Immediate Baseline (Week 1): Map current key risk indicators across governance assets.\n2. Targeted Controls (Weeks 2-3): Deploy automated monitoring attestation.\n3. Regulator Alignment (Week 4): Document control effectiveness before audit.`}</ReactMarkdown>
             </div>
 
             {/* Lock Overlay Card */}
@@ -143,11 +147,12 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
               </div>
             </div>
           </div>
+          </div>
 
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="shrink-0 p-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-slate-50 rounded-b-2xl">
           <button
             onClick={() => {
               onClose();

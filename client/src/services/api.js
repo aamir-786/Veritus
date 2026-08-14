@@ -1,8 +1,11 @@
+import { supabase } from '../lib/supabase';
+
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/+$/, '');
 
 
-const getHeaders = () => {
-  const token = localStorage.getItem('veritus_token');
+const getHeaders = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
   return {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -11,38 +14,25 @@ const getHeaders = () => {
 
 export const api = {
   // Auth API
-  login: async (email, password) => {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    return res.json();
-  },
-
-  register: async (email, password, full_name) => {
-    const res = await fetch(`${API_BASE}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, full_name })
-    });
-    return res.json();
-  },
-
-  googleLogin: async (payload = {}) => {
-    const res = await fetch(`${API_BASE}/auth/google`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    return res.json();
-  },
-
+  // NOTE: login, register, and googleLogin are now handled directly by Supabase in AuthContext.
+  // We keep getProfile for completeness if needed.
   getProfile: async () => {
     const res = await fetch(`${API_BASE}/auth/profile`, {
-      headers: getHeaders()
+      headers: await getHeaders()
     });
     return res.json();
+  },
+
+  checkAndSendWelcomeEmail: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/welcome`, {
+        method: 'POST',
+        headers: await getHeaders()
+      });
+      return res.json();
+    } catch (e) {
+      return { success: false };
+    }
   },
 
   sendContactInquiry: async (formData) => {
@@ -69,7 +59,7 @@ export const api = {
   getAICopilotAdvice: async (payload) => {
     const res = await fetch(`${API_BASE}/questions/ai-copilot`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: await getHeaders(),
       body: JSON.stringify(payload)
     });
     return res.json();
@@ -77,24 +67,24 @@ export const api = {
 
   // Courses & Lessons API
   getCourses: async () => {
-    const res = await fetch(`${API_BASE}/courses`, { headers: getHeaders() });
+    const res = await fetch(`${API_BASE}/courses`, { headers: await getHeaders() });
     return res.json();
   },
 
   getCourseDetails: async (identifier) => {
-    const res = await fetch(`${API_BASE}/courses/${identifier}`, { headers: getHeaders() });
+    const res = await fetch(`${API_BASE}/courses/${identifier}`, { headers: await getHeaders() });
     return res.json();
   },
 
   getLessonPlayback: async (courseId, lessonId) => {
-    const res = await fetch(`${API_BASE}/courses/${courseId}/lessons/${lessonId}`, { headers: getHeaders() });
+    const res = await fetch(`${API_BASE}/courses/${courseId}/lessons/${lessonId}`, { headers: await getHeaders() });
     return res.json();
   },
 
   // Templates API
   getTemplates: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE}/templates?${query}`, { headers: getHeaders() });
+    const res = await fetch(`${API_BASE}/templates?${query}`, { headers: await getHeaders() });
     return res.json();
   },
 
@@ -102,7 +92,7 @@ export const api = {
   createCheckoutSession: async (item_id, item_type, customer_email) => {
     const res = await fetch(`${API_BASE}/checkout/create-session`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: await getHeaders(),
       body: JSON.stringify({ item_id, item_type, customer_email })
     });
     return res.json();
@@ -117,16 +107,25 @@ export const api = {
     return res.json();
   },
 
+  createMultiCheckoutSession: async (payload) => {
+    const res = await fetch(`${API_BASE}/checkout/session/multi`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  },
+
   // Dashboard API
   getDashboardSummary: async () => {
-    const res = await fetch(`${API_BASE}/dashboard/summary`, { headers: getHeaders() });
+    const res = await fetch(`${API_BASE}/dashboard/summary`, { headers: await getHeaders() });
     return res.json();
   },
 
   updateLessonProgress: async (payload) => {
     const res = await fetch(`${API_BASE}/dashboard/progress`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: await getHeaders(),
       body: JSON.stringify(payload)
     });
     return res.json();
@@ -134,14 +133,14 @@ export const api = {
 
   // Admin Studio API
   getAdminMetrics: async () => {
-    const res = await fetch(`${API_BASE}/admin/metrics`, { headers: getHeaders() });
+    const res = await fetch(`${API_BASE}/admin/metrics`, { headers: await getHeaders() });
     return res.json();
   },
 
   createCourse: async (courseData) => {
     const res = await fetch(`${API_BASE}/admin/courses`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: await getHeaders(),
       body: JSON.stringify(courseData)
     });
     return res.json();
@@ -150,7 +149,7 @@ export const api = {
   addModuleToCourse: async (courseId, title) => {
     const res = await fetch(`${API_BASE}/admin/courses/${courseId}/modules`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: await getHeaders(),
       body: JSON.stringify({ title })
     });
     return res.json();
@@ -159,7 +158,7 @@ export const api = {
   addLessonToModule: async (courseId, moduleId, lessonData) => {
     const res = await fetch(`${API_BASE}/admin/courses/${courseId}/modules/${moduleId}/lessons`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: await getHeaders(),
       body: JSON.stringify(lessonData)
     });
     return res.json();
@@ -168,8 +167,86 @@ export const api = {
   updateQuestion: async (id, questionData) => {
     const res = await fetch(`${API_BASE}/admin/questions/${id}`, {
       method: 'PUT',
-      headers: getHeaders(),
+      headers: await getHeaders(),
       body: JSON.stringify(questionData)
+    });
+    return res.json();
+  },
+
+  createQuestion: async (questionData) => {
+    const res = await fetch(`${API_BASE}/admin/questions`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(questionData)
+    });
+    return res.json();
+  },
+
+  deleteQuestion: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/questions/${id}`, {
+      method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  deleteUser: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/users/${id}`, {
+      method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  adminResetPassword: async (email) => {
+    const res = await fetch(`${API_BASE}/admin/users/reset-password`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify({ email })
+    });
+    return res.json();
+  },
+
+  createTemplate: async (templateData) => {
+    const res = await fetch(`${API_BASE}/admin/templates`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(templateData)
+    });
+    return res.json();
+  },
+
+  updateTemplate: async (id, templateData) => {
+    const res = await fetch(`${API_BASE}/admin/templates/${id}`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify(templateData)
+    });
+    return res.json();
+  },
+
+  deleteTemplate: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/templates/${id}`, {
+      method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  uploadFile: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // We cannot use getHeaders directly since fetch shouldn't have 'Content-Type': 'application/json' for FormData
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
+    const res = await fetch(`${API_BASE}/admin/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: formData
     });
     return res.json();
   }

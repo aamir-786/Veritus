@@ -4,73 +4,27 @@ import { ShieldAlert, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-  const { register, googleLogin } = useAuth();
+  const { register, supabaseGoogleLogin } = useAuth();
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '489307613601-01he7rnu8tgrp3n47r1jeat4tco5rn7h.apps.googleusercontent.com';
-    if (window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          auto_select: false,
-          callback: async (response) => {
-            if (response.credential) {
-              setLoading(true);
-              const res = await googleLogin({ credential: response.credential });
-              if (res.success) {
-                if (res.user?.role === 'admin') {
-                  navigate('/admin');
-                } else {
-                  navigate('/dashboard');
-                }
-              } else {
-                setError(res.error || 'Google Authentication failed');
-              }
-              setLoading(false);
-            }
-          }
-        });
-      } catch (e) {
-        console.warn('Google Identity initialization error:', e);
-      }
-    }
-  }, []);
-
-  const performGoogleSignUp = async () => {
+  const handleGoogleSignUp = async () => {
     setLoading(true);
     setError('');
-
-    try {
-      const res = await googleLogin({
-        email: email || 'new.learner@enterprise-risk.com',
-        name: fullName || 'Risk Practitioner (Google)'
-      });
-      if (res.success) {
-        if (res.user?.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        setError(res.error || 'Google Authentication failed');
-      }
-    } catch (err) {
-      setError('An error occurred during Google Sign-Up.');
-    } finally {
+    const res = await supabaseGoogleLogin();
+    if (!res.success) {
+      setError(res.error || 'Failed to initialize Google login');
       setLoading(false);
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    await performGoogleSignUp();
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,7 +35,10 @@ export default function Register() {
     try {
       const res = await register(email, password, fullName);
       if (res.success) {
-        navigate('/dashboard');
+        setSuccess(res.message || 'Registration successful! Please check your email to verify your account.');
+        setFullName('');
+        setEmail('');
+        setPassword('');
       } else {
         setError(res.error || 'Registration failed');
       }
@@ -119,7 +76,14 @@ export default function Register() {
           </div>
         )}
 
-        {/* Google Sign-Up Option */}
+        {success && (
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        {/* Supabase Google Sign-Up Option */}
         <button
           type="button"
           onClick={handleGoogleSignUp}

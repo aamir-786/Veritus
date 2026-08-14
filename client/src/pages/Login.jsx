@@ -4,71 +4,26 @@ import { ShieldAlert, ArrowRight, Lock, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const { login, googleLogin } = useAuth();
+  const { login, supabaseGoogleLogin } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('admin@veritus.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '489307613601-01he7rnu8tgrp3n47r1jeat4tco5rn7h.apps.googleusercontent.com';
-    if (window.google?.accounts?.id) {
-      try {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          auto_select: false,
-          callback: async (response) => {
-            if (response.credential) {
-              setLoading(true);
-              const res = await googleLogin({ credential: response.credential });
-              if (res.success) {
-                if (res.user?.role === 'admin') {
-                  navigate('/admin');
-                } else {
-                  navigate('/dashboard');
-                }
-              } else {
-                setError(res.error || 'Google Authentication failed');
-              }
-              setLoading(false);
-            }
-          }
-        });
-      } catch (e) {
-        console.warn('Google Identity initialization error:', e);
-      }
-    }
-  }, []);
-
-  const performGoogleLogin = async () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
-    try {
-      const res = await googleLogin({
-        email: 'alex.vance@enterprise-risk.com',
-        name: 'Alex Vance (Risk Practitioner)'
-      });
-      if (res.success) {
-        if (res.user?.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        setError(res.error || 'Google Authentication failed');
-      }
-    } catch (err) {
-      setError('An error occurred during Google Sign-In.');
-    } finally {
+    const res = await supabaseGoogleLogin();
+    if (!res.success) {
+      setError(res.error || 'Failed to initialize Google login');
       setLoading(false);
     }
+    // Note: On success, Supabase will redirect the browser, so we don't need to do anything else here.
   };
 
-  const handleGoogleSignIn = async () => {
-    await performGoogleLogin();
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,7 +76,7 @@ export default function Login() {
           </div>
         )}
 
-        {/* Google OAuth Login Option */}
+        {/* Supabase Google OAuth Login Option */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
@@ -166,6 +121,12 @@ export default function Login() {
             />
           </div>
 
+          <div className="flex items-center justify-end">
+            <Link to="/forgot-password" className="text-[11px] text-blue-600 hover:text-blue-800 font-bold hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -175,16 +136,13 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="pt-3 border-t border-slate-100 text-center text-xs text-slate-500 space-y-1.5">
-          <div className="font-medium flex items-center justify-center gap-1 text-slate-600">
-            <Lock className="w-3 h-3 text-slate-400" /> Executive Access Credentials:
-          </div>
-          <div className="flex justify-center gap-3 font-mono text-[11px]">
-            <button onClick={() => { setEmail('admin@veritus.com'); setPassword('admin123'); }} className="text-blue-900 font-bold hover:underline cursor-pointer">Admin Account</button>
-            <span>•</span>
-            <button onClick={() => { setEmail('student@veritus.com'); setPassword('student123'); }} className="text-indigo-800 font-bold hover:underline cursor-pointer">Student Account</button>
-          </div>
+        <div className="text-center pt-2">
+          <p className="text-xs text-slate-500 font-medium">
+            Don't have an account? <Link to="/register" className="text-blue-700 hover:text-blue-900 font-bold hover:underline">Apply for Access</Link>
+          </p>
         </div>
+
+
 
       </div>
     </div>

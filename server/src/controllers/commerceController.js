@@ -1,9 +1,10 @@
 // commerceController.js - Stripe Payments, Checkout & Entitlement Provisioning
-const db = require('../data/dbStore');
+const supabase = require('../config/supabase');
 const emailService = require('../services/emailService');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Initiate Checkout Session (Course or Template)
-exports.createCheckoutSession = (req, res) => {
+exports.createCheckoutSession = async (req, res) => {
   const { item_id, item_type } = req.body;
   const userId = req.user ? req.user.id : null;
   const userEmail = req.user ? req.user.email : req.body.customer_email;
@@ -12,144 +13,286 @@ exports.createCheckoutSession = (req, res) => {
     return res.status(400).json({ success: false, error: 'User email is required for checkout' });
   }
 
-  let item = null;
-  if (item_type === 'course') {
-    item = db.courses.find(c => c.id === item_id || c.slug === item_id);
-  } else if (item_type === 'template') {
-    item = db.templates.find(t => t.id === item_id);
+  try {
+    let item = null;
+    if (item_type === 'course') {
+      const { data } = await supabase.from('courses').select('*').or(`id.eq.${item_id},slug.eq.${item_id}`).single();
+      item = data;
+    } else if (item_type === 'template') {
+      const { data } = await supabase.from('templates').select('*').eq('id', item_id).single();
+      item = data;
+    }
+
+    if (!item) {
+      return res.status(404).json({ success: false, error: 'Selected product not found' });
+    }
+
+    // Create Order Record in Pending State
+    const orderId = `ord-${Date.now()}`;
+    const newOrder = {
+      id: orderId,
+      user_id: userId, // Supabase Auth UUID, null if guest
+      user_email: userEmail,
+      product_id: item.id,
+      product_title: item.title,
+      amount: item.price,
+      currency: 'USD',
+      status: 'pending'
+    };
+
+    const { error } = await supabase.from('orders').insert([newOrder]);
+    if (error) throw error;
+
+    // Return Hosted Checkout URL / Modal details
+    return res.json({
+      success: true,
+      order_id: orderId,
+      amount: item.price,
+      currency: 'USD',
+      product_title: item.title,
+      checkout_url: `/checkout/pay/${orderId}`
+    });
+  } catch (err) {
+    console.error('createCheckoutSession Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to initiate checkout' });
+  }
+};
+
+// Multi-Item Real Stripe Checkout Session
+exports.createMultiCheckoutSession = async (req, res) => {
+  const { items } = req.body;
+  const userId = req.user ? req.user.id : null;
+  const userEmail = req.user ? req.user.email : req.body.customer_email;
+
+  if (!items || items.length === 0) {
+    return res.status(400).json({ success: false, error: 'Cart is empty' });
   }
 
-  if (!item) {
-    return res.status(404).json({ success: false, error: 'Selected product not found' });
+  try {
+    const line_items = [];
+    const orderIds = [];
+    const createdOrders = [];
+
+    for (const item of items) {
+      // Validate item exists in DB to prevent price spoofing
+      let dbItem = null;
+      if (item.type === 'Course' || item.type === 'course') {
+        const { data } = await supabase.from('courses').select('*').or(`id.eq.${item.id},slug.eq.${item.id}`).single();
+        dbItem = data;
+      } else {
+        const { data } = await supabase.from('templates').select('*').eq('id', item.id).single();
+        dbItem = data;
+      }
+
+      if (!dbItem) continue;
+
+      const orderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      orderIds.push(orderId);
+
+      createdOrders.push({
+        id: orderId,
+        user_id: userId,
+        user_email: userEmail || 'guest@veritus.com', // Required by DB schema potentially
+        product_id: dbItem.id,
+        product_title: dbItem.title,
+        amount: dbItem.price,
+        currency: 'USD',
+        status: 'pending'
+      });
+
+      line_items.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: dbItem.title,
+            description: dbItem.headline || dbItem.description || '',
+            images: dbItem.cover_image ? [dbItem.cover_image] : [],
+          },
+          unit_amount: Math.round(dbItem.price * 100), // Stripe expects cents
+        },
+        quantity: 1,
+      });
+    }
+
+    if (line_items.length === 0) {
+      return res.status(400).json({ success: false, error: 'No valid products found in cart' });
+    }
+
+    // Insert pending orders
+    const { error } = await supabase.from('orders').insert(createdOrders);
+    if (error) throw error;
+
+    // Create Stripe Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items,
+      mode: 'payment',
+      customer_email: userEmail || undefined,
+      client_reference_id: userId || undefined,
+      metadata: {
+        order_ids: orderIds.join(',') // We store a comma-separated list of order IDs
+      },
+      success_url: `${req.headers.origin || 'http://localhost:3000'}/dashboard?payment=success`,
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/cart?payment=cancelled`,
+    });
+
+    return res.json({
+      success: true,
+      checkout_url: session.url
+    });
+  } catch (err) {
+    console.error('createMultiCheckoutSession Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to create checkout session' });
   }
-
-  // Create Order Record in Pending State
-  const orderId = `ord-${Date.now()}`;
-  const newOrder = {
-    id: orderId,
-    user_id: userId || `guest-${Date.now()}`,
-    user_email: userEmail,
-    product_id: item.id,
-    product_title: item.title,
-    amount: item.price,
-    currency: 'USD',
-    status: 'pending',
-    created_at: new Date().toISOString()
-  };
-
-  db.orders.push(newOrder);
-
-  // Return Hosted Checkout URL / Modal details
-  return res.json({
-    success: true,
-    order_id: orderId,
-    amount: item.price,
-    currency: 'USD',
-    product_title: item.title,
-    checkout_url: `/checkout/pay/${orderId}`
-  });
 };
 
 // Complete Payment (Simulated Hosted Stripe Checkout Callback & Webhook)
-exports.completeCheckout = (req, res) => {
+exports.completeCheckout = async (req, res) => {
   const { order_id, card_holder_name } = req.body;
-  const order = db.orders.find(o => o.id === order_id);
 
-  if (!order) {
-    return res.status(404).json({ success: false, error: 'Order transaction not found' });
-  }
+  try {
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', order_id)
+      .single();
 
-  if (order.status === 'paid') {
-    return res.json({ success: true, message: 'Order has already been processed', order });
-  }
+    if (orderError || !order) {
+      return res.status(404).json({ success: false, error: 'Order transaction not found' });
+    }
 
-  // Update Order Status to Paid
-  order.status = 'paid';
-  order.card_holder_name = card_holder_name || 'Authorized Buyer';
-  order.paid_at = new Date().toISOString();
+    if (order.status === 'paid') {
+      return res.json({ success: true, message: 'Order has already been processed', order });
+    }
 
-  // Provision Entitlement for User
-  let targetUser = db.users.find(u => u.email.toLowerCase() === order.user_email.toLowerCase());
-  if (!targetUser) {
-    // Auto-create user account if guest purchased
-    targetUser = {
-      id: order.user_id,
+    // Update Order Status to Paid
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('orders')
+      .update({
+        status: 'paid',
+        paid_at: new Date().toISOString()
+      })
+      .eq('id', order_id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    order.status = 'paid'; // Keep local copy updated
+
+    // Note: Auto-creating users in Supabase Auth from backend requires admin API
+    // If user_id is null (guest checkout), we skip creating an account automatically 
+    // because Supabase Auth handles that better on the frontend, but we still grant entitlement if they register later with same email.
+    // For now, if they have a user_id, we grant entitlement:
+    
+    let targetUserId = order.user_id;
+
+    if (!targetUserId) {
+      // Find if a profile exists with this email
+      const { data: profile } = await supabase.from('profiles').select('id').ilike('email', order.user_email).maybeSingle();
+      if (profile) {
+        targetUserId = profile.id;
+        // Link the order to the found user
+        await supabase.from('orders').update({ user_id: profile.id }).eq('id', order_id);
+      }
+    }
+
+    if (targetUserId) {
+      const { error: entError } = await supabase.from('entitlements').upsert({
+        user_id: targetUserId,
+        product_id: order.product_id
+      });
+      if (entError) console.warn('Entitlement upsert error:', entError.message);
+    }
+
+    // Dispatch Order Receipt & Entitlement Access Email
+    emailService.sendOrderReceiptEmail({
       email: order.user_email,
-      password: 'changeMe123',
-      full_name: card_holder_name || 'Member',
-      role: 'student',
-      created_at: new Date().toISOString()
-    };
-    db.users.push(targetUser);
+      name: card_holder_name || 'Valued Buyer',
+      order: updatedOrder
+    }).catch(err => console.warn('[Commerce] Order receipt email error:', err.message));
+
+    return res.json({
+      success: true,
+      message: 'Payment completed successfully. Entitlement unlocked & receipt email dispatched.',
+      order: updatedOrder,
+      receipt_sent_to: order.user_email
+    });
+  } catch (err) {
+    console.error('completeCheckout Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to complete checkout' });
   }
-
-  const entitlementId = `ent-${Date.now()}`;
-  db.entitlements.push({
-    id: entitlementId,
-    user_id: targetUser.id,
-    product_id: order.product_id,
-    access_granted_at: new Date().toISOString()
-  });
-
-  // Dispatch Order Receipt & Entitlement Access Email
-  emailService.sendOrderReceiptEmail({
-    email: order.user_email,
-    name: targetUser.full_name,
-    order
-  }).catch(err => console.warn('[Commerce] Order receipt email error:', err.message));
-
-  return res.json({
-    success: true,
-    message: 'Payment completed successfully. Entitlement unlocked & receipt email dispatched.',
-    order,
-    receipt_sent_to: order.user_email
-  });
 };
 
 // Official Production Stripe Webhook Handler (for Render / Deployed Environments)
-exports.handleStripeWebhook = (req, res) => {
+exports.handleStripeWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let event = req.body;
 
-  // Handle Event Type
-  if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
-    const session = event.data.object;
-    const orderId = session.metadata?.order_id || session.client_reference_id;
+  try {
+    // Handle Event Type
+    if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
+      const session = event.data.object;
+      const metadataOrderIds = session.metadata?.order_ids || session.metadata?.order_id || session.client_reference_id;
 
-    if (orderId) {
-      const order = db.orders.find(o => o.id === orderId);
-      if (order && order.status !== 'paid') {
-        order.status = 'paid';
-        order.paid_at = new Date().toISOString();
-        db.entitlements.push({
-          id: `ent-${Date.now()}`,
-          user_id: order.user_id,
-          product_id: order.product_id,
-          access_granted_at: new Date().toISOString()
-        });
+      if (metadataOrderIds) {
+        const orderIdList = metadataOrderIds.split(',');
 
-        emailService.sendOrderReceiptEmail({
-          email: order.user_email,
-          name: order.card_holder_name || 'Valued Buyer',
-          order
-        }).catch(err => console.warn('[Stripe Webhook] Receipt email error:', err.message));
+        for (const orderId of orderIdList) {
+          const { data: order } = await supabase.from('orders').select('*').eq('id', orderId.trim()).single();
+          
+          if (order && order.status !== 'paid') {
+            const { data: updatedOrder } = await supabase
+              .from('orders')
+              .update({ status: 'paid', paid_at: new Date().toISOString() })
+              .eq('id', orderId.trim())
+              .select()
+              .single();
+
+            if (order.user_id || session.client_reference_id) {
+              await supabase.from('entitlements').upsert({
+                user_id: order.user_id || session.client_reference_id,
+                product_id: order.product_id
+              });
+            }
+
+            emailService.sendOrderReceiptEmail({
+              email: order.user_email || session.customer_email || session.customer_details?.email,
+              name: session.customer_details?.name || 'Valued Buyer',
+              order: updatedOrder || order
+            }).catch(err => console.warn('[Stripe Webhook] Receipt email error:', err.message));
+          }
+        }
       }
     }
-  }
 
-  return res.json({ received: true });
+    return res.json({ received: true });
+  } catch (err) {
+    console.error('Webhook Error:', err);
+    return res.status(500).json({ received: false });
+  }
 };
 
-
 // Reconcile Orders Listing for User
-exports.getUserOrders = (req, res) => {
+exports.getUserOrders = async (req, res) => {
   const userId = req.user.id;
-  const userOrders = db.orders.filter(o => o.user_id === userId || o.user_email === req.user.email);
+  
+  try {
+    const { data: userOrders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  return res.json({
-    success: true,
-    orders: userOrders
-  });
+    if (error) throw error;
+
+    return res.json({
+      success: true,
+      orders: userOrders
+    });
+  } catch (err) {
+    console.error('getUserOrders Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+  }
 };

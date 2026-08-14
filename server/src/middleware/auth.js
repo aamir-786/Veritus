@@ -1,11 +1,8 @@
-// auth.js - Express JWT Authentication & Role-Based Access Middleware
-const jwt = require('jsonwebtoken');
-const db = require('../data/dbStore');
+// auth.js - Express Middleware for Supabase Auth
+const supabase = require('../config/supabase');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'veritus_super_secret_jwt_key_2026';
-
-// Verify token from Authorization header (Bearer <token>)
-const authenticateToken = (req, res, next) => {
+// Verify token from Authorization header (Bearer <token>) using Supabase Auth
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -14,30 +11,78 @@ const authenticateToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.users.find(u => u.id === decoded.id || u.email === decoded.email);
+    // Verify the JWT with Supabase Auth
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'User account not found' });
+    if (error || !user) {
+      return res.status(401).json({ success: false, error: 'Invalid or expired authentication token' });
     }
 
-    req.user = user;
+    // Fetch the user's role and profile data from our public.profiles table
+    let { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // Auto-create profile if missing (e.g. users created before the database trigger)
+    if (!profile) {
+      const newProfile = {
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+        role: 'student'
+      };
+      
+      const { data: insertedProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert([newProfile])
+        .select('*')
+        .single();
+        
+      if (!insertError && insertedProfile) {
+        profile = insertedProfile;
+      } else {
+        // Fallback to basic user info if insert fails
+        profile = newProfile;
+      }
+    }
+
+    // Attach to request
+    req.user = profile;
     next();
   } catch (err) {
-    return res.status(403).json({ success: false, error: 'Invalid or expired authentication token' });
+    console.error('Auth Middleware Error:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error during authentication' });
   }
 };
 
 // Optional auth for public routes that enhance response if logged in
-const optionalToken = (req, res, next) => {
+const optionalToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const user = db.users.find(u => u.id === decoded.id || u.email === decoded.email);
-      if (user) req.user = user;
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (!error && user) {
+        let { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+          
+        if (profile) {
+          req.user = profile;
+        } else {
+          req.user = {
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name,
+            role: 'student'
+          };
+        }
+      }
     } catch (e) {
       // Ignore token error for optional auth
     }
@@ -54,7 +99,6 @@ const requireAdmin = (req, res, next) => {
 };
 
 module.exports = {
-  JWT_SECRET,
   authenticateToken,
   optionalToken,
   requireAdmin

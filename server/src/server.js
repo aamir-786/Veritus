@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 
 const apiRouter = require('./routes/api');
+const uploadRoute = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ app.use(express.json());
 
 // API Endpoints
 app.use('/api/v1', apiRouter);
+app.use('/api/v1/admin/upload', uploadRoute);
 
 // Health Check
 app.get('/api/health', (req, res) => {

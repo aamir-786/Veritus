@@ -1,123 +1,188 @@
 // coursesController.js - Catalog, Course Hierarchy, Gated Video Playback & Content Access
-const db = require('../data/dbStore');
+const supabase = require('../config/supabase');
 
 // Helper to check if a user has purchased a course
-const userHasCourse = (userId, courseId) => {
+const userHasCourse = async (userId, courseId) => {
   if (!userId) return false;
-  // Admin automatically gets access to everything
-  const user = db.users.find(u => u.id === userId);
-  if (user && user.role === 'admin') return true;
+  
+  // Admin gets everything
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+    
+  if (userProfile && userProfile.role === 'admin') return true;
 
-  return db.entitlements.some(e => e.user_id === userId && e.product_id === courseId);
+  // Check entitlements
+  const { data: entitlement } = await supabase
+    .from('entitlements')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('product_id', courseId)
+    .maybeSingle();
+
+  return !!entitlement;
 };
 
 // Get Course Catalog
-exports.getCourses = (req, res) => {
-  const publishedCourses = db.courses.filter(c => c.published).map(c => ({
-    id: c.id,
-    slug: c.slug,
-    title: c.title,
-    headline: c.headline,
-    description: c.description,
-    tier: c.tier,
-    price: c.price,
-    currency: c.currency,
-    author_name: c.author_name,
-    cover_image: c.cover_image,
-    module_count: c.modules.length,
-    lesson_count: c.modules.reduce((acc, m) => acc + m.lessons.length, 0)
-  }));
+exports.getCourses = async (req, res) => {
+  try {
+    const { data: courses, error } = await supabase
+      .from('courses')
+      .select('*, modules(*, lessons(id))')
+      .eq('published', true);
 
-  return res.json({
-    success: true,
-    courses: publishedCourses
-  });
+    if (error) throw error;
+
+    const formattedCourses = courses.map(c => {
+      const module_count = c.modules ? c.modules.length : 0;
+      const lesson_count = c.modules ? c.modules.reduce((acc, m) => acc + (m.lessons ? m.lessons.length : 0), 0) : 0;
+
+      return {
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        headline: c.headline,
+        description: c.description,
+        tier: c.tier,
+        price: c.price,
+        currency: c.currency,
+        author_name: c.author_name,
+        cover_image: c.cover_image,
+        module_count,
+        lesson_count
+      };
+    });
+
+    return res.json({
+      success: true,
+      courses: formattedCourses
+    });
+  } catch (err) {
+    console.error('getCourses Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch courses' });
+  }
 };
 
 // Get Single Course Details by Slug or ID
-exports.getCourseDetails = (req, res) => {
+exports.getCourseDetails = async (req, res) => {
   const { identifier } = req.params;
-  const course = db.courses.find(c => c.slug === identifier || c.id === identifier);
 
-  if (!course) {
-    return res.status(404).json({ success: false, error: 'Course not found' });
-  }
+  try {
+    const { data: course, error } = await supabase
+      .from('courses')
+      .select('*, modules(*, lessons(*))')
+      .or(`id.eq.${identifier},slug.eq.${identifier}`)
+      .single();
 
-  const userId = req.user ? req.user.id : null;
-  const isEnrolled = userHasCourse(userId, course.id);
-
-  // Return course hierarchy; mask full lesson video URLs if not enrolled and not free preview
-  const sanitizedModules = course.modules.map(mod => ({
-    id: mod.id,
-    title: mod.title,
-    order_index: mod.order_index,
-    lessons: mod.lessons.map(l => ({
-      id: l.id,
-      title: l.title,
-      type: l.type,
-      duration_minutes: l.duration_minutes,
-      is_free_preview: l.is_free_preview,
-      // Only include video_url and content if enrolled OR if free preview
-      video_url: (isEnrolled || l.is_free_preview) ? l.video_url : null,
-      captions_vtt: (isEnrolled || l.is_free_preview) ? l.captions_vtt : null,
-      content: (isEnrolled || l.is_free_preview) ? l.content : 'This lesson is locked. Purchase the course to gain instant lifetime access.'
-    }))
-  }));
-
-  return res.json({
-    success: true,
-    course: {
-      id: course.id,
-      slug: course.slug,
-      title: course.title,
-      headline: course.headline,
-      description: course.description,
-      tier: course.tier,
-      price: course.price,
-      currency: course.currency,
-      author_name: course.author_name,
-      cover_image: course.cover_image,
-      is_enrolled: isEnrolled,
-      modules: sanitizedModules
+    if (error || !course) {
+      return res.status(404).json({ success: false, error: 'Course not found' });
     }
-  });
+
+    // Sort modules and lessons based on order_index or id if order_index is missing
+    if (course.modules) {
+      course.modules.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+      course.modules.forEach(m => {
+        if (m.lessons) {
+          m.lessons.sort((a, b) => a.id.localeCompare(b.id)); // Fallback sorting for lessons
+        }
+      });
+    }
+
+    const userId = req.user ? req.user.id : null;
+    const isEnrolled = await userHasCourse(userId, course.id);
+
+    // Return course hierarchy; mask full lesson video URLs if not enrolled and not free preview
+    const sanitizedModules = (course.modules || []).map(mod => ({
+      id: mod.id,
+      title: mod.title,
+      order_index: mod.order_index,
+      lessons: (mod.lessons || []).map(l => ({
+        id: l.id,
+        title: l.title,
+        type: l.type,
+        duration_minutes: l.duration_minutes,
+        is_free_preview: l.is_free_preview,
+        // Only include video_url and content if enrolled OR if free preview
+        video_url: (isEnrolled || l.is_free_preview) ? l.video_url : null,
+        captions_vtt: (isEnrolled || l.is_free_preview) ? l.captions_vtt : null,
+        content: (isEnrolled || l.is_free_preview) ? l.content : 'This lesson is locked. Purchase the course to gain instant lifetime access.'
+      }))
+    }));
+
+    return res.json({
+      success: true,
+      course: {
+        id: course.id,
+        slug: course.slug,
+        title: course.title,
+        headline: course.headline,
+        description: course.description,
+        tier: course.tier,
+        price: course.price,
+        currency: course.currency,
+        author_name: course.author_name,
+        cover_image: course.cover_image,
+        is_enrolled: isEnrolled,
+        modules: sanitizedModules
+      }
+    });
+  } catch (err) {
+    console.error('getCourseDetails Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch course details' });
+  }
 };
 
 // Access Gated Video Lesson Stream
-exports.getLessonPlayback = (req, res) => {
+exports.getLessonPlayback = async (req, res) => {
   const { courseId, lessonId } = req.params;
-  const course = db.courses.find(c => c.id === courseId || c.slug === courseId);
 
-  if (!course) {
-    return res.status(404).json({ success: false, error: 'Course not found' });
-  }
+  try {
+    const { data: course, error } = await supabase
+      .from('courses')
+      .select('id, slug, modules(lessons(*))')
+      .or(`id.eq.${courseId},slug.eq.${courseId}`)
+      .single();
 
-  let targetLesson = null;
-  for (const mod of course.modules) {
-    const l = mod.lessons.find(less => less.id === lessonId);
-    if (l) {
-      targetLesson = l;
-      break;
+    if (error || !course) {
+      return res.status(404).json({ success: false, error: 'Course not found' });
     }
-  }
 
-  if (!targetLesson) {
-    return res.status(404).json({ success: false, error: 'Lesson not found' });
-  }
+    let targetLesson = null;
+    if (course.modules) {
+      for (const mod of course.modules) {
+        if (mod.lessons) {
+          const l = mod.lessons.find(less => less.id === lessonId);
+          if (l) {
+            targetLesson = l;
+            break;
+          }
+        }
+      }
+    }
 
-  const userId = req.user ? req.user.id : null;
-  const isEnrolled = userHasCourse(userId, course.id);
+    if (!targetLesson) {
+      return res.status(404).json({ success: false, error: 'Lesson not found' });
+    }
 
-  if (!isEnrolled && !targetLesson.is_free_preview) {
-    return res.status(403).json({ 
-      success: false, 
-      error: 'Access Gated: You must purchase this course to access this lesson video.',
-      requires_purchase: true 
+    const userId = req.user ? req.user.id : null;
+    const isEnrolled = await userHasCourse(userId, course.id);
+
+    if (!isEnrolled && !targetLesson.is_free_preview) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access Gated: You must purchase this course to access this lesson video.',
+        requires_purchase: true 
+      });
+    }
+
+    return res.json({
+      success: true,
+      lesson: targetLesson
     });
+  } catch (err) {
+    console.error('getLessonPlayback Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch lesson' });
   }
-
-  return res.json({
-    success: true,
-    lesson: targetLesson
-  });
 };

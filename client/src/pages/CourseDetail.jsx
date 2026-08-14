@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { PlayCircle, Lock, CheckCircle2, ShieldAlert, ArrowRight } from 'lucide-react';
+import { PlayCircle, Lock, CheckCircle2, ShieldAlert, ArrowRight, ShoppingCart } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import VideoPlayer from '../components/VideoPlayer';
-import CheckoutModal from '../components/CheckoutModal';
 
 export default function CourseDetail() {
   const { identifier } = useParams();
   const { user } = useAuth();
+  const { addToCart } = useCart();
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activePreviewLesson, setActivePreviewLesson] = useState(null);
-  const [showCheckout, setShowCheckout] = useState(false);
 
   const fetchDetails = async () => {
     setLoading(true);
@@ -81,10 +81,11 @@ export default function CourseDetail() {
               </Link>
             ) : (
               <button
-                onClick={() => setShowCheckout(true)}
+                onClick={() => addToCart({ ...course, type: 'Course' })}
                 className="w-full py-3 rounded-xl bg-blue-900 text-white font-extrabold hover:bg-blue-800 transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
               >
-                Enroll Now — ${course.price.toFixed(2)}
+                <ShoppingCart className="w-4 h-4" />
+                Add to Cart — ${course.price.toFixed(2)}
               </button>
             )}
 
@@ -162,19 +163,6 @@ export default function CourseDetail() {
           ))}
         </div>
       </div>
-
-      {/* Checkout Modal */}
-      {showCheckout && (
-        <CheckoutModal
-          item={course}
-          itemType="course"
-          onClose={() => setShowCheckout(false)}
-          onSuccess={() => {
-            setShowCheckout(false);
-            fetchDetails();
-          }}
-        />
-      )}
 
     </div>
   );

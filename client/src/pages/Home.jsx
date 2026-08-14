@@ -154,7 +154,7 @@ export default function Home() {
           {/* Metrics Bar with Background Card Accents & Slide Animations */}
           <div className="pt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
             <ScrollReveal animation="slide-up" delay={150}>
-              <div className="p-4 rounded-2xl glass-card border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-all">
+              <div className="p-4 rounded-2xl glass-card glass-card-hover border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-all">
                 <div className="text-2xl font-extrabold text-slate-900 font-display">100</div>
                 <div className="text-[11px] text-slate-500 font-bold">Structured Questions</div>
                 <div className="absolute -right-3 -bottom-3 text-slate-200 group-hover:text-blue-100 transition-colors pointer-events-none">
@@ -164,7 +164,7 @@ export default function Home() {
             </ScrollReveal>
 
             <ScrollReveal animation="slide-up" delay={250}>
-              <div className="p-4 rounded-2xl glass-card border border-blue-200/90 shadow-xs relative overflow-hidden group hover:border-blue-400 transition-all">
+              <div className="p-4 rounded-2xl glass-card glass-card-hover border border-blue-200/90 shadow-xs relative overflow-hidden group hover:border-blue-400 transition-all">
                 <div className="text-2xl font-extrabold text-blue-900 font-display">7 Tags</div>
                 <div className="text-[11px] text-slate-500 font-bold">Taxonomy Filter Matrix</div>
                 <div className="absolute -right-3 -bottom-3 text-blue-100 pointer-events-none">
@@ -174,7 +174,7 @@ export default function Home() {
             </ScrollReveal>
 
             <ScrollReveal animation="slide-up" delay={350}>
-              <div className="p-4 rounded-2xl glass-card border border-emerald-200/90 shadow-xs relative overflow-hidden group hover:border-emerald-400 transition-all">
+              <div className="p-4 rounded-2xl glass-card glass-card-hover border border-emerald-200/90 shadow-xs relative overflow-hidden group hover:border-emerald-400 transition-all">
                 <div className="text-2xl font-extrabold text-emerald-800 font-display">20,000+</div>
                 <div className="text-[11px] text-slate-500 font-bold">Words of Guidance</div>
                 <div className="absolute -right-3 -bottom-3 text-emerald-100 pointer-events-none">
@@ -184,7 +184,7 @@ export default function Home() {
             </ScrollReveal>
 
             <ScrollReveal animation="slide-up" delay={450}>
-              <div className="p-4 rounded-2xl glass-card border border-amber-200/90 shadow-xs relative overflow-hidden group hover:border-amber-400 transition-all">
+              <div className="p-4 rounded-2xl glass-card glass-card-hover border border-amber-200/90 shadow-xs relative overflow-hidden group hover:border-amber-400 transition-all">
                 <div className="text-2xl font-extrabold text-amber-800 font-display">14-Day</div>
                 <div className="text-[11px] text-slate-500 font-bold">Regulator Quick-Wins</div>
                 <div className="absolute -right-3 -bottom-3 text-amber-100 pointer-events-none">
@@ -314,10 +314,10 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {courses.map((course, idx) => (
               <ScrollReveal key={course.id} animation={idx === 0 ? 'slide-right' : 'slide-left'} delay={150 * idx}>
-                <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs hover:shadow-md transition-all group">
+                <div className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs transition-all group">
                   <div>
                     <div className="relative overflow-hidden">
-                      <img src={course.cover_image} alt={course.title} className="w-full h-52 object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <img src={course.cover_image || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} alt={course.title} className="w-full h-52 object-cover transition-transform duration-700 group-hover:scale-105" />
                       <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur text-blue-900 text-xs font-bold border border-blue-200 shadow-xs">
                         {course.tier}
                       </div>
@@ -407,7 +407,7 @@ export default function Home() {
             </ScrollReveal>
 
             <ScrollReveal animation="zoom-in" delay={200}>
-              <div className="glass-card rounded-2xl p-6 border-2 border-blue-600 bg-blue-50/40 relative space-y-4 shadow-md h-full flex flex-col justify-between transform md:-translate-y-2">
+              <div className="glass-card glass-card-hover rounded-2xl p-6 border-2 border-blue-600 bg-blue-50/40 relative space-y-4 shadow-md h-full flex flex-col justify-between transform md:-translate-y-2">
                 <span className="absolute -top-3 right-6 px-3 py-1 rounded-full bg-blue-900 text-white text-[10px] font-extrabold uppercase tracking-wider shadow-xs">Most Popular</span>
                 <div>
                   <span className="text-xs font-bold text-blue-900 uppercase">Core License</span>

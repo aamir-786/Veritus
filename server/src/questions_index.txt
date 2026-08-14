@@ -1,0 +1,102 @@
+Quick Index
+#	Domain	Title	Effort	Duration	Tier	Reg	Cost	ROI
+Q001	Risk	We Have a Risk Register, But No One Uses It	Moderate	6-12 weeks	Foundational	Low	Low ($)	Quick
+Q002	Risk	What's Our Risk Appetite Again?	Moderate	6-12 weeks	Foundational	Moderate	Low ($)	Quick
+Q003	Risk	Too Many Controls, Still Not Safe	Project	3-6 months	Tactical	Low	Medium ($$)	Mid
+Q004	Risk	Everyone's Reporting Incidents Differently	Moderate	6-12 weeks	Foundational	High	Low ($)	Quick
+Q005	Risk	Risk Culture Is Just a Buzzword	Project	3-6 months	Strategic	None	Low ($)	Mid
+Q006	Risk	Our Risk Reports Are Too Technical for the Board	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q007	Risk	Who Owns This Risk? Finger-Pointing Everywhere	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q009	Risk	Controls Pass Design but Fail in Operation	Project	3-6 months	Tactical	Low	Medium ($$)	Mid
+Q010	Risk	Third-Party Risk Is a Black Box	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q013	Risk	We Can't Prioritise Projects-Too Many Risk Scores	Project	6-12 weeks	Tactical	None	Low ($)	Mid
+Q016	Risk	Post-Incident Reviews Blame, Not Learn	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q018	Risk	Risk Workshop Fatigue	Quick Win	< 2 weeks	Foundational	None	Low ($)	Quick
+Q019	Risk	Risk Appetite vs. Growth Targets Clash	Project	3-6 months	Strategic	Low	Low ($)	Mid
+Q020	Risk	We Underestimate Emerging Risks	Moderate	6-12 weeks	Tactical	None	Low ($)	Mid
+Q021	Risk	Data Quality Tanking Our Risk Dashboards	Moderate	6-12 weeks	Foundational	Low	Low ($)	Quick
+Q022	Risk	Risk Framework Too Complex for SMEs	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q023	Risk	KRIs Don't Predict Anything	Moderate	6-12 weeks	Tactical	Low	Low ($)	Quick
+Q024	Risk	Risk Talent Shortage	Transformation	> 6 months	Transformational	None	Medium ($$)	Strategic
+Q025	Risk	We Treat All Vendors the Same	Moderate	6-12 weeks	Tactical	Moderate	Low ($)	Quick
+Q027	Risk	Insurance Gaps Discovered Too Late	Moderate	2-6 weeks	Tactical	Low	Low ($)	Quick
+Q029	Risk	Incident Severity Ratings Inconsistent	Moderate	2-6 weeks	Foundational	High	Low ($)	Quick
+Q030	Risk	Lessons Learned Lost in Email	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q031	Risk	Risk Escalation Too Slow	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q032	Risk	Risk Assessment Forms 30 Pages Long	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q033	Risk	Risk Registers Don't Sync Across Projects	Project	6-12 weeks	Tactical	Low	Medium ($$)	Mid
+Q034	Risk	Controls Owned by People Who Left	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q035	Risk	Over-Customised GRC Tool	Project	3-6 months	Strategic	None	Medium ($$)	Mid
+Q037	Risk	Siloes Between Risk and Strategy	Project	3-6 months	Strategic	None	Low ($)	Mid
+Q038	Risk	Risk Committee Meetings Drift Off Agenda	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q040	Risk	KPIs and KRIs Misaligned	Moderate	6-12 weeks	Tactical	None	Low ($)	Quick
+Q042	Risk	No Budget for Risk Initiatives	Project	6-12 weeks	Strategic	None	Low ($)	Mid
+Q043	Risk	We Only Do Risk Annually	Moderate	6-12 weeks	Tactical	None	Low ($)	Quick
+Q044	Risk	Scenario Analysis Too Academic	Moderate	6-12 weeks	Tactical	None	Low ($)	Mid
+Q045	Risk	Risk Maturity Stuck at 'Reactive'	Transformation	> 6 months	Transformational	None	Medium ($$)	Strategic
+Q046	Risk	Change Management Ignores Risk	Project	3-6 months	Strategic	Low	Low ($)	Mid
+Q047	Risk	We Overlook Positive Risk (Opportunities)	Moderate	6-12 weeks	Tactical	None	Low ($)	Quick
+Q051	Risk	Quantitative Risk Analysis Confuses Everyone	Project	3-6 months	Strategic	None	Medium ($$)	Mid
+Q052	Risk	Heatmaps Everywhere, Insight Nowhere	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q053	Risk	Risk Team Burnout	Moderate	6-12 weeks	Foundational	None	Low ($)	Quick
+Q054	Risk	Risk Assessments Done, Then Shelved	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q055	Risk	Spreadsheet Chaos	Moderate	6-12 weeks	Tactical	Low	Low ($)	Quick
+Q056	Risk	Dashboard Sprawl	Moderate	6-12 weeks	Tactical	None	Low ($)	Quick
+Q057	Risk	Stakeholders Resist the Risk Process	Moderate	6-12 weeks	Foundational	None	Low ($)	Quick
+Q058	Risk	Unclear Risk Budget Allocation	Moderate	6-12 weeks	Tactical	Low	Low ($)	Quick
+Q060	Risk	Vendor Concentration Risk	Project	3-6 months	Strategic	Moderate	Medium ($$)	Mid
+Q063	Risk	Root Cause Analysis Superficial	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q064	Risk	Appetite Not in Performance Reviews	Moderate	6-12 weeks	Tactical	Low	Low ($)	Quick
+Q065	Risk	M&A Integration Risks Overlooked	Transformation	> 6 months	Transformational	Moderate	Medium ($$)	Strategic
+Q066	Risk	Geopolitical Risk Under-Assessed	Project	3-6 months	Strategic	Low	Low ($)	Mid
+Q068	Risk	Fraud Detection Weak	Project	3-6 months	Strategic	Moderate	Medium ($$)	Mid
+Q069	Risk	Project Risk Logs Ignored	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q070	Risk	Agile Teams Skip Risk Management	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q073	Risk	Risk Metrics Without Thresholds	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q074	Risk	Change Fatigue Risk	Project	3-6 months	Strategic	None	Low ($)	Mid
+Q081	Risk	Outsourced-Process Visibility Low	Project	3-6 months	Strategic	Moderate	Medium ($$)	Mid
+Q082	Risk	Intellectual-Property Risk Ignored	Moderate	6-12 weeks	Tactical	Low	Low ($)	Quick
+Q083	Risk	Inflation Eroding Budgets	Moderate	6-12 weeks	Tactical	None	Low ($)	Mid
+Q089	Risk	Hybrid-Work Talent Retention Risk	Moderate	6-12 weeks	Foundational	None	Low ($)	Mid
+Q097	Risk	KPI-Gaming Risk	Moderate	6-12 weeks	Tactical	None	Low ($)	Quick
+Q098	Risk	Risk-Champion Network Ineffective	Moderate	6-12 weeks	Foundational	None	Low ($)	Quick
+Q008	Compliance	Audit Actions Keep Re-Opening	Moderate	6-12 weeks	Tactical	Moderate	Low ($)	Quick
+Q015	Compliance	Regulatory Changes Catch Us Off-Guard	Project	3-6 months	Strategic	High	Low ($)	Mid
+Q017	Compliance	No One Reads the Risk Policy	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q028	Compliance	Multiple Frameworks, Zero Integration	Project	3-6 months	Strategic	Moderate	Medium ($$)	Mid
+Q039	Compliance	Compliance Training Click-Through Only	Moderate	2-6 weeks	Foundational	Moderate	Low ($)	Quick
+Q041	Compliance	Ethics Hotline Underutilised	Moderate	2-6 weeks	Foundational	High	Low ($)	Quick
+Q048	Compliance	Sustainability Risks Not Integrated	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q062	Compliance	Cross-Border Data Privacy Confusion	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q067	Compliance	Greenwashing Risk Looms	Moderate	6-12 weeks	Tactical	High	Low ($)	Quick
+Q075	Compliance	Overlapping Assurance Functions	Moderate	6-12 weeks	Tactical	None	Low ($)	Quick
+Q079	Compliance	Regulator Narrative Weak	Moderate	6-12 weeks	Tactical	High	Low ($)	Quick
+Q011	Cyber	Shadow IT Keeps Popping Up	Moderate	6-12 weeks	Tactical	Moderate	Low ($)	Quick
+Q012	Cyber	Cyber Risk Metrics Overload	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q059	Cyber	Board Lacks Cyber Literacy	Moderate	6-12 weeks	Tactical	High	Low ($)	Quick
+Q061	Cyber	Cloud Migration Blind Spots	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q071	Cyber	Remote Work Security Gaps	Moderate	6-12 weeks	Foundational	High	Low ($)	Quick
+Q076	Cyber	Customer Data Risk Rising	Moderate	6-12 weeks	Tactical	High	Low ($)	Quick
+Q084	Cyber	Technology-Obsolescence Surprise	Project	3-6 months	Strategic	Low	Medium ($$)	Mid
+Q087	Cyber	Cryptographic-Key Mismanagement	Moderate	6-12 weeks	Tactical	High	Low ($)	Quick
+Q090	Cyber	Cyber-Insurance Confusion	Moderate	2-6 weeks	Tactical	Low	Low ($)	Quick
+Q091	Cyber	Insider-Threat Program Immature	Project	3-6 months	Strategic	Moderate	Medium ($$)	Mid
+Q092	Cyber	IoT Devices Unsecured	Moderate	6-12 weeks	Tactical	High	Low ($)	Quick
+Q093	Cyber	Ransomware Readiness Low	Moderate	6-12 weeks	Tactical	High	Low ($)	Quick
+Q099	Cyber	Data-Migration Nightmares	Project	3-6 months	Strategic	Low	Medium ($$)	Mid
+Q100	Cyber	DevOps Releases Break Controls	Moderate	6-12 weeks	Tactical	Low	Low ($)	Quick
+Q014	Resilience	Business Continuity Plan in a Drawer	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q036	Resilience	Crisis Communication Plan Missing	Project	3-6 months	Strategic	High	Low ($)	Mid
+Q049	Resilience	Key Person Risk Not Addressed	Moderate	2-6 weeks	Foundational	None	Low ($)	Quick
+Q050	Resilience	When the CRO Leaves - Knowledge Walks Out	Moderate	6-12 weeks	Foundational	None	Low ($)	Quick
+Q072	Resilience	Crisis Simulations Unrealistic	Moderate	6-12 weeks	Tactical	Low	Low ($)	Quick
+Q077	Resilience	Customer Incident Communication Fumbles	Moderate	2-6 weeks	Foundational	High	Low ($)	Quick
+Q080	Resilience	Resilience vs BCM Confusion	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q086	Resilience	Social-Media Reputation Shock	Moderate	2-6 weeks	Foundational	Low	Low ($)	Quick
+Q088	Resilience	Energy-Supply Disruption Risk	Project	3-6 months	Strategic	Low	Medium ($$)	Mid
+Q095	Resilience	Environmental-Hazard Exposure	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q096	Resilience	Black-Swan Planning Absent	Transformation	> 6 months	Transformational	Low	Medium ($$)	Strategic
+Q026	AI	AI Use Growing - No Governance	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q078	AI	Model-Risk Unmanaged	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q085	AI	Ethical-AI Concerns Unchecked	Project	3-6 months	Strategic	High	Medium ($$)	Mid
+Q094	AI	Generative-AI Misuse Risk	Moderate	6-12 weeks	Tactical	Moderate	Low ($)	Quick

@@ -11,15 +11,14 @@ const dashboardController = require('../controllers/dashboardController');
 const adminController = require('../controllers/adminController');
 
 const { authenticateToken, optionalToken, requireAdmin } = require('../middleware/auth');
-
 const emailService = require('../services/emailService');
 
 // --- Auth Routes ---
-router.post('/auth/login', authController.login);
-router.post('/auth/register', authController.register);
-router.post('/auth/google', authController.googleLogin);
-router.get('/auth/profile', authenticateToken, authController.getProfile);
-router.post('/auth/reset-password', authController.resetPassword);
+// Note: Login, Registration, Google Auth, and Reset Password are now handled entirely by Supabase Auth on the frontend.
+router.get('/auth/profile', authenticateToken, (req, res) => {
+  return res.json({ success: true, user: req.user });
+});
+router.post('/auth/welcome', authenticateToken, authController.checkAndSendWelcome);
 
 // --- Contact Form Email Endpoint ---
 router.post('/contact', async (req, res) => {
@@ -47,7 +46,7 @@ router.post('/contact', async (req, res) => {
 // --- 100 Risk Questions & AI Copilot Routes ---
 router.get('/questions', questionsController.getQuestions);
 router.get('/questions/:id', questionsController.getQuestionById);
-router.post('/questions/ai-copilot', questionsController.generateAIRiskAdvice);
+router.post('/questions/ai-copilot', authenticateToken, questionsController.generateAIRiskAdvice);
 
 // --- Courses & Lessons Routes ---
 router.get('/courses', coursesController.getCourses);
@@ -60,6 +59,7 @@ router.get('/templates/download/:templateId', optionalToken, templatesController
 
 // --- Commerce & Payment Routes ---
 router.post('/checkout/create-session', optionalToken, commerceController.createCheckoutSession);
+router.post('/checkout/session/multi', optionalToken, commerceController.createMultiCheckoutSession);
 router.post('/checkout/complete', commerceController.completeCheckout);
 router.post('/checkout/webhook', commerceController.handleStripeWebhook);
 router.get('/orders', authenticateToken, commerceController.getUserOrders);
@@ -74,5 +74,13 @@ router.post('/admin/courses', authenticateToken, requireAdmin, adminController.c
 router.post('/admin/courses/:courseId/modules', authenticateToken, requireAdmin, adminController.addModuleToCourse);
 router.post('/admin/courses/:courseId/modules/:moduleId/lessons', authenticateToken, requireAdmin, adminController.addLessonToModule);
 router.put('/admin/questions/:id', authenticateToken, requireAdmin, adminController.updateQuestion);
+router.post('/admin/questions', authenticateToken, requireAdmin, adminController.createQuestion);
+router.delete('/admin/questions/:id', authenticateToken, requireAdmin, adminController.deleteQuestion);
+router.delete('/admin/users/:id', authenticateToken, requireAdmin, adminController.deleteUser);
+router.post('/admin/users/reset-password', authenticateToken, requireAdmin, adminController.adminResetPassword);
+
+router.post('/admin/templates', authenticateToken, requireAdmin, adminController.createTemplate);
+router.put('/admin/templates/:id', authenticateToken, requireAdmin, adminController.updateTemplate);
+router.delete('/admin/templates/:id', authenticateToken, requireAdmin, adminController.deleteTemplate);
 
 module.exports = router;
