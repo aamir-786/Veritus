@@ -1056,7 +1056,7 @@ export default function AdminStudio() {
                       </div>
                       <div className="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between mt-auto">
                         <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                          <Layers className="w-3 h-3" /> {course.modules?.length || 0} Modules
+                          <Layers className="w-3 h-3" /> {course.module_count || 0} Modules
                         </div>
                         <div className="flex gap-2">
                           <button 
