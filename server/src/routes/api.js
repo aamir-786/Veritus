@@ -99,5 +99,6 @@ router.post('/admin/inquiries/:id/reply', authenticateToken, requireAdmin, admin
 router.put('/admin/inquiries/:id/status', authenticateToken, requireAdmin, adminController.updateInquiryStatus);
 router.get('/admin/orders', authenticateToken, requireAdmin, adminController.getOrders);
 router.put('/admin/orders/:id/status', authenticateToken, requireAdmin, adminController.updateOrderStatus);
+router.post('/admin/orders/:id/refund', authenticateToken, requireAdmin, adminController.refundOrder);
 
 module.exports = router;

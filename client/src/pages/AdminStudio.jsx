@@ -20,6 +20,7 @@ export default function AdminStudio() {
   const [templates, setTemplates] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null); // For order details modal
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(null); // stores order ID being updated
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -149,12 +150,37 @@ export default function AdminStudio() {
       const res = await api.updateOrderStatus(orderId, newStatus);
       if (res.success) {
         setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        if (selectedOrder && selectedOrder.id === orderId) {
+          setSelectedOrder({ ...selectedOrder, status: newStatus });
+        }
       } else {
         alert(res.error || 'Failed to update order status');
       }
     } catch (err) {
       console.error(err);
       alert('An error occurred while updating the order status.');
+    } finally {
+      setIsUpdatingOrder(null);
+    }
+  };
+
+  const handleRefundOrder = async (orderId) => {
+    if (!window.confirm("Are you sure you want to process a Stripe refund (25% fee)? This action cannot be undone.")) return;
+    setIsUpdatingOrder(orderId);
+    try {
+      const res = await api.refundOrder(orderId);
+      if (res.success) {
+        setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'refunded' } : o));
+        if (selectedOrder && selectedOrder.id === orderId) {
+          setSelectedOrder({ ...selectedOrder, status: 'refunded' });
+        }
+        alert("Refund processed successfully!");
+      } else {
+        alert(res.error || 'Failed to process refund');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while processing the refund.');
     } finally {
       setIsUpdatingOrder(null);
     }
@@ -942,7 +968,11 @@ export default function AdminStudio() {
                       </tr>
                     ) : (
                       orders.map(order => (
-                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                        <tr 
+                          key={order.id} 
+                          className="hover:bg-slate-50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedOrder(order)}
+                        >
                           <td className="px-4 py-3 text-slate-500">
                             {new Date(order.created_at).toLocaleDateString()}
                           </td>
@@ -955,22 +985,14 @@ export default function AdminStudio() {
                             {order.currency?.toUpperCase()} {order.amount?.toLocaleString()}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <select
-                              value={order.status || 'pending'}
-                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                              disabled={isUpdatingOrder === order.id}
-                              className={`px-2 py-1 rounded text-[10px] font-extrabold uppercase tracking-wide border-0 outline-none cursor-pointer ${
-                                order.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 
-                                order.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
-                                order.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
-                                'bg-amber-100 text-amber-700'
-                              } ${isUpdatingOrder === order.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="paid">Paid</option>
-                              <option value="refunded">Refunded</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide ${
+                              order.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 
+                              order.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
+                              order.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {order.status}
+                            </span>
                           </td>
                         </tr>
                       ))
@@ -1549,6 +1571,99 @@ export default function AdminStudio() {
         )}
 
       </main>
+
+      {/* --- ORDER DETAILS MODAL --- */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}></div>
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div>
+                <h3 className="font-display font-bold text-lg text-slate-900">Order Details</h3>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">{selectedOrder.id}</p>
+              </div>
+              <button onClick={() => setSelectedOrder(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Customer Email</span>
+                  <span className="font-medium text-slate-900 text-sm">{selectedOrder.user_email || 'Guest'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Order Date</span>
+                  <span className="font-medium text-slate-900 text-sm">{new Date(selectedOrder.created_at).toLocaleString()}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Product</span>
+                  <span className="font-bold text-indigo-600 text-sm">{selectedOrder.product_title || selectedOrder.product_id}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Amount</span>
+                  <span className="font-extrabold text-slate-900 text-xl">{selectedOrder.currency?.toUpperCase()} {selectedOrder.amount?.toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</span>
+                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
+                    selectedOrder.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 
+                    selectedOrder.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
+                    selectedOrder.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>
+                    {selectedOrder.status}
+                  </span>
+                </div>
+              </div>
+
+              {selectedOrder.status === 'paid' && (
+                <div className="pt-6 border-t border-slate-100 space-y-3">
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                    <h4 className="text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Management Actions</h4>
+                    <p className="text-[11px] text-amber-700/80 mb-4 leading-relaxed">
+                      Cancelling an order revokes access instantly. Processing a refund will automatically refund 75% of the transaction via Stripe (keeping a 25% cut) and revoke access.
+                    </p>
+                    
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'cancelled')}
+                        disabled={isUpdatingOrder === selectedOrder.id}
+                        className="flex-1 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        Cancel Order (No Refund)
+                      </button>
+                      
+                      <button 
+                        onClick={() => handleRefundOrder(selectedOrder.id)}
+                        disabled={isUpdatingOrder === selectedOrder.id}
+                        className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {isUpdatingOrder === selectedOrder.id ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <DollarSign className="w-3.5 h-3.5" />
+                        )}
+                        Process Refund
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button 
+                onClick={() => setSelectedOrder(null)}
+                className="px-5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

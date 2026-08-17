@@ -1,6 +1,7 @@
 // adminController.js - Admin Studio Management & Analytics
 const supabase = require('../config/supabase');
 const emailService = require('../services/emailService');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Sales & Platform Analytics Overview
 exports.getAdminMetrics = async (req, res) => {
@@ -596,5 +597,65 @@ exports.updateOrderStatus = async (req, res) => {
   } catch (err) {
     console.error('updateOrderStatus Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to update order status' });
+  }
+};
+
+exports.refundOrder = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Get the current order
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    if (order.status !== 'paid') {
+      return res.status(400).json({ success: false, error: 'Order is not in paid status' });
+    }
+
+    // 2. Process Stripe Refund (if applicable)
+    if (order.stripe_payment_intent) {
+      // Calculate 75% refund (keep 25% cut)
+      const refundAmount = Math.round((order.amount * 100) * 0.75); // Stripe expects cents
+      
+      try {
+        await stripe.refunds.create({
+          payment_intent: order.stripe_payment_intent,
+          amount: refundAmount,
+        });
+      } catch (stripeErr) {
+        console.error('Stripe Refund Error:', stripeErr);
+        return res.status(500).json({ success: false, error: 'Failed to process refund with payment gateway' });
+      }
+    }
+
+    // 3. Update Order Status in Database
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('orders')
+      .update({ status: 'refunded' })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // 4. Revoke Entitlement
+    if (order.user_id) {
+      await supabase
+        .from('entitlements')
+        .delete()
+        .match({ user_id: order.user_id, product_id: order.product_id });
+    }
+
+    return res.json({ success: true, message: 'Order refunded successfully', order: updatedOrder });
+  } catch (err) {
+    console.error('refundOrder Error:', err);
+    return res.status(500).json({ success: false, error: 'Internal server error during refund' });
   }
 };

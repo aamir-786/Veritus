@@ -163,6 +163,14 @@ export const api = {
     return res.json();
   },
 
+  refundOrder: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/orders/${id}/refund`, {
+      method: 'POST',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
   getAdminInquiries: async () => {
     const res = await fetch(`${API_BASE}/admin/inquiries`, {
       headers: await getHeaders()

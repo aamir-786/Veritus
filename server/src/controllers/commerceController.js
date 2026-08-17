@@ -295,10 +295,14 @@ exports.handleStripeWebhook = async (req, res) => {
         for (const orderId of orderIdList) {
           const { data: order } = await supabase.from('orders').select('*').eq('id', orderId.trim()).single();
           
-          if (order && order.status !== 'paid') {
-            const { data: updatedOrder } = await supabase
-              .from('orders')
-              .update({ status: 'paid', paid_at: new Date().toISOString() })
+            if (order && order.status !== 'paid') {
+              const { data: updatedOrder } = await supabase
+                .from('orders')
+                .update({ 
+                  status: 'paid', 
+                  paid_at: new Date().toISOString(),
+                  stripe_payment_intent: session.payment_intent || null 
+                })
               .eq('id', orderId.trim())
               .select()
               .single();
