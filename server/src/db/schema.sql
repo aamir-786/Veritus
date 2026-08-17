@@ -172,6 +172,7 @@ CREATE TABLE public.inquiries (
   email TEXT NOT NULL,
   company TEXT,
   message TEXT,
+  status TEXT DEFAULT 'pending' NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

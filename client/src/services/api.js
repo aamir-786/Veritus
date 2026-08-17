@@ -146,7 +146,18 @@ export const api = {
   },
 
   getAdminInquiries: async () => {
-    const res = await fetch(`${API_BASE}/admin/inquiries`, { headers: await getHeaders() });
+    const res = await fetch(`${API_BASE}/admin/inquiries`, {
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  replyToInquiry: async (id, replyMessage) => {
+    const res = await fetch(`${API_BASE}/admin/inquiries/${id}/reply`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify({ replyMessage })
+    });
     return res.json();
   },
 

@@ -1,5 +1,6 @@
 // adminController.js - Admin Studio Management & Analytics
 const supabase = require('../config/supabase');
+const emailService = require('../services/emailService');
 
 // Sales & Platform Analytics Overview
 exports.getAdminMetrics = async (req, res) => {
@@ -353,5 +354,67 @@ exports.getInquiries = async (req, res) => {
   } catch (err) {
     console.error('getInquiries Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch inquiries' });
+  }
+};
+
+exports.replyToInquiry = async (req, res) => {
+  const { id } = req.params;
+  const { replyMessage } = req.body;
+
+  if (!replyMessage || !replyMessage.trim()) {
+    return res.status(400).json({ success: false, error: 'Reply message is required' });
+  }
+
+  try {
+    // 1. Fetch the inquiry
+    const { data: inquiry, error: fetchError } = await supabase
+      .from('inquiries')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !inquiry) {
+      return res.status(404).json({ success: false, error: 'Inquiry not found' });
+    }
+
+    // 2. Send the email
+    const emailHtml = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Re: Your Inquiry to Veritus</h2>
+        <p>Hi ${inquiry.name},</p>
+        <p>Thank you for reaching out to us. Here is the response to your inquiry:</p>
+        <div style="padding: 15px; border-left: 4px solid #1e3a8a; background: #f8fafc; margin: 20px 0;">
+          ${replyMessage.replace(/\n/g, '<br/>')}
+        </div>
+        <br/>
+        <p><strong>Your Original Message:</strong></p>
+        <blockquote style="color: #64748b; font-size: 0.9em; border-left: 2px solid #cbd5e1; padding-left: 10px;">
+          ${inquiry.message.replace(/\n/g, '<br/>')}
+        </blockquote>
+        <br/>
+        <p>Best regards,<br/>The Veritus Team</p>
+      </div>
+    `;
+
+    await emailService.sendEmail({
+      to: inquiry.email,
+      subject: 'Re: Your Inquiry to Veritus',
+      html: emailHtml
+    });
+
+    // 3. Update status (ignore error if status column doesn't exist yet, to ensure backward compatibility)
+    const { error: updateError } = await supabase
+      .from('inquiries')
+      .update({ status: 'replied' })
+      .eq('id', id);
+      
+    if (updateError) {
+      console.warn('Could not update status to replied (column might be missing):', updateError);
+    }
+
+    return res.json({ success: true, message: 'Reply sent successfully' });
+  } catch (err) {
+    console.error('replyToInquiry Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to send reply' });
   }
 };

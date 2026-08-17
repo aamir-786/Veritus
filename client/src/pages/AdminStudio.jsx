@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, Plus, BookOpen, Layers, Users, DollarSign, 
   BarChart3, Settings, ShieldCheck, Search, ChevronRight, Video, Edit2, PlayCircle, ShieldAlert,
-  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X
+  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X, CheckCircle2, Send
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,11 @@ export default function AdminStudio() {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  
+  // Inquiry Modal State
+  const [selectedInquiry, setSelectedInquiry] = useState(null);
+  const [inquiryReplyText, setInquiryReplyText] = useState('');
+  const [isReplying, setIsReplying] = useState(false);
   
   // Navigation State
   const [activeTab, setActiveTab] = useState(() => {
@@ -299,6 +304,27 @@ export default function AdminStudio() {
     navigate('/login');
   };
 
+  const handleReplyToInquiry = async () => {
+    if (!inquiryReplyText.trim() || !selectedInquiry) return;
+    setIsReplying(true);
+    try {
+      const res = await api.replyToInquiry(selectedInquiry.id, inquiryReplyText);
+      if (res.success) {
+        alert('Reply sent successfully!');
+        setInquiries(inquiries.map(i => i.id === selectedInquiry.id ? { ...i, status: 'replied' } : i));
+        setSelectedInquiry(null);
+        setInquiryReplyText('');
+      } else {
+        alert(res.error || 'Failed to send reply');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error sending reply');
+    } finally {
+      setIsReplying(false);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F1F5F9]">
       <div className="flex flex-col items-center gap-3">
@@ -316,6 +342,60 @@ export default function AdminStudio() {
   return (
     <div className="min-h-screen bg-[#F1F5F9] text-slate-900 flex flex-col md:flex-row font-sans relative">
       
+      {/* Inquiry Reply Modal */}
+      {selectedInquiry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900 font-display">Inquiry from {selectedInquiry.name}</h3>
+                <p className="text-xs text-slate-500">{selectedInquiry.email} • {selectedInquiry.company || 'No Company'}</p>
+              </div>
+              <button onClick={() => { setSelectedInquiry(null); setInquiryReplyText(''); }} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-6 text-sm text-slate-700 whitespace-pre-wrap">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Original Message:</span>
+                {selectedInquiry.message}
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">Your Reply (Sent via Email)</label>
+                <textarea
+                  rows={5}
+                  value={inquiryReplyText}
+                  onChange={(e) => setInquiryReplyText(e.target.value)}
+                  placeholder="Type your response here..."
+                  className="w-full p-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                  disabled={selectedInquiry.status === 'replied'}
+                />
+                {selectedInquiry.status === 'replied' && (
+                  <p className="text-emerald-600 text-xs font-bold mt-2">✓ You have already replied to this inquiry.</p>
+                )}
+              </div>
+            </div>
+            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+              <button 
+                onClick={() => { setSelectedInquiry(null); setInquiryReplyText(''); }}
+                className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg"
+              >
+                Close
+              </button>
+              <button 
+                onClick={handleReplyToInquiry}
+                disabled={isReplying || !inquiryReplyText.trim() || selectedInquiry.status === 'replied'}
+                className="px-5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 flex items-center gap-2 shadow-sm"
+              >
+                {isReplying ? 'Sending...' : 'Send Reply Email'}
+                {!isReplying && <Send className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Header Bar */}
       <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
         <EffectiveVeritusLogo subtitle={false} variant="light" />
@@ -628,7 +708,7 @@ export default function AdminStudio() {
                       <th className="px-5 py-4">Name</th>
                       <th className="px-5 py-4">Email Address</th>
                       <th className="px-5 py-4">Company</th>
-                      <th className="px-5 py-4">Message</th>
+                      <th className="px-5 py-4">Status</th>
                       <th className="px-5 py-4">Date</th>
                     </tr>
                   </thead>
@@ -639,11 +719,25 @@ export default function AdminStudio() {
                       </tr>
                     ) : (
                       inquiries.map((inq) => (
-                        <tr key={inq.id} className="hover:bg-slate-50/80 transition-colors group">
+                        <tr 
+                          key={inq.id} 
+                          onClick={() => setSelectedInquiry(inq)}
+                          className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                        >
                           <td className="px-5 py-3 font-bold text-slate-800">{inq.name}</td>
                           <td className="px-5 py-3 text-slate-500">{inq.email}</td>
                           <td className="px-5 py-3 text-slate-500">{inq.company || '-'}</td>
-                          <td className="px-5 py-3 text-slate-600 max-w-md truncate" title={inq.message}>{inq.message}</td>
+                          <td className="px-5 py-3">
+                            {inq.status === 'replied' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
+                                <CheckCircle2 className="w-3 h-3" /> Replied
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider">
+                                Pending
+                              </span>
+                            )}
+                          </td>
                           <td className="px-5 py-3 text-slate-400">
                             {new Date(inq.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </td>
