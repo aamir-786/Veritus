@@ -1037,7 +1037,14 @@ export default function AdminStudio() {
                 {/* Courses List Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map(course => (
-                    <div key={course.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs group h-full">
+                    <div 
+                      key={course.id} 
+                      onClick={async () => {
+                        const res = await api.getCourseDetails(course.slug);
+                        if (res.success) setManagingCourse(res.course);
+                      }}
+                      className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs group h-full cursor-pointer"
+                    >
                       <div>
                         <div className="relative overflow-hidden">
                           <img 
@@ -1060,13 +1067,17 @@ export default function AdminStudio() {
                         </div>
                         <div className="flex gap-2">
                           <button 
-                            onClick={() => openCourseForEditing(course)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openCourseForEditing(course);
+                            }}
                             className="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-indigo-600 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors"
                           >
                             <Edit2 className="w-3 h-3" /> Edit
                           </button>
                           <button 
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.stopPropagation();
                               const res = await api.getCourseDetails(course.slug);
                               if (res.success) setManagingCourse(res.course);
                             }}
