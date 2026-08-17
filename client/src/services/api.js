@@ -192,7 +192,11 @@ export const api = {
       headers: await getHeaders(),
       body: JSON.stringify(courseData)
     });
-    return res.json();
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      return res.json();
+    }
+    return { success: false, error: 'Server returned an invalid response. Is the backend running?' };
   },
 
   addModuleToCourse: async (courseId, title) => {
