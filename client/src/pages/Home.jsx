@@ -42,6 +42,7 @@ export default function Home() {
   const [contactCompany, setContactCompany] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,6 +64,8 @@ export default function Home() {
 
   const handleContactSubmit = async (e) => {
     e.preventDefault();
+    if (contactLoading) return;
+    setContactLoading(true);
     try {
       await api.sendContactInquiry({
         name: contactName,
@@ -70,14 +73,16 @@ export default function Home() {
         company: contactCompany,
         message: contactMessage
       });
+      setContactSuccess(true);
+      setContactName('');
+      setContactEmail('');
+      setContactCompany('');
+      setContactMessage('');
     } catch (err) {
       console.warn('Contact email error:', err);
+    } finally {
+      setContactLoading(false);
     }
-    setContactSuccess(true);
-    setContactName('');
-    setContactEmail('');
-    setContactCompany('');
-    setContactMessage('');
   };
 
   const faqs = [
@@ -561,9 +566,11 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="sm:col-span-2 py-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-extrabold text-xs shadow-sm flex items-center justify-center gap-2 transition-all hover:shadow-md"
+                  disabled={contactLoading}
+                  className="sm:col-span-2 py-3 rounded-xl bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-sm flex items-center justify-center gap-2 transition-all hover:shadow-md"
                 >
-                  <Send className="w-4 h-4" /> Send Inquiry
+                  <Send className={`w-4 h-4 ${contactLoading ? 'animate-pulse' : ''}`} /> 
+                  {contactLoading ? 'Sending...' : 'Send Inquiry'}
                 </button>
               </form>
             )}
