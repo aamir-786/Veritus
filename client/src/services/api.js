@@ -158,7 +158,14 @@ export const api = {
       headers: await getHeaders(),
       body: JSON.stringify({ replyMessage })
     });
-    return res.json();
+    
+    // Check if the response is JSON before parsing to prevent SyntaxError
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      return res.json();
+    } else {
+      return { success: false, error: 'Server returned an invalid response. Is the backend running?' };
+    }
   },
 
   updateInquiryStatus: async (id, status) => {
