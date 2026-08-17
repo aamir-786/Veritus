@@ -19,6 +19,8 @@ export default function AdminStudio() {
   const [questions, setQuestions] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [inquiries, setInquiries] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(null); // stores order ID being updated
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -114,18 +116,20 @@ export default function AdminStudio() {
       setIsRefreshing(true);
     }
     try {
-      const [mRes, cRes, qRes, tRes, iRes] = await Promise.all([
+      const [mRes, cRes, qRes, tRes, iRes, oRes] = await Promise.all([
         api.getAdminMetrics(),
         api.getCourses(),
         api.getQuestions(),
         api.getTemplates(),
-        api.getAdminInquiries()
+        api.getAdminInquiries(),
+        api.getAdminOrders()
       ]);
       if (mRes.success) setMetrics(mRes.metrics);
       if (cRes.success) setCourses(cRes.courses);
       if (qRes.success) setQuestions(qRes.questions);
       if (tRes.success) setTemplates(tRes.templates);
       if (iRes && iRes.success) setInquiries(iRes.inquiries);
+      if (oRes && oRes.success) setOrders(oRes.orders);
       
       if (managingCourse) {
         const detailsRes = await api.getCourseDetails(managingCourse.slug);
@@ -136,6 +140,23 @@ export default function AdminStudio() {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    setIsUpdatingOrder(orderId);
+    try {
+      const res = await api.updateOrderStatus(orderId, newStatus);
+      if (res.success) {
+        setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      } else {
+        alert(res.error || 'Failed to update order status');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while updating the order status.');
+    } finally {
+      setIsUpdatingOrder(null);
     }
   };
 
@@ -669,6 +690,15 @@ export default function AdminStudio() {
           >
             <Mail className="w-4 h-4" /> Contact Inquiries
           </button>
+
+          <button 
+            onClick={() => { setActiveTab('orders'); setMobileNavOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" /> Orders
+          </button>
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -875,6 +905,79 @@ export default function AdminStudio() {
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- ORDERS TAB --- */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
+            <div className="flex justify-between items-end">
+              <div>
+                <h1 className="font-display text-xl font-bold text-slate-900">Orders & Revenue</h1>
+                <p className="text-slate-500 text-xs mt-1">Review all purchases and transactions.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider">Order ID</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider">Customer</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider">Item</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider text-right">Amount</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {orders.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="px-4 py-8 text-center text-slate-400">No orders found.</td>
+                      </tr>
+                    ) : (
+                      orders.map(order => (
+                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 text-slate-500">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-slate-500">{order.id.slice(0, 8)}...</td>
+                          <td className="px-4 py-3 font-medium text-slate-900">{order.user_email || 'Guest'}</td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {(() => {
+                              const course = courses.find(c => c.id === order.product_id);
+                              return course ? course.title : order.product_id;
+                            })()}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-slate-900 text-right">
+                            {order.currency?.toUpperCase()} {order.amount?.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <select
+                              value={order.status || 'pending'}
+                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                              disabled={isUpdatingOrder === order.id}
+                              className={`px-2 py-1 rounded text-[10px] font-extrabold uppercase tracking-wide border-0 outline-none cursor-pointer ${
+                                order.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 
+                                order.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
+                                order.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
+                                'bg-amber-100 text-amber-700'
+                              } ${isUpdatingOrder === order.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="paid">Paid</option>
+                              <option value="refunded">Refunded</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -145,6 +145,24 @@ export const api = {
     return res.json();
   },
 
+  getAdminOrders: async () => {
+    const res = await fetch(`${API_BASE}/admin/orders`, { headers: await getHeaders() });
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      return res.json();
+    }
+    return { success: false, error: 'Server returned an invalid response. Is the backend running?' };
+  },
+
+  updateOrderStatus: async (id, status) => {
+    const res = await fetch(`${API_BASE}/admin/orders/${id}/status`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify({ status })
+    });
+    return res.json();
+  },
+
   getAdminInquiries: async () => {
     const res = await fetch(`${API_BASE}/admin/inquiries`, {
       headers: await getHeaders()

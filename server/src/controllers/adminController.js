@@ -533,3 +533,68 @@ exports.updateInquiryStatus = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to update status' });
   }
 };
+
+exports.getOrders = async (req, res) => {
+  try {
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+
+    return res.json({ success: true, orders: orders || [] });
+  } catch (err) {
+    console.error('getOrders Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+  }
+};
+
+exports.updateOrderStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    // 1. Get the current order
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    // 2. Update the order status
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // 3. Handle entitlements
+    if (order.user_id) {
+      if (status === 'refunded' || status === 'cancelled') {
+        // Revoke entitlement
+        await supabase
+          .from('entitlements')
+          .delete()
+          .match({ user_id: order.user_id, product_id: order.product_id });
+      } else if (status === 'paid' && order.status !== 'paid') {
+        // Grant entitlement
+        await supabase
+          .from('entitlements')
+          .upsert({ user_id: order.user_id, product_id: order.product_id });
+      }
+    }
+
+    return res.json({ success: true, order: updatedOrder });
+  } catch (err) {
+    console.error('updateOrderStatus Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update order status' });
+  }
+};

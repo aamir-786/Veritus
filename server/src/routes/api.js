@@ -97,5 +97,7 @@ router.delete('/admin/templates/:id', authenticateToken, requireAdmin, adminCont
 router.get('/admin/inquiries', authenticateToken, requireAdmin, adminController.getInquiries);
 router.post('/admin/inquiries/:id/reply', authenticateToken, requireAdmin, adminController.replyToInquiry);
 router.put('/admin/inquiries/:id/status', authenticateToken, requireAdmin, adminController.updateInquiryStatus);
+router.get('/admin/orders', authenticateToken, requireAdmin, adminController.getOrders);
+router.put('/admin/orders/:id/status', authenticateToken, requireAdmin, adminController.updateOrderStatus);
 
 module.exports = router;
