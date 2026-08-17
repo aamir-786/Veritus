@@ -38,12 +38,19 @@ export default function AdminStudio() {
 
   // Course Form State
   const [showCourseForm, setShowCourseForm] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState(null);
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [newCoursePrice, setNewCoursePrice] = useState('199');
   const [newCourseTier, setNewCourseTier] = useState('Executive Tier');
   const [newCourseHeadline, setNewCourseHeadline] = useState('');
+  const [newCourseDescription, setNewCourseDescription] = useState('');
   const [newCourseCover, setNewCourseCover] = useState('');
   const [isUploadingCourseCover, setIsUploadingCourseCover] = useState(false);
+
+  // User Profile Details State
+  const [selectedUserForDetails, setSelectedUserForDetails] = useState(null);
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
 
   // Question Form State
   const [showQuestionForm, setShowQuestionForm] = useState(false);
@@ -129,25 +136,66 @@ export default function AdminStudio() {
     fetchData();
   }, []);
 
-  const handleCreateCourse = async (e) => {
+  const handleSaveCourse = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.createCourse({
+      const courseData = {
         title: newCourseTitle,
         price: parseFloat(newCoursePrice),
         tier: newCourseTier,
         headline: newCourseHeadline,
+        description: newCourseDescription,
         cover_image: newCourseCover
-      });
+      };
+
+      let res;
+      if (editingCourseId) {
+        res = await api.updateCourse(editingCourseId, courseData);
+      } else {
+        res = await api.createCourse(courseData);
+      }
+
       if (res.success) {
         setNewCourseTitle('');
         setNewCourseHeadline('');
+        setNewCourseDescription('');
         setNewCourseCover('');
         setShowCourseForm(false);
+        setEditingCourseId(null);
         fetchData();
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const openCourseForEditing = (course) => {
+    setEditingCourseId(course.id);
+    setNewCourseTitle(course.title || '');
+    setNewCourseHeadline(course.headline || '');
+    setNewCourseDescription(course.description || '');
+    setNewCoursePrice(course.price ? course.price.toString() : '199');
+    setNewCourseTier(course.tier || 'Executive Tier');
+    setNewCourseCover(course.cover_image || '');
+    setShowCourseForm(true);
+  };
+
+  const handleOpenUserDetails = async (userId) => {
+    setSelectedUserForDetails(userId);
+    setUserDetailsLoading(true);
+    setUserDetails(null);
+    try {
+      const res = await api.getUserAdminDetails(userId);
+      if (res.success) {
+        setUserDetails(res);
+      } else {
+        alert('Failed to load user details.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching user details.');
+    } finally {
+      setUserDetailsLoading(false);
     }
   };
 
@@ -390,6 +438,106 @@ export default function AdminStudio() {
               >
                 {isReplying ? 'Sending...' : 'Send Reply Email'}
                 {!isReplying && <Send className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Profile Details Modal */}
+      {selectedUserForDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900 font-display">User Profile</h3>
+                <p className="text-xs text-slate-500">View details, enrollments, and activity</p>
+              </div>
+              <button onClick={() => setSelectedUserForDetails(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 bg-slate-50">
+              {userDetailsLoading ? (
+                <div className="flex flex-col items-center justify-center h-48 gap-3">
+                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Loading Profile...</p>
+                </div>
+              ) : userDetails ? (
+                <div className="space-y-6">
+                  {/* Basic Info */}
+                  <div className="bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-2xl">
+                      {userDetails.user?.full_name?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-slate-900">{userDetails.user?.full_name || 'Unknown User'}</h4>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-sm text-slate-500">{userDetails.user?.email}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide ${userDetails.user?.role === 'admin' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {userDetails.user?.role || 'student'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2">
+                        Joined {new Date(userDetails.user?.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Enrollments */}
+                    <div className="bg-white p-5 rounded-xl border border-slate-200">
+                      <h5 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" /> Enrolled Courses
+                      </h5>
+                      {userDetails.entitlements.length === 0 ? (
+                        <p className="text-sm text-slate-400">No active enrollments.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {userDetails.entitlements.map(ent => (
+                            <li key={ent.id} className="text-sm font-medium text-slate-700 bg-slate-50 p-2 rounded border border-slate-100">
+                              {ent.resource_id}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {/* Stats & Progress */}
+                    <div className="bg-white p-5 rounded-xl border border-slate-200">
+                      <h5 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" /> Activity Stats
+                      </h5>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                          <span className="text-sm text-slate-500">Lessons Completed</span>
+                          <span className="font-bold text-slate-900">{userDetails.progress.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                          <span className="text-sm text-slate-500">Total Orders</span>
+                          <span className="font-bold text-slate-900">{userDetails.orders.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-slate-500">Total Spent</span>
+                          <span className="font-bold text-slate-900">
+                            ${userDetails.orders.filter(o => o.status === 'paid').reduce((sum, o) => sum + Number(o.amount || 0), 0).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-500">Failed to load details.</div>
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-white flex justify-end">
+              <button 
+                onClick={() => setSelectedUserForDetails(null)}
+                className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Close
               </button>
             </div>
           </div>
@@ -647,7 +795,11 @@ export default function AdminStudio() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {metrics.users_list.map((u) => (
-                      <tr key={u.id} className="hover:bg-slate-50/80 transition-colors group">
+                      <tr 
+                        key={u.id} 
+                        onClick={() => handleOpenUserDetails(u.id)}
+                        className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                      >
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center justify-center font-bold">
@@ -667,13 +819,13 @@ export default function AdminStudio() {
                         <td className="px-5 py-3">
                           <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                             <button 
-                              onClick={() => handleResetPassword(u.email)}
+                              onClick={(e) => { e.stopPropagation(); handleResetPassword(u.email); }}
                               className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded text-slate-600 hover:text-indigo-600 font-bold text-[10px] flex items-center gap-1 shadow-sm"
                             >
                               <KeyRound className="w-3 h-3" /> Reset Pwd
                             </button>
                             <button 
-                              onClick={() => handleDeleteUser(u.id)}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteUser(u.id); }}
                               className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-bold text-[10px] flex items-center gap-1 transition-colors"
                             >
                               <Trash2 className="w-3 h-3" /> Delete
@@ -770,11 +922,13 @@ export default function AdminStudio() {
                   </button>
                 </div>
 
-                {/* Create Course Form */}
+                {/* Create/Edit Course Form */}
                 {showCourseForm && (
-                  <div className="bg-white rounded-xl p-8 border border-indigo-100 shadow-md relative overflow-hidden animate-in zoom-in-95 duration-200">
-                    <h3 className="font-bold text-base text-slate-900 mb-6 border-b border-slate-100 pb-2">Masterclass Configuration</h3>
-                    <form onSubmit={handleCreateCourse} className="space-y-6">
+                  <div className="bg-white rounded-xl p-8 border border-indigo-100 shadow-md relative overflow-hidden animate-in zoom-in-95 duration-200 mb-6">
+                    <h3 className="font-bold text-base text-slate-900 mb-6 border-b border-slate-100 pb-2">
+                      {editingCourseId ? 'Edit Masterclass Configuration' : 'New Masterclass Configuration'}
+                    </h3>
+                    <form onSubmit={handleSaveCourse} className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-5 rounded-xl border border-slate-100">
                         <div className="md:col-span-2 space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Official Title</label>
@@ -802,6 +956,15 @@ export default function AdminStudio() {
                           />
                         </div>
                         <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Description</label>
+                          <textarea
+                            required value={newCourseDescription} onChange={e => setNewCourseDescription(e.target.value)}
+                            rows={3}
+                            placeholder="Detailed description of the masterclass..."
+                            className="w-full px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-xs font-medium outline-none transition-all shadow-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
                           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
                             <span>Cover Image (URL or Upload)</span>
                             {isUploadingCourseCover && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
@@ -820,9 +983,9 @@ export default function AdminStudio() {
                         </div>
                       </div>
                       <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                        <button type="button" onClick={() => setShowCourseForm(false)} className="px-5 py-2.5 rounded-lg text-slate-600 font-bold text-[11px] uppercase tracking-wide hover:bg-slate-100 transition-colors">Cancel</button>
+                        <button type="button" onClick={() => { setShowCourseForm(false); setEditingCourseId(null); }} className="px-5 py-2.5 rounded-lg text-slate-600 font-bold text-[11px] uppercase tracking-wide hover:bg-slate-100 transition-colors">Cancel</button>
                         <button type="submit" className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                          Publish Configuration
+                          {editingCourseId ? 'Save Updates' : 'Publish Configuration'}
                         </button>
                       </div>
                     </form>
@@ -853,15 +1016,23 @@ export default function AdminStudio() {
                         <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
                           <Layers className="w-3 h-3" /> {course.modules?.length || 0} Modules
                         </div>
-                        <button 
-                          onClick={async () => {
-                            const res = await api.getCourseDetails(course.slug);
-                            if (res.success) setManagingCourse(res.course);
-                          }}
-                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors"
-                        >
-                          Manage <ChevronRight className="w-3 h-3" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => openCourseForEditing(course)}
+                            className="px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-indigo-600 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3" /> Edit
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              const res = await api.getCourseDetails(course.slug);
+                              if (res.success) setManagingCourse(res.course);
+                            }}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors"
+                          >
+                            Manage <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

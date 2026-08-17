@@ -170,6 +170,15 @@ export const api = {
     return res.json();
   },
 
+  updateCourse: async (id, courseData) => {
+    const res = await fetch(`${API_BASE}/admin/courses/${id}`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify(courseData)
+    });
+    return res.json();
+  },
+
   addModuleToCourse: async (courseId, title) => {
     const res = await fetch(`${API_BASE}/admin/courses/${courseId}/modules`, {
       method: 'POST',
@@ -217,6 +226,13 @@ export const api = {
   deleteUser: async (id) => {
     const res = await fetch(`${API_BASE}/admin/users/${id}`, {
       method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  getUserAdminDetails: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/users/${id}/details`, {
       headers: await getHeaders()
     });
     return res.json();

@@ -80,12 +80,14 @@ router.post('/dashboard/progress', authenticateToken, dashboardController.update
 // --- Admin Studio Routes (Protected: Admin Only) ---
 router.get('/admin/metrics', authenticateToken, requireAdmin, adminController.getAdminMetrics);
 router.post('/admin/courses', authenticateToken, requireAdmin, adminController.createCourse);
+router.put('/admin/courses/:id', authenticateToken, requireAdmin, adminController.updateCourse);
 router.post('/admin/courses/:courseId/modules', authenticateToken, requireAdmin, adminController.addModuleToCourse);
 router.post('/admin/courses/:courseId/modules/:moduleId/lessons', authenticateToken, requireAdmin, adminController.addLessonToModule);
 router.put('/admin/questions/:id', authenticateToken, requireAdmin, adminController.updateQuestion);
 router.post('/admin/questions', authenticateToken, requireAdmin, adminController.createQuestion);
 router.delete('/admin/questions/:id', authenticateToken, requireAdmin, adminController.deleteQuestion);
 router.delete('/admin/users/:id', authenticateToken, requireAdmin, adminController.deleteUser);
+router.get('/admin/users/:id/details', authenticateToken, requireAdmin, adminController.getUserDetails);
 router.post('/admin/users/reset-password', authenticateToken, requireAdmin, adminController.adminResetPassword);
 
 router.post('/admin/templates', authenticateToken, requireAdmin, adminController.createTemplate);

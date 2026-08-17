@@ -72,6 +72,51 @@ exports.createCourse = async (req, res) => {
   }
 };
 
+exports.updateCourse = async (req, res) => {
+  const { id } = req.params;
+  const {
+    title,
+    headline,
+    description,
+    tier,
+    price,
+    author_name,
+    cover_image
+  } = req.body;
+
+  try {
+    const updates = {
+      ...(title && { title }),
+      ...(headline && { headline }),
+      ...(description !== undefined && { description }),
+      ...(tier && { tier }),
+      ...(price !== undefined && { price: parseFloat(price) }),
+      ...(author_name && { author_name }),
+      ...(cover_image && { cover_image })
+    };
+
+    const { data: updatedCourse, error } = await supabase
+      .from('courses')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !updatedCourse) {
+      return res.status(404).json({ success: false, error: 'Course not found or update failed' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Course updated successfully',
+      course: updatedCourse
+    });
+  } catch (err) {
+    console.error('updateCourse Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update course' });
+  }
+};
+
 exports.addModuleToCourse = async (req, res) => {
   const { courseId } = req.params;
   const { title } = req.body;
@@ -354,6 +399,53 @@ exports.getInquiries = async (req, res) => {
   } catch (err) {
     console.error('getInquiries Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch inquiries' });
+  }
+};
+
+exports.getUserDetails = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Get profile
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (profileErr || !profile) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // 2. Get orders
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+
+    // 3. Get entitlements
+    const { data: entitlements } = await supabase
+      .from('entitlements')
+      .select('*')
+      .eq('user_id', id);
+
+    // 4. Get progress
+    const { data: progress } = await supabase
+      .from('progress')
+      .select('*')
+      .eq('user_id', id);
+
+    return res.json({
+      success: true,
+      user: profile,
+      orders: orders || [],
+      entitlements: entitlements || [],
+      progress: progress || []
+    });
+  } catch (err) {
+    console.error('getUserDetails Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch user details' });
   }
 };
 
