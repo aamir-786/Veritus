@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, Plus, BookOpen, Layers, Users, DollarSign, 
   BarChart3, Settings, ShieldCheck, Search, ChevronRight, Video, Edit2, PlayCircle, ShieldAlert,
-  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft
+  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import EffectiveVeritusLogo from '../components/EffectiveVeritusLogo';
 import AdminQuestionModal from '../components/AdminQuestionModal';
 import { supabase } from '../lib/supabase';
@@ -18,7 +18,9 @@ export default function AdminStudio() {
   const [courses, setCourses] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
   // Navigation State
   const [activeTab, setActiveTab] = useState(() => {
@@ -94,16 +96,18 @@ export default function AdminStudio() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [mRes, cRes, qRes, tRes] = await Promise.all([
+      const [mRes, cRes, qRes, tRes, iRes] = await Promise.all([
         api.getAdminMetrics(),
         api.getCourses(),
         api.getQuestions(),
-        api.getTemplates()
+        api.getTemplates(),
+        api.getAdminInquiries()
       ]);
       if (mRes.success) setMetrics(mRes.metrics);
       if (cRes.success) setCourses(cRes.courses);
       if (qRes.success) setQuestions(qRes.questions);
       if (tRes.success) setTemplates(tRes.templates);
+      if (iRes && iRes.success) setInquiries(iRes.inquiries);
       
       if (managingCourse) {
         const detailsRes = await api.getCourseDetails(managingCourse.slug);
@@ -310,17 +314,41 @@ export default function AdminStudio() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] text-slate-900 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-[#F1F5F9] text-slate-900 flex flex-col md:flex-row font-sans relative">
       
+      {/* Mobile Header Bar */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
+        <EffectiveVeritusLogo subtitle={false} variant="light" />
+        <button 
+          onClick={() => setMobileNavOpen(true)}
+          className="p-2 bg-slate-800 rounded-lg text-slate-300 hover:text-white"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Mobile Drawer Overlay */}
+      {mobileNavOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 md:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
       {/* Sidebar Navigation - Dark Theme for Admin Feel */}
-      <aside className="w-full md:w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 flex flex-col hidden md:flex h-screen sticky top-0 text-slate-300">
-        <div className="px-5 py-3 border-b border-slate-800 bg-white">
+      <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 flex flex-col z-50 transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 md:h-screen text-slate-300 ${
+        mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="px-5 py-3 border-b border-slate-800 bg-white flex items-center justify-between">
           <EffectiveVeritusLogo subtitle={true} />
+          <button className="md:hidden p-1 bg-slate-100 rounded text-slate-500" onClick={() => setMobileNavOpen(false)}>
+            <X className="w-4 h-4" />
+          </button>
         </div>
         
         <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
           <button 
-            onClick={() => setActiveTab('overview')}
+            onClick={() => { setActiveTab('overview'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             }`}
@@ -329,7 +357,7 @@ export default function AdminStudio() {
           </button>
           
           <button 
-            onClick={() => setActiveTab('courses')}
+            onClick={() => { setActiveTab('courses'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'courses' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             }`}
@@ -338,7 +366,7 @@ export default function AdminStudio() {
           </button>
           
           <button 
-            onClick={() => setActiveTab('questions')}
+            onClick={() => { setActiveTab('questions'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'questions' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             }`}
@@ -347,7 +375,7 @@ export default function AdminStudio() {
           </button>
 
           <button 
-            onClick={() => setActiveTab('templates')}
+            onClick={() => { setActiveTab('templates'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'templates' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             }`}
@@ -356,12 +384,21 @@ export default function AdminStudio() {
           </button>
 
           <button 
-            onClick={() => setActiveTab('users')}
+            onClick={() => { setActiveTab('users'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'users' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             }`}
           >
             <Users className="w-4 h-4" /> User Management
+          </button>
+
+          <button 
+            onClick={() => { setActiveTab('inquiries'); setMobileNavOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'inquiries' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <Mail className="w-4 h-4" /> Contact Inquiries
           </button>
         </nav>
 
@@ -380,11 +417,20 @@ export default function AdminStudio() {
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
+          
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Link to="/" className="py-2 flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[9px] uppercase tracking-wider transition-colors">
+              <Search className="w-3 h-3" /> Live Site
+            </Link>
+            <Link to="/dashboard" className="py-2 flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[9px] uppercase tracking-wider transition-colors">
+              <BookOpen className="w-3 h-3" /> Dashboard
+            </Link>
+          </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto h-screen">
+      <main className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto overflow-x-hidden">
         
         {/* --- OVERVIEW TAB --- */}
         {activeTab === 'overview' && metrics && (
@@ -563,6 +609,54 @@ export default function AdminStudio() {
           </div>
         )}
 
+        {/* --- INQUIRIES TAB --- */}
+        {activeTab === 'inquiries' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
+            
+            <div className="flex justify-between items-end">
+              <div>
+                <h1 className="font-display text-xl font-bold text-slate-900">Contact Inquiries</h1>
+                <p className="text-slate-500 text-xs mt-1">Review messages sent via the contact form.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-5 py-4">Name</th>
+                      <th className="px-5 py-4">Email Address</th>
+                      <th className="px-5 py-4">Company</th>
+                      <th className="px-5 py-4">Message</th>
+                      <th className="px-5 py-4">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {inquiries.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="px-5 py-8 text-center text-slate-500">No inquiries found.</td>
+                      </tr>
+                    ) : (
+                      inquiries.map((inq) => (
+                        <tr key={inq.id} className="hover:bg-slate-50/80 transition-colors group">
+                          <td className="px-5 py-3 font-bold text-slate-800">{inq.name}</td>
+                          <td className="px-5 py-3 text-slate-500">{inq.email}</td>
+                          <td className="px-5 py-3 text-slate-500">{inq.company || '-'}</td>
+                          <td className="px-5 py-3 text-slate-600 max-w-md truncate" title={inq.message}>{inq.message}</td>
+                          <td className="px-5 py-3 text-slate-400">
+                            {new Date(inq.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* --- COURSES TAB --- */}
         {activeTab === 'courses' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
@@ -618,13 +712,13 @@ export default function AdminStudio() {
                             <span>Cover Image (URL or Upload)</span>
                             {isUploadingCourseCover && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
                           </label>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <input
                               type="text" value={newCourseCover} onChange={e => setNewCourseCover(e.target.value)}
                               placeholder="https://images.unsplash.com/..."
                               className="flex-1 px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-xs font-medium outline-none transition-all shadow-sm"
                             />
-                            <label className="cursor-pointer px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 flex items-center shrink-0">
+                            <label className="cursor-pointer justify-center px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 flex items-center shrink-0">
                               Upload Image
                               <input type="file" className="hidden" accept="image/*" onChange={e => handleFileUpload(e, setNewCourseCover, setIsUploadingCourseCover)} disabled={isUploadingCourseCover} />
                             </label>
@@ -642,40 +736,38 @@ export default function AdminStudio() {
                 )}
 
                 {/* Courses List Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map(course => (
-                    <div key={course.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group hover:border-indigo-200 transition-colors">
-                      <div className="h-24 bg-slate-100 relative overflow-hidden">
-                        <img 
-                          src={course.cover_image || course.thumbnail_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} 
-                          alt={course.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-slate-900/40"></div>
-                        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
-                          <span className="px-2 py-0.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold uppercase tracking-widest rounded shadow-sm">
+                    <div key={course.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs group h-full">
+                      <div>
+                        <div className="relative overflow-hidden">
+                          <img 
+                            src={course.cover_image || course.thumbnail_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} 
+                            alt={course.title}
+                            className="w-full h-32 object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-blue-900 text-[10px] font-bold border border-blue-200 shadow-xs">
                             {course.tier}
-                          </span>
-                          <span className="text-white font-bold text-sm shadow-sm">${course.price}</span>
+                          </div>
+                        </div>
+                        <div className="p-3 space-y-2">
+                          <h3 className="font-display text-base font-bold text-slate-900 leading-tight">{course.title}</h3>
+                          <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">{course.headline}</p>
                         </div>
                       </div>
-                      <div className="p-4 flex-1 flex flex-col">
-                        <h3 className="font-bold text-sm text-slate-900 mb-1 leading-tight">{course.title}</h3>
-                        <p className="text-[11px] text-slate-500 mb-4 line-clamp-2 leading-relaxed">{course.headline}</p>
-                        <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {course.modules?.length || 0} Modules
-                          </div>
-                          <button 
-                            onClick={async () => {
-                              const res = await api.getCourseDetails(course.slug);
-                              if (res.success) setManagingCourse(res.course);
-                            }}
-                            className="text-indigo-600 hover:text-indigo-800 text-[11px] font-bold flex items-center gap-1"
-                          >
-                            Manage <ChevronRight className="w-3 h-3" />
-                          </button>
+                      <div className="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between mt-auto">
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                          <Layers className="w-3 h-3" /> {course.modules?.length || 0} Modules
                         </div>
+                        <button 
+                          onClick={async () => {
+                            const res = await api.getCourseDetails(course.slug);
+                            if (res.success) setManagingCourse(res.course);
+                          }}
+                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors"
+                        >
+                          Manage <ChevronRight className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -846,9 +938,9 @@ export default function AdminStudio() {
                         <span>File Path / URL</span>
                         {isUploadingTemplate && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input type="text" required value={newTemplateFilePath} onChange={e => setNewTemplateFilePath(e.target.value)} placeholder="e.g. https://..." className="flex-1 px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-xs font-medium outline-none transition-all shadow-sm" />
-                        <label className="cursor-pointer px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 flex items-center shrink-0">
+                        <label className="cursor-pointer justify-center px-4 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 flex items-center shrink-0">
                           Upload File
                           <input type="file" className="hidden" onChange={e => handleFileUpload(e, setNewTemplateFilePath, setIsUploadingTemplate)} disabled={isUploadingTemplate} />
                         </label>
@@ -882,7 +974,8 @@ export default function AdminStudio() {
             )}
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-left text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <tr>
                     <th className="px-5 py-4">Template Title</th>
@@ -929,6 +1022,7 @@ export default function AdminStudio() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         )}
@@ -972,8 +1066,8 @@ export default function AdminStudio() {
                   />
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                <table className="w-full text-left">
+              <div className="flex-1 overflow-x-auto overflow-y-auto">
+                <table className="w-full text-left min-w-[600px]">
                   <thead className="bg-white sticky top-0 z-10 text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 shadow-sm">
                     <tr>
                       <th className="px-4 py-3 w-12">ID</th>

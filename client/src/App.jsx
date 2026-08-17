@@ -41,19 +41,12 @@ const AppContent = () => {
   const isAdmin = user?.role === 'admin';
   const isAdminRoute = location.pathname.startsWith('/admin');
 
-  // Completely hide header/footer if the user is an admin OR on the admin route
-  const hideLayout = isAdminRoute || isAdmin;
+  // Completely hide header/footer if the user is on the admin route
+  const hideLayout = isAdminRoute;
 
-  // If the user is an admin, lock them to the admin panel
-  React.useEffect(() => {
-    if (isAdmin && !isAdminRoute) {
-      // Force admin to the admin panel
-      window.location.replace('/admin');
-    }
-  }, [isAdmin, isAdminRoute]);
 
   return (
-    <div className={`min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col justify-between selection:bg-amber-400 selection:text-black ${hideLayout ? 'h-screen overflow-hidden' : ''}`}>
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col justify-between selection:bg-amber-400 selection:text-black">
       <div>
         {!hideLayout && <Navbar />}
         <main>

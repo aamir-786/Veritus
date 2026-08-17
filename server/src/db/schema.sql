@@ -164,3 +164,20 @@ ALTER TABLE public.progress ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own progress." ON public.progress FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own progress." ON public.progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their own progress." ON public.progress FOR UPDATE USING (auth.uid() = user_id);
+
+-- 10. Inquiries Table
+CREATE TABLE public.inquiries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  company TEXT,
+  message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Inquiries are viewable by admins only." ON public.inquiries FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
+  )
+);

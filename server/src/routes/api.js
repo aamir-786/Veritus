@@ -12,6 +12,7 @@ const adminController = require('../controllers/adminController');
 
 const { authenticateToken, optionalToken, requireAdmin } = require('../middleware/auth');
 const emailService = require('../services/emailService');
+const supabase = require('../config/supabase');
 
 // --- Auth Routes ---
 // Note: Login, Registration, Google Auth, and Reset Password are now handled entirely by Supabase Auth on the frontend.
@@ -25,6 +26,13 @@ router.post('/contact', async (req, res) => {
   const { name, email, company, message } = req.body;
   if (!name || !email || !message) {
     return res.status(400).json({ success: false, error: 'Name, email, and message are required' });
+  }
+
+  try {
+    const { error } = await supabase.from('inquiries').insert([{ name, email, company, message }]);
+    if (error) console.error('Failed to save inquiry to DB:', error);
+  } catch (err) {
+    console.error('Failed to save inquiry to DB:', err);
   }
 
   const result = await emailService.sendEmail({
@@ -83,5 +91,7 @@ router.post('/admin/users/reset-password', authenticateToken, requireAdmin, admi
 router.post('/admin/templates', authenticateToken, requireAdmin, adminController.createTemplate);
 router.put('/admin/templates/:id', authenticateToken, requireAdmin, adminController.updateTemplate);
 router.delete('/admin/templates/:id', authenticateToken, requireAdmin, adminController.deleteTemplate);
+
+router.get('/admin/inquiries', authenticateToken, requireAdmin, adminController.getInquiries);
 
 module.exports = router;

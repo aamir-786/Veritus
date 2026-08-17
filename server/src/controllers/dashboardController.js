@@ -55,6 +55,8 @@ exports.getDashboardSummary = async (req, res) => {
         id: c.id,
         slug: c.slug,
         title: c.title,
+        headline: c.headline,
+        tier: c.tier,
         cover_image: c.cover_image,
         total_lessons: allLessonIds.length,
         completed_lessons: completedCount,

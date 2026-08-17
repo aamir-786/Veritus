@@ -58,12 +58,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs">
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[110px]">
+        <div className="flex flex-wrap items-center gap-3 text-xs w-full md:w-auto">
+          <div className="flex-1 md:flex-none p-3 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[110px]">
             <div className="text-lg font-extrabold text-slate-900 font-display">{data.enrolled_courses.length}</div>
             <div className="text-[10px] text-slate-500 font-medium">Enrolled Courses</div>
           </div>
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[110px]">
+          <div className="flex-1 md:flex-none p-3 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[110px]">
             <div className="text-lg font-extrabold text-emerald-700 font-display">{data.accessible_templates.length}</div>
             <div className="text-[10px] text-slate-500 font-medium">Unlocked Assets</div>
           </div>
@@ -84,32 +84,45 @@ export default function Dashboard() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.enrolled_courses.map(course => (
-              <div key={course.id} className="glass-card rounded-2xl p-5 border border-slate-200 space-y-3 shadow-xs">
-                <h3 className="font-display text-base font-bold text-slate-900">{course.title}</h3>
-                
-                {/* Progress Bar */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-slate-500 font-medium">
-                    <span>Course Completion</span>
-                    <span className="font-bold text-blue-900">{course.progress_percent}%</span>
+              <div key={course.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs group h-full">
+                <div>
+                  <div className="relative overflow-hidden">
+                    <img src={course.cover_image || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} alt={course.title} className="w-full h-32 object-cover transition-transform duration-700 group-hover:scale-105" />
+                    {course.tier && (
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-blue-900 text-[10px] font-bold border border-blue-200 shadow-xs">
+                        {course.tier}
+                      </div>
+                    )}
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                    <div 
-                      className="h-full bg-blue-900 transition-all duration-500 rounded-full" 
-                      style={{ width: `${course.progress_percent}%` }}
-                    />
+                  <div className="p-3 space-y-2">
+                    <h3 className="font-display text-base font-bold text-slate-900 leading-tight">{course.title}</h3>
+                    <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">{course.headline || 'Continue your learning journey with this masterclass.'}</p>
+                    
+                    {/* Progress Bar */}
+                    <div className="space-y-1 pt-2">
+                      <div className="flex justify-between text-[10px] text-slate-500 font-medium">
+                        <span>Course Completion</span>
+                        <span className="font-bold text-blue-900">{course.progress_percent}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div 
+                          className="h-full bg-blue-900 transition-all duration-500 rounded-full" 
+                          style={{ width: `${course.progress_percent}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between">
-                  <span className="text-xs text-slate-500">{course.completed_lessons} of {course.total_lessons} Lessons Finished</span>
+                <div className="p-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-auto">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{course.completed_lessons} / {course.total_lessons} Lessons</span>
                   
                   {course.resume_lesson && (
                     <Link
                       to={`/learn/${course.slug}/lesson/${course.resume_lesson.id}`}
-                      className="px-3.5 py-1.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 transition-colors flex items-center gap-1 shadow-xs"
+                      className="w-full sm:w-auto justify-center px-3 py-1.5 rounded-lg bg-blue-900 text-white font-bold text-[10px] hover:bg-blue-800 transition-colors flex items-center gap-1 shadow-xs"
                     >
                       Resume Learning
                     </Link>
@@ -127,21 +140,33 @@ export default function Dashboard() {
           <FileText className="w-4 h-4 text-emerald-700" /> Accessible Digital Risk Frameworks
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.accessible_templates.map(tpl => (
-            <div key={tpl.id} className="glass-card rounded-xl p-4 border border-slate-200 flex items-center justify-between text-xs shadow-xs">
-              <div>
-                <div className="font-bold text-slate-900 line-clamp-1">{tpl.title}</div>
-                <div className="text-[10px] text-slate-500 font-medium">{tpl.category}</div>
+            <div key={tpl.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs h-full">
+              <div className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    {tpl.category}
+                  </span>
+                  <span className="text-[9px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                    Unlocked
+                  </span>
+                </div>
+                <h3 className="font-display font-bold text-base text-slate-900 leading-snug">{tpl.title}</h3>
+                <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-3">{tpl.description || 'Access your digital risk framework asset.'}</p>
               </div>
-              <a
-                href={`${API_BASE}/templates/download/${tpl.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 border border-emerald-200"
-              >
-                <Download className="w-4 h-4" />
-              </a>
+
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3 mt-auto">
+                <span className="text-[10px] text-slate-500 font-medium">Ready for download</span>
+                <a
+                  href={`${API_BASE}/templates/download/${tpl.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                >
+                  <Download className="w-3 h-3" /> Download
+                </a>
+              </div>
             </div>
           ))}
         </div>

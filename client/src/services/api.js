@@ -145,6 +145,11 @@ export const api = {
     return res.json();
   },
 
+  getAdminInquiries: async () => {
+    const res = await fetch(`${API_BASE}/admin/inquiries`, { headers: await getHeaders() });
+    return res.json();
+  },
+
   createCourse: async (courseData) => {
     const res = await fetch(`${API_BASE}/admin/courses`, {
       method: 'POST',

@@ -338,3 +338,20 @@ exports.deleteTemplate = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to delete template' });
   }
 };
+
+// --- Inquiries Management ---
+exports.getInquiries = async (req, res) => {
+  try {
+    const { data: inquiries, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) throw error;
+
+    return res.json({ success: true, inquiries: inquiries || [] });
+  } catch (err) {
+    console.error('getInquiries Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch inquiries' });
+  }
+};

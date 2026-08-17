@@ -311,39 +311,49 @@ export default function Home() {
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {courses.map((course, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {courses.slice(0, 4).map((course, idx) => (
               <ScrollReveal key={course.id} animation={idx === 0 ? 'slide-right' : 'slide-left'} delay={150 * idx}>
-                <div className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs transition-all group">
+                <div className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs transition-all group h-full">
                   <div>
                     <div className="relative overflow-hidden">
-                      <img src={course.cover_image || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} alt={course.title} className="w-full h-52 object-cover transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur text-blue-900 text-xs font-bold border border-blue-200 shadow-xs">
+                      <img src={course.cover_image || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} alt={course.title} className="w-full h-40 object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-white/95 backdrop-blur text-blue-900 text-[10px] font-bold border border-blue-200 shadow-xs">
                         {course.tier}
                       </div>
                     </div>
-                    <div className="p-5 space-y-2.5">
-                      <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-blue-900 transition-colors">{course.title}</h3>
-                      <p className="text-xs text-slate-600 leading-relaxed font-normal">{course.headline}</p>
+                    <div className="p-4 space-y-2">
+                      <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-tight">{course.title}</h3>
+                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-3">{course.headline}</p>
                     </div>
                   </div>
 
-                  <div className="p-5 border-t border-slate-100/80 bg-slate-50/80 backdrop-blur flex items-center justify-between">
+                  <div className="p-4 border-t border-slate-100/80 bg-slate-50/80 backdrop-blur flex items-center justify-between mt-auto">
                     <div>
-                      <div className="text-xl font-extrabold text-emerald-800">${course.price}</div>
-                      <div className="text-[10px] text-slate-500 uppercase font-mono font-medium">Single Pay License</div>
+                      <div className="text-lg font-extrabold text-emerald-800">${course.price}</div>
                     </div>
                     <Link
                       to={`/courses/${course.slug}`}
-                      className="px-4 py-2 rounded-xl bg-blue-900 text-white font-bold hover:bg-blue-800 transition-colors text-xs flex items-center gap-1 shadow-xs"
+                      className="px-3 py-1.5 rounded-lg bg-blue-900 text-white font-bold hover:bg-blue-800 transition-colors text-[11px] flex items-center gap-1 shadow-xs"
                     >
-                      View Syllabus <ArrowRight className="w-3.5 h-3.5" />
+                      Syllabus <ArrowRight className="w-3 h-3" />
                     </Link>
                   </div>
                 </div>
               </ScrollReveal>
             ))}
           </div>
+
+          <ScrollReveal animation="slide-up" delay={400}>
+            <div className="flex justify-center pt-8">
+              <Link
+                to="/courses"
+                className="px-6 py-3 rounded-xl bg-white text-slate-800 font-bold border border-slate-300 hover:border-slate-400 hover:-translate-y-0.5 transition-all text-xs shadow-sm flex items-center gap-2"
+              >
+                View More Masterclasses <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
