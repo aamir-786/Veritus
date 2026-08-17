@@ -507,6 +507,29 @@ exports.replyToInquiry = async (req, res) => {
     return res.json({ success: true, message: 'Reply sent successfully' });
   } catch (err) {
     console.error('replyToInquiry Error:', err);
-    return res.status(500).json({ success: false, error: 'Failed to send reply' });
+    return res.status(500).json({ success: false, error: err.message || 'Failed to send reply' });
+  }
+};
+
+exports.updateInquiryStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    const { data: updatedInquiry, error } = await supabase
+      .from('inquiries')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !updatedInquiry) {
+      return res.status(404).json({ success: false, error: 'Inquiry not found or update failed' });
+    }
+
+    return res.json({ success: true, inquiry: updatedInquiry });
+  } catch (err) {
+    console.error('updateInquiryStatus Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update status' });
   }
 };

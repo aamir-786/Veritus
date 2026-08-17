@@ -161,6 +161,15 @@ export const api = {
     return res.json();
   },
 
+  updateInquiryStatus: async (id, status) => {
+    const res = await fetch(`${API_BASE}/admin/inquiries/${id}/status`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify({ status })
+    });
+    return res.json();
+  },
+
   createCourse: async (courseData) => {
     const res = await fetch(`${API_BASE}/admin/courses`, {
       method: 'POST',

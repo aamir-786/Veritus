@@ -26,6 +26,7 @@ export default function AdminStudio() {
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [inquiryReplyText, setInquiryReplyText] = useState('');
   const [isReplying, setIsReplying] = useState(false);
+  const [replyFeedback, setReplyFeedback] = useState(null);
   
   // Navigation State
   const [activeTab, setActiveTab] = useState(() => {
@@ -355,21 +356,37 @@ export default function AdminStudio() {
   const handleReplyToInquiry = async () => {
     if (!inquiryReplyText.trim() || !selectedInquiry) return;
     setIsReplying(true);
+    setReplyFeedback(null);
     try {
       const res = await api.replyToInquiry(selectedInquiry.id, inquiryReplyText);
       if (res.success) {
-        alert('Reply sent successfully!');
+        setReplyFeedback({ type: 'success', message: 'Reply sent successfully!' });
         setInquiries(inquiries.map(i => i.id === selectedInquiry.id ? { ...i, status: 'replied' } : i));
-        setSelectedInquiry(null);
         setInquiryReplyText('');
       } else {
-        alert(res.error || 'Failed to send reply');
+        setReplyFeedback({ type: 'error', message: res.error || 'Failed to send reply' });
       }
     } catch (err) {
       console.error(err);
-      alert('Error sending reply');
+      setReplyFeedback({ type: 'error', message: 'Error sending reply. Please try again.' });
     } finally {
       setIsReplying(false);
+    }
+  };
+
+  const handleInquiryStatusChange = async (e, id) => {
+    e.stopPropagation();
+    const newStatus = e.target.value;
+    try {
+      const res = await api.updateInquiryStatus(id, newStatus);
+      if (res.success) {
+        setInquiries(inquiries.map(i => i.id === id ? { ...i, status: newStatus } : i));
+      } else {
+        alert(res.error || 'Failed to update status');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating status');
     }
   };
 
@@ -399,7 +416,7 @@ export default function AdminStudio() {
                 <h3 className="font-bold text-slate-900 font-display">Inquiry from {selectedInquiry.name}</h3>
                 <p className="text-xs text-slate-500">{selectedInquiry.email} • {selectedInquiry.company || 'No Company'}</p>
               </div>
-              <button onClick={() => { setSelectedInquiry(null); setInquiryReplyText(''); }} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg">
+              <button onClick={() => { setSelectedInquiry(null); setInquiryReplyText(''); setReplyFeedback(null); }} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -419,14 +436,19 @@ export default function AdminStudio() {
                   className="w-full p-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
                   disabled={selectedInquiry.status === 'replied'}
                 />
-                {selectedInquiry.status === 'replied' && (
+                {selectedInquiry.status === 'replied' && !replyFeedback && (
                   <p className="text-emerald-600 text-xs font-bold mt-2">✓ You have already replied to this inquiry.</p>
+                )}
+                {replyFeedback && (
+                  <p className={`text-xs font-bold mt-2 ${replyFeedback.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {replyFeedback.type === 'success' ? '✓ ' : '⚠ '}{replyFeedback.message}
+                  </p>
                 )}
               </div>
             </div>
             <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
               <button 
-                onClick={() => { setSelectedInquiry(null); setInquiryReplyText(''); }}
+                onClick={() => { setSelectedInquiry(null); setInquiryReplyText(''); setReplyFeedback(null); }}
                 className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg"
               >
                 Close
@@ -880,15 +902,19 @@ export default function AdminStudio() {
                           <td className="px-5 py-3 text-slate-500">{inq.email}</td>
                           <td className="px-5 py-3 text-slate-500">{inq.company || '-'}</td>
                           <td className="px-5 py-3">
-                            {inq.status === 'replied' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
-                                <CheckCircle2 className="w-3 h-3" /> Replied
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider">
-                                Pending
-                              </span>
-                            )}
+                            <select
+                              value={inq.status || 'pending'}
+                              onChange={(e) => handleInquiryStatusChange(e, inq.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border-none outline-none cursor-pointer appearance-none ${
+                                inq.status === 'replied' 
+                                  ? 'bg-emerald-100 text-emerald-700 focus:ring-2 focus:ring-emerald-500/50' 
+                                  : 'bg-amber-100 text-amber-700 focus:ring-2 focus:ring-amber-500/50'
+                              }`}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="replied">Replied</option>
+                            </select>
                           </td>
                           <td className="px-5 py-3 text-slate-400">
                             {new Date(inq.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
