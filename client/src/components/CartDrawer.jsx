@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,9 +9,10 @@ export default function CartDrawer() {
   const { cartItems, removeFromCart, cartTotal, isCartOpen, closeCart, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
   const handleCheckout = async () => {
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || isCheckoutLoading) return;
     
     if (!user) {
       closeCart();
@@ -19,6 +20,7 @@ export default function CartDrawer() {
       return;
     }
 
+    setIsCheckoutLoading(true);
     try {
       const res = await api.createMultiCheckoutSession({ items: cartItems });
       if (res.success && res.checkout_url) {
@@ -27,6 +29,7 @@ export default function CartDrawer() {
     } catch (err) {
       console.error('Checkout failed:', err);
       alert('Failed to initiate checkout. Please try again.');
+      setIsCheckoutLoading(false);
     }
   };
 
@@ -110,10 +113,11 @@ export default function CartDrawer() {
             </div>
             <button 
               onClick={handleCheckout}
-              className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 group"
+              disabled={isCheckoutLoading}
+              className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2 group"
             >
-              Checkout via Stripe
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {isCheckoutLoading ? 'Preparing Checkout...' : 'Checkout via Stripe'}
+              <ArrowRight className={`w-4 h-4 transition-transform ${isCheckoutLoading ? 'animate-pulse' : 'group-hover:translate-x-1'}`} />
             </button>
             <div className="text-center">
               <button 
