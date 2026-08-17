@@ -949,10 +949,7 @@ export default function AdminStudio() {
                           <td className="px-4 py-3 font-mono text-slate-500">{order.id.slice(0, 8)}...</td>
                           <td className="px-4 py-3 font-medium text-slate-900">{order.user_email || 'Guest'}</td>
                           <td className="px-4 py-3 text-slate-600">
-                            {(() => {
-                              const course = courses.find(c => c.id === order.product_id);
-                              return course ? course.title : order.product_id;
-                            })()}
+                            {order.product_title || order.product_id}
                           </td>
                           <td className="px-4 py-3 font-bold text-slate-900 text-right">
                             {order.currency?.toUpperCase()} {order.amount?.toLocaleString()}
