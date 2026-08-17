@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Veritus API Backend Service",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "license": "MIT",
   "author": "Veritus",
   "scripts": {

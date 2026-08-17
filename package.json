@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Veritus - Deciding in the Dark Knowledge & Decision Platform",
   "main": "server/src/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "license": "MIT",
   "author": "Veritus",
   "scripts": {
