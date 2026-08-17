@@ -535,7 +535,10 @@ export default function AdminStudio() {
                         <ul className="space-y-2">
                           {userDetails.entitlements.map(ent => (
                             <li key={ent.id} className="text-sm font-medium text-slate-700 bg-slate-50 p-2 rounded border border-slate-100">
-                              {ent.resource_id}
+                              {(() => {
+                                const course = courses.find(c => c.id === ent.product_id);
+                                return course ? course.title : ent.product_id;
+                              })()}
                             </li>
                           ))}
                         </ul>
