@@ -589,8 +589,8 @@ export default function AdminStudio() {
       <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 flex flex-col z-50 transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 md:h-screen text-slate-300 ${
         mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="px-5 py-3 border-b border-slate-800 bg-white flex items-center justify-between">
-          <EffectiveVeritusLogo subtitle={true} />
+        <div className="px-5 py-3 border-b border-slate-800 flex items-center justify-between">
+          <EffectiveVeritusLogo subtitle={true} variant="light" />
           <button className="md:hidden p-1 bg-slate-100 rounded text-slate-500" onClick={() => setMobileNavOpen(false)}>
             <X className="w-4 h-4" />
           </button>
