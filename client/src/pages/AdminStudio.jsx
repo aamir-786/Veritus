@@ -20,6 +20,7 @@ export default function AdminStudio() {
   const [templates, setTemplates] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   
   // Inquiry Modal State
@@ -107,7 +108,11 @@ export default function AdminStudio() {
   };
 
   const fetchData = async () => {
-    setLoading(true);
+    if (!metrics) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     try {
       const [mRes, cRes, qRes, tRes, iRes] = await Promise.all([
         api.getAdminMetrics(),
@@ -130,6 +135,7 @@ export default function AdminStudio() {
       console.error(err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -407,6 +413,16 @@ export default function AdminStudio() {
   return (
     <div className="min-h-screen bg-[#F1F5F9] text-slate-900 flex flex-col md:flex-row font-sans relative">
       
+      {/* Background Refreshing Overlay */}
+      {isRefreshing && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/10 backdrop-blur-[1px] transition-all pointer-events-none">
+          <div className="bg-white/90 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-slate-200 flex flex-col items-center gap-3 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-600 font-bold text-[10px] tracking-widest uppercase">Syncing</p>
+          </div>
+        </div>
+      )}
+
       {/* Inquiry Reply Modal */}
       {selectedInquiry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
