@@ -584,7 +584,7 @@ export default function AdminStudio() {
 
       {/* Mobile Header Bar */}
       <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
-        <EffectiveVeritusLogo subtitle={false} variant="light" />
+        <EffectiveVeritusLogo subtitle={true} variant="light" />
         <button 
           onClick={() => setMobileNavOpen(true)}
           className="p-2 bg-slate-800 rounded-lg text-slate-300 hover:text-white"
