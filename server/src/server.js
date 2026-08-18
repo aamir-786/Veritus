@@ -7,7 +7,7 @@ const apiRouter = require('./routes/api');
 const uploadRoute = require('./routes/upload');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Enable CORS & JSON Request Body Parsing
 app.use(cors({
@@ -39,6 +39,20 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
   });
 }
+
+// API 404 Handler
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ success: false, error: 'API Endpoint Not Found' });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Global Error:', err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal Server Error'
+  });
+});
 
 const startServer = (portToTry) => {
   const server = app.listen(portToTry, () => {
