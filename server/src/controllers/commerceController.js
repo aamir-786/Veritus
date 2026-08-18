@@ -106,7 +106,11 @@ exports.createMultiCheckoutSession = async (req, res) => {
         dbItem = data;
       } else if (item.type === 'Pack' || item.type === 'pack') {
         const packs = getDomainPacks();
-        dbItem = packs[item.id];
+        dbItem = packs[item.id] || { 
+          id: item.id, 
+          title: item.title || 'Domain Master Pack', 
+          price: 49 
+        };
       }
 
       if (!dbItem) continue;

@@ -16,17 +16,9 @@ export default function QuestionDetailModal({ question, unlockedDomains, packs, 
   let fullText = question.guidance_text || '';
   fullText = fullText.replace(/^###\s*(Answer|Guidance|Response)\s*\n+/i, ''); // Strip explicit header if present
 
-  const packMap = {
-    'Governance': 'pack_governance',
-    'Operational Risk': 'pack_operational_risk',
-    'Financial & Market': 'pack_financial_market',
-    'Cyber & Tech Risk': 'pack_cyber_tech_risk',
-    'Regulatory & Compliance': 'pack_regulatory_compliance'
-  };
-
-  const domainPackId = packMap[question.domain] || null;
+  const domainPackId = `pack_${question.domain.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_').replace(/[^a-z0-9_]/g, '')}`;
   const hasAccess = user?.role === 'admin' || 
-    (unlockedDomains && (unlockedDomains.includes('pack_full') || (domainPackId && unlockedDomains.includes(domainPackId))));
+    (unlockedDomains && (unlockedDomains.includes('pack_full') || unlockedDomains.includes(domainPackId)));
 
   let teaserSnippet = '';
   let lockedBody = '';
@@ -44,7 +36,7 @@ export default function QuestionDetailModal({ question, unlockedDomains, packs, 
     teaserSnippet = fullText;
   }
 
-  const packObj = packs && packs[domainPackId || 'pack_full'] ? packs[domainPackId || 'pack_full'] : { id: domainPackId || 'pack_full', title: `${question.domain} Master Pack`, price: 49 };
+  const packObj = packs && packs[domainPackId] ? packs[domainPackId] : { id: domainPackId, title: `${question.domain} Master Pack`, price: 49 };
 
   const handleAddToCart = () => {
     if (!user) {
