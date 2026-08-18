@@ -6,10 +6,20 @@ import { useCart } from '../context/CartContext';
 import { api } from '../services/api';
 
 export default function Login() {
-  const { login, supabaseGoogleLogin } = useAuth();
+  const { login, supabaseGoogleLogin, user } = useAuth();
   const { cartItems } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, navigate]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

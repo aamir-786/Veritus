@@ -4,9 +4,19 @@ import { ShieldAlert, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-  const { register, supabaseGoogleLogin } = useAuth();
+  const { register, supabaseGoogleLogin, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, navigate]);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
