@@ -130,8 +130,8 @@ exports.createMultiCheckoutSession = async (req, res) => {
           currency: 'usd',
           product_data: {
             name: dbItem.title,
-            description: dbItem.headline || dbItem.description || '',
-            images: dbItem.cover_image ? [dbItem.cover_image] : [],
+            ...(dbItem.headline || dbItem.description ? { description: dbItem.headline || dbItem.description } : {}),
+            ...(dbItem.cover_image ? { images: [dbItem.cover_image] } : {}),
           },
           unit_amount: Math.round(dbItem.price * 100), // Stripe expects cents
         },
