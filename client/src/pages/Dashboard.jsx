@@ -140,8 +140,16 @@ export default function Dashboard() {
           <FileText className="w-4 h-4 text-emerald-700" /> Accessible Digital Risk Frameworks
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data.accessible_templates.map(tpl => (
+        {data.accessible_templates.length === 0 ? (
+          <div className="glass-card rounded-2xl p-8 text-center space-y-3">
+            <p className="text-slate-600 text-xs font-medium">You have not unlocked any digital risk frameworks yet.</p>
+            <Link to="/templates" className="inline-block px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+              Explore Template Hub
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {data.accessible_templates.map(tpl => (
             <div key={tpl.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs h-full">
               <div className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
@@ -168,16 +176,25 @@ export default function Dashboard() {
                 </a>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Unlocked Reference Content */}
-      {data.unlocked_domains && data.unlocked_domains.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-indigo-700" /> Unlocked Reference Packs
-          </h2>
+      <div className="space-y-4">
+        <h2 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-indigo-700" /> Unlocked Reference Packs
+        </h2>
+        
+        {!data.unlocked_domains || data.unlocked_domains.length === 0 ? (
+          <div className="glass-card rounded-2xl p-8 text-center space-y-3">
+            <p className="text-slate-600 text-xs font-medium">You have not unlocked any domain master packs yet.</p>
+            <Link to="/questions" className="inline-block px-4 py-2 bg-indigo-900 hover:bg-indigo-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+              Explore 100 Risk Questions
+            </Link>
+          </div>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.unlocked_domains.map(packId => (
               <div key={packId} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-indigo-200 flex flex-col justify-between shadow-xs h-full bg-indigo-50/30">
@@ -208,8 +225,8 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
     </div>
   );
