@@ -86,9 +86,9 @@ export default function CoursePlayer() {
       
       {/* Sidebar Navigation */}
       <div className="w-full md:w-80 bg-white border-r border-slate-200 p-4 space-y-5 shrink-0">
-        <Link to="/dashboard" className="text-xs text-blue-900 hover:underline flex items-center gap-1 font-bold">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to My Dashboard
-        </Link>
+        <button onClick={() => navigate(-1)} className="text-xs text-blue-900 hover:underline flex items-center gap-1 font-bold">
+          <ArrowLeft className="w-3.5 h-3.5" /> Back
+        </button>
 
         <div>
           <div className="text-[10px] uppercase font-mono text-slate-500 font-bold tracking-wider">Course Player</div>

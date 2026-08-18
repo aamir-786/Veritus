@@ -760,14 +760,6 @@ export default function AdminStudio() {
             </button>
           </div>
           
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Link to="/" className="py-2 flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[9px] uppercase tracking-wider transition-colors">
-              <Search className="w-3 h-3" /> Live Site
-            </Link>
-            <Link to="/dashboard" className="py-2 flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[9px] uppercase tracking-wider transition-colors">
-              <BookOpen className="w-3 h-3" /> Dashboard
-            </Link>
-          </div>
         </div>
       </aside>
 
