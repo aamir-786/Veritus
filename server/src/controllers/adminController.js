@@ -2,6 +2,8 @@
 const supabase = require('../config/supabase');
 const emailService = require('../services/emailService');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const fs = require('fs');
+const path = require('path');
 
 // Sales & Platform Analytics Overview
 exports.getAdminMetrics = async (req, res) => {
@@ -178,6 +180,7 @@ exports.addLessonToModule = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to add lesson' });
   }
 };
+
 
 // Edit Question Taxonomy & Guidance
 exports.updateQuestion = async (req, res) => {
@@ -657,5 +660,35 @@ exports.refundOrder = async (req, res) => {
   } catch (err) {
     console.error('refundOrder Error:', err);
     return res.status(500).json({ success: false, error: 'Internal server error during refund' });
+  }
+};
+
+exports.getPacks = (req, res) => {
+  try {
+    const packsPath = path.join(__dirname, '../data/packs.json');
+    if (!fs.existsSync(packsPath)) {
+      return res.json({ success: true, packs: [] });
+    }
+    const packsData = fs.readFileSync(packsPath, 'utf8');
+    const packs = JSON.parse(packsData);
+    return res.json({ success: true, packs });
+  } catch (err) {
+    console.error('getPacks Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch packs' });
+  }
+};
+
+exports.updatePacks = (req, res) => {
+  try {
+    const packsPath = path.join(__dirname, '../data/packs.json');
+    const packs = req.body.packs;
+    if (!Array.isArray(packs)) {
+      return res.status(400).json({ success: false, error: 'Invalid payload' });
+    }
+    fs.writeFileSync(packsPath, JSON.stringify(packs, null, 2), 'utf8');
+    return res.json({ success: true, message: 'Packs updated successfully' });
+  } catch (err) {
+    console.error('updatePacks Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update packs' });
   }
 };

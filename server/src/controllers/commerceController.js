@@ -3,6 +3,25 @@ const supabase = require('../config/supabase');
 const emailService = require('../services/emailService');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+const fs = require('fs');
+const path = require('path');
+
+const getDomainPacks = () => {
+  try {
+    const packsPath = path.join(__dirname, '../data/packs.json');
+    const packsData = fs.readFileSync(packsPath, 'utf8');
+    const packsList = JSON.parse(packsData);
+    const packsMap = {};
+    packsList.forEach(pack => {
+      packsMap[pack.id] = pack;
+    });
+    return packsMap;
+  } catch (err) {
+    console.error('Error loading packs:', err);
+    return {};
+  }
+};
+
 // Initiate Checkout Session (Course or Template)
 exports.createCheckoutSession = async (req, res) => {
   const { item_id, item_type } = req.body;
@@ -21,6 +40,9 @@ exports.createCheckoutSession = async (req, res) => {
     } else if (item_type === 'template') {
       const { data } = await supabase.from('templates').select('*').eq('id', item_id).single();
       item = data;
+    } else if (item_type === 'pack') {
+      const packs = getDomainPacks();
+      item = packs[item_id];
     }
 
     if (!item) {
@@ -79,9 +101,12 @@ exports.createMultiCheckoutSession = async (req, res) => {
       if (item.type === 'Course' || item.type === 'course') {
         const { data } = await supabase.from('courses').select('*').or(`id.eq.${item.id},slug.eq.${item.id}`).single();
         dbItem = data;
-      } else {
+      } else if (item.type === 'Template' || item.type === 'template') {
         const { data } = await supabase.from('templates').select('*').eq('id', item.id).single();
         dbItem = data;
+      } else if (item.type === 'Pack' || item.type === 'pack') {
+        const packs = getDomainPacks();
+        dbItem = packs[item.id];
       }
 
       if (!dbItem) continue;

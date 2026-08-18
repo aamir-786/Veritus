@@ -66,6 +66,7 @@ router.get('/templates', optionalToken, templatesController.getTemplates);
 router.get('/templates/download/:templateId', optionalToken, templatesController.downloadTemplate);
 
 // --- Commerce & Payment Routes ---
+router.get('/packs', adminController.getPacks);
 router.post('/checkout/create-session', optionalToken, commerceController.createCheckoutSession);
 router.post('/checkout/session/multi', optionalToken, commerceController.createMultiCheckoutSession);
 router.post('/checkout/complete', commerceController.completeCheckout);
@@ -93,6 +94,9 @@ router.post('/admin/users/reset-password', authenticateToken, requireAdmin, admi
 router.post('/admin/templates', authenticateToken, requireAdmin, adminController.createTemplate);
 router.put('/admin/templates/:id', authenticateToken, requireAdmin, adminController.updateTemplate);
 router.delete('/admin/templates/:id', authenticateToken, requireAdmin, adminController.deleteTemplate);
+
+router.get('/admin/packs', authenticateToken, requireAdmin, adminController.getPacks);
+router.put('/admin/packs', authenticateToken, requireAdmin, adminController.updatePacks);
 
 router.get('/admin/inquiries', authenticateToken, requireAdmin, adminController.getInquiries);
 router.post('/admin/inquiries/:id/reply', authenticateToken, requireAdmin, adminController.replyToInquiry);

@@ -1,21 +1,37 @@
-import React from 'react';
-import { X, Sparkles, ShieldAlert, Clock, DollarSign, Zap, Layers, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Sparkles, ShieldAlert, Clock, DollarSign, Zap, Layers, Lock, ArrowRight, CheckCircle2, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import { api } from '../services/api';
 
-export default function QuestionDetailModal({ question, onClose, onAskCopilot }) {
+export default function QuestionDetailModal({ question, unlockedDomains, packs, onClose, onAskCopilot }) {
   const { user } = useAuth();
+  const { addToCart } = useCart();
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
   if (!question) return null;
 
   // Prepare text based on auth state
   let fullText = question.guidance_text || '';
   fullText = fullText.replace(/^###\s*(Answer|Guidance|Response)\s*\n+/i, ''); // Strip explicit header if present
 
+  const packMap = {
+    'Governance': 'pack_governance',
+    'Operational Risk': 'pack_operational_risk',
+    'Financial & Market': 'pack_financial_market',
+    'Cyber & Tech Risk': 'pack_cyber_tech_risk',
+    'Regulatory & Compliance': 'pack_regulatory_compliance'
+  };
+
+  const domainPackId = packMap[question.domain] || null;
+  const hasAccess = user?.role === 'admin' || 
+    (unlockedDomains && (unlockedDomains.includes('pack_full') || (domainPackId && unlockedDomains.includes(domainPackId))));
+
   let teaserSnippet = '';
   let lockedBody = '';
 
-  if (!user) {
+  if (!hasAccess) {
     const firstPeriod = fullText.indexOf('. ');
     if (firstPeriod !== -1) {
       teaserSnippet = fullText.slice(0, firstPeriod + 1);
@@ -27,6 +43,22 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
   } else {
     teaserSnippet = fullText;
   }
+
+  const packObj = packs && packs[domainPackId || 'pack_full'] ? packs[domainPackId || 'pack_full'] : { id: domainPackId || 'pack_full', title: `${question.domain} Master Pack`, price: 49 };
+
+  const handleAddToCart = () => {
+    if (!user) {
+      window.location.href = '/login?redirect=/questions';
+      return;
+    }
+    addToCart({
+      id: packObj.id,
+      title: packObj.title,
+      price: packObj.price,
+      type: 'pack'
+    });
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm">
@@ -111,8 +143,8 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
             </div>
           </div>
 
-          {/* Locked / Blurred Remaining Guidance (If not logged in) */}
-          {!user && (
+          {/* Locked / Blurred Remaining Guidance */}
+          {!hasAccess && (
             <div className="relative mt-2">
               {/* Blurred Content */}
               <div className="filter blur-md select-none opacity-40 pointer-events-none prose prose-slate prose-sm max-w-none text-slate-900 leading-relaxed overflow-hidden" style={{ maxHeight: '200px' }}>
@@ -126,28 +158,30 @@ export default function QuestionDetailModal({ question, onClose, onAskCopilot })
                 </div>
                 <div>
                   <h4 className="font-display text-lg font-extrabold text-slate-900">
-                    Login to Read Full Answer
+                    Unlock {question.domain} Master Pack
                   </h4>
                   <p className="text-xs text-slate-600 max-w-md mt-1">
-                    Please log in to your account to read the complete answer and guidance text.
+                    Get full lifetime access to all guidance, answers, and frameworks for the {question.domain} domain.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                  <Link
-                    to="/login"
-                    onClick={onClose}
-                    className="px-5 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 shadow-sm transition-all flex items-center gap-1.5"
+                  <button
+                    onClick={handleAddToCart}
+                    className="px-5 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 shadow-sm transition-all flex items-center gap-2"
                   >
-                    Sign In to Read Full Answer <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={onClose}
-                    className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-300 hover:bg-slate-200 transition-all"
-                  >
-                    Create Free Account
-                  </Link>
+                    <ShoppingCart className="w-4 h-4" />
+                    Add {question.domain} Pack to Cart - ${packObj.price}
+                  </button>
+                  {!user && (
+                    <Link
+                      to="/register"
+                      onClick={onClose}
+                      className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-300 hover:bg-slate-200 transition-all"
+                    >
+                      Create Free Account
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

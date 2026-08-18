@@ -319,6 +319,20 @@ export const api = {
     return res.json();
   },
 
+  getPacks: async () => {
+    const res = await fetch(`${API_BASE}/packs`);
+    return res.json();
+  },
+
+  updatePacks: async (packs) => {
+    const res = await fetch(`${API_BASE}/admin/packs`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify({ packs })
+    });
+    return res.json();
+  },
+
   uploadFile: async (file) => {
     const formData = new FormData();
     formData.append('file', file);

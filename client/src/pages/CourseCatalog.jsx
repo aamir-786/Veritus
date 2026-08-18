@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen, ArrowRight, ShieldCheck, PlayCircle, Layers, ShoppingCart } from 'lucide-react';
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { Helmet } from 'react-helmet-async';
 
 export default function CourseCatalog() {
   const [courses, setCourses] = useState([]);
@@ -24,7 +25,12 @@ export default function CourseCatalog() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-slate-900 bg-[#F8FAFC]">
+    <div className="bg-[#F8FAFC] min-h-screen pt-24 pb-16">
+      <Helmet>
+        <title>Masterclasses | Veritus</title>
+        <meta name="description" content="Browse our library of premium risk management masterclasses." />
+      </Helmet>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-8 py-10 space-y-8 text-slate-900 bg-[#F8FAFC]">
       
       {/* Header */}
       <div className="space-y-2">
@@ -93,6 +99,7 @@ export default function CourseCatalog() {
         ))}
       </div>
 
+      </div>
     </div>
   );
 }

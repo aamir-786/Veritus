@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Cpu
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { api } from '../services/api';
 import QuestionCard from '../components/QuestionCard';
 import QuestionDetailModal from '../components/QuestionDetailModal';

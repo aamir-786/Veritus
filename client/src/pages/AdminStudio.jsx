@@ -17,6 +17,7 @@ export default function AdminStudio() {
   const [metrics, setMetrics] = useState(null);
   const [courses, setCourses] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [packs, setPacks] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -117,17 +118,19 @@ export default function AdminStudio() {
       setIsRefreshing(true);
     }
     try {
-      const [mRes, cRes, qRes, tRes, iRes, oRes] = await Promise.all([
+      const [mRes, cRes, qRes, tRes, iRes, oRes, pRes] = await Promise.all([
         api.getAdminMetrics(),
         api.getCourses(),
         api.getQuestions(),
         api.getTemplates(),
         api.getAdminInquiries(),
-        api.getAdminOrders()
+        api.getAdminOrders(),
+        api.getPacks()
       ]);
       if (mRes.success) setMetrics(mRes.metrics);
       if (cRes.success) setCourses(cRes.courses);
       if (qRes.success) setQuestions(qRes.questions);
+      if (pRes && pRes.success) setPacks(pRes.packs);
       if (tRes.success) setTemplates(tRes.templates);
       if (iRes && iRes.success) setInquiries(iRes.inquiries);
       if (oRes && oRes.success) setOrders(oRes.orders);
@@ -284,6 +287,20 @@ export default function AdminStudio() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleSavePackPrice = async (packId, newPrice) => {
+    const updatedPacks = packs.map(p => p.id === packId ? { ...p, price: Number(newPrice) } : p);
+    setPacks(updatedPacks);
+    try {
+      const res = await api.updatePacks(updatedPacks);
+      if (!res.success) {
+        alert('Failed to update pack price');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating pack price');
     }
   };
 
@@ -1495,6 +1512,33 @@ export default function AdminStudio() {
               question={editingQuestion} 
               onSave={handleSaveQuestion} 
             />
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6 p-6">
+              <h2 className="font-display text-lg font-bold text-slate-900 mb-4">Domain Packs Pricing</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {packs.map(pack => (
+                  <div key={pack.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center">
+                    <div>
+                      <div className="font-bold text-sm text-slate-900">{pack.title}</div>
+                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">{pack.id}</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-500 font-bold">$</span>
+                      <input 
+                        type="number" 
+                        value={pack.price}
+                        onChange={(e) => {
+                          const updatedPacks = packs.map(p => p.id === pack.id ? { ...p, price: Number(e.target.value) } : p);
+                          setPacks(updatedPacks);
+                        }}
+                        onBlur={(e) => handleSavePackPrice(pack.id, e.target.value)}
+                        className="w-16 px-2 py-1 text-sm font-bold border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
               <div className="p-3 border-b border-slate-100 bg-slate-50/80">

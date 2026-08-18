@@ -172,6 +172,45 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Unlocked Reference Content */}
+      {data.unlocked_domains && data.unlocked_domains.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-indigo-700" /> Unlocked Reference Packs
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {data.unlocked_domains.map(packId => (
+              <div key={packId} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-indigo-200 flex flex-col justify-between shadow-xs h-full bg-indigo-50/30">
+                <div className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-indigo-900 bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200">
+                      Domain Pack
+                    </span>
+                    <span className="text-[9px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      Unlocked
+                    </span>
+                  </div>
+                  <h3 className="font-display font-bold text-base text-slate-900 leading-snug">
+                    {packId.replace('pack_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Pack
+                  </h3>
+                  <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                    Full access to guidance, answers, and frameworks for this domain.
+                  </p>
+                </div>
+                <div className="p-4 border-t border-indigo-100 bg-white/50 flex items-center justify-between mt-auto">
+                  <Link
+                    to="/questions"
+                    className="w-full px-3 py-2 rounded-lg bg-indigo-900 hover:bg-indigo-800 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                  >
+                    View in Taxonomy Explorer
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

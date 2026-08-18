@@ -15,6 +15,10 @@ exports.getDashboardSummary = async (req, res) => {
       userEntitlementIds = entitlements.map(e => e.product_id);
     }
 
+    const unlocked_domains = req.user.role === 'admin' 
+      ? ['pack_full'] 
+      : userEntitlementIds.filter(id => id.startsWith('pack_'));
+
     // Get courses
     let coursesQuery = supabase.from('courses').select('*, modules(*, lessons(id))');
     if (req.user.role !== 'admin' && userEntitlementIds.length > 0) {
@@ -86,7 +90,8 @@ exports.getDashboardSummary = async (req, res) => {
         role: req.user.role
       },
       enrolled_courses: enrolledCourses,
-      accessible_templates: templateEntitlements || []
+      accessible_templates: templateEntitlements || [],
+      unlocked_domains: unlocked_domains || []
     });
   } catch (err) {
     console.error('getDashboardSummary Error:', err);

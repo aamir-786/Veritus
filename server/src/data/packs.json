@@ -1,0 +1,32 @@
+[
+  {
+    "id": "pack_governance",
+    "title": "Governance Risk Pack",
+    "price": 49
+  },
+  {
+    "id": "pack_operational_risk",
+    "title": "Operational Risk Pack",
+    "price": 49
+  },
+  {
+    "id": "pack_financial_market",
+    "title": "Financial & Market Risk Pack",
+    "price": 49
+  },
+  {
+    "id": "pack_cyber_tech_risk",
+    "title": "Cyber & Tech Risk Pack",
+    "price": 49
+  },
+  {
+    "id": "pack_regulatory_compliance",
+    "title": "Regulatory Compliance Pack",
+    "price": 49
+  },
+  {
+    "id": "pack_full",
+    "title": "Full 100 Questions Master Pack",
+    "price": 199
+  }
+]

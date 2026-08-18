@@ -4,10 +4,14 @@ import { api } from '../services/api';
 import QuestionCard from '../components/QuestionCard';
 import QuestionDetailModal from '../components/QuestionDetailModal';
 import AICopilotModal from '../components/AICopilotModal';
+import { useAuth } from '../context/AuthContext';
 
 export default function QuestionsMatrix() {
+  const { user } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unlockedDomains, setUnlockedDomains] = useState([]);
+  const [packs, setPacks] = useState({});
 
   // 7 Filter States
   const [search, setSearch] = useState('');
@@ -48,6 +52,35 @@ export default function QuestionsMatrix() {
   useEffect(() => {
     fetchQuestions();
   }, [search, domain, effort, duration, cost, payback, tier, regulatorPressure]);
+
+  useEffect(() => {
+    const fetchAccess = async () => {
+      try {
+        const [dashRes, packsRes] = await Promise.all([
+          user ? api.getDashboardSummary() : Promise.resolve({ success: false }),
+          api.getPacks() // assuming getPacks works without auth
+        ]);
+        
+        if (dashRes.success) {
+          setUnlockedDomains(dashRes.unlocked_domains || []);
+        } else {
+          setUnlockedDomains([]);
+        }
+
+        if (packsRes && packsRes.success) {
+          // convert array to map for easy lookup
+          const packMap = {};
+          packsRes.packs.forEach(p => {
+            packMap[p.id] = p;
+          });
+          setPacks(packMap);
+        }
+      } catch(err) {
+        console.error(err);
+      }
+    };
+    fetchAccess();
+  }, [user]);
 
   const resetFilters = () => {
     setSearch('');
@@ -242,6 +275,8 @@ export default function QuestionsMatrix() {
       {selectedQuestion && (
         <QuestionDetailModal
           question={selectedQuestion}
+          unlockedDomains={unlockedDomains}
+          packs={packs}
           onClose={() => setSelectedQuestion(null)}
           onAskCopilot={(q) => {
             setSelectedQuestion(null);

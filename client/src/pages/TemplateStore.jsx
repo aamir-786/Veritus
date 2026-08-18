@@ -3,6 +3,7 @@ import { FileText, Download, Lock, Search, CheckCircle2, ShoppingCart } from 'lu
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { Helmet } from 'react-helmet-async';
 
 export default function TemplateStore() {
   const { user } = useAuth();
@@ -40,9 +41,13 @@ export default function TemplateStore() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 text-slate-900 bg-[#F8FAFC]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-slate-900 bg-[#F8FAFC] min-h-screen">
+      <Helmet>
+        <title>Digital Templates | Veritus</title>
+        <meta name="description" content="Download premium risk management frameworks, policies, and checklists." />
+      </Helmet>
       
-      {/* Page Header */}
+      {/* Header */}
       <div className="space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-100/80 text-emerald-900 border border-emerald-200 text-xs font-bold uppercase">
           <FileText className="w-3.5 h-3.5 text-emerald-700" /> Digital Risk Framework Library

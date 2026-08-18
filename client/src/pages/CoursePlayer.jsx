@@ -147,8 +147,38 @@ export default function CoursePlayer() {
           </button>
         </div>
 
-        {/* Video Player OR Reading Content */}
-        {activeLesson.type === 'video' ? (
+        {/* Mixed Blocks OR Fallback to Single Type */}
+        {activeLesson.blocks && Array.isArray(activeLesson.blocks) ? (
+          <div className="space-y-8">
+            {activeLesson.blocks.map((block, idx) => (
+              <div key={idx} className="animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
+                {block.type === 'video' ? (
+                  <VideoPlayer
+                    videoUrl={block.url}
+                    captionsVtt={block.captions_vtt}
+                    title={block.title || activeLesson.title}
+                    onCompleted={idx === activeLesson.blocks.length - 1 ? handleMarkComplete : undefined}
+                  />
+                ) : block.type === 'document' ? (
+                  <div className="glass-card rounded-2xl p-6 border border-slate-200 space-y-3">
+                    <h3 className="font-display text-base font-bold text-slate-900">{block.title || 'Downloadable Framework Resource'}</h3>
+                    {block.content && <p className="text-xs text-slate-600">{block.content}</p>}
+                    <a
+                      href={block.url}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 transition-colors shadow-xs"
+                    >
+                      <Download className="w-4 h-4" /> Download Resource File
+                    </a>
+                  </div>
+                ) : (
+                  <div className="glass-card rounded-2xl p-6 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none">
+                    {block.content}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : activeLesson.type === 'video' ? (
           <VideoPlayer
             videoUrl={activeLesson.video_url}
             captionsVtt={activeLesson.captions_vtt}
