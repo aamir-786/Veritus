@@ -83,9 +83,31 @@ export const api = {
 
   // Templates API
   getTemplates: async (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${API_BASE}/templates?${query}`, { headers: await getHeaders() });
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`${API_BASE}/templates?${qs}`, { headers: await getHeaders() });
     return res.json();
+  },
+
+  downloadTemplateFile: async (templateId) => {
+    const res = await fetch(`${API_BASE}/templates/download/${templateId}`, {
+      method: 'GET',
+      headers: await getHeaders()
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to download template');
+    }
+    
+    // Get filename from Content-Disposition header if possible
+    let filename = 'template-download.txt';
+    const disposition = res.headers.get('Content-Disposition');
+    if (disposition && disposition.indexOf('filename=') !== -1) {
+      const matches = /filename="([^"]+)"/.exec(disposition);
+      if (matches != null && matches[1]) filename = matches[1];
+    }
+    
+    const blob = await res.blob();
+    return { blob, filename };
   },
 
   // Commerce API

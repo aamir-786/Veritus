@@ -13,10 +13,28 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const [downloadingId, setDownloadingId] = useState(null);
+
   const handleDownload = async (tpl) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || '';
-    window.open(`${API_BASE}/templates/download/${tpl.id}?token=${token}`, '_blank');
+    try {
+      setDownloadingId(tpl.id);
+      const { blob, filename } = await api.downloadTemplateFile(tpl.id);
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert(err.message || 'Failed to download template. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   useEffect(() => {
@@ -182,9 +200,22 @@ export default function Dashboard() {
                 <span className="text-[10px] text-slate-500 font-medium">Ready for download</span>
                 <button
                   onClick={() => handleDownload(tpl)}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                  disabled={downloadingId === tpl.id}
+                  className={`px-3 py-1.5 rounded-lg text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs ${
+                    downloadingId === tpl.id 
+                      ? 'bg-slate-300 text-slate-500 cursor-wait' 
+                      : 'bg-emerald-700 hover:bg-emerald-600'
+                  }`}
                 >
-                  <Download className="w-3 h-3" /> Download
+                  {downloadingId === tpl.id ? (
+                    <span className="flex items-center gap-1 animate-pulse">
+                      Downloading...
+                    </span>
+                  ) : (
+                    <>
+                      <Download className="w-3 h-3" /> Download
+                    </>
+                  )}
                 </button>
               </div>
             </div>

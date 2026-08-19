@@ -32,15 +32,33 @@ export default function TemplateStore() {
     fetchTemplates();
   }, [category, search]);
 
+  const [downloadingId, setDownloadingId] = useState(null);
+
   const handleDownload = async (tpl) => {
     if (!tpl.can_download) {
       addToCart({ ...tpl, type: 'Template' });
       return;
     }
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || '';
-    // Direct file download stream trigger
-    window.open(`${API_BASE}/templates/download/${tpl.id}?token=${token}`, '_blank');
+    
+    try {
+      setDownloadingId(tpl.id);
+      const { blob, filename } = await api.downloadTemplateFile(tpl.id);
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert(err.message || 'Failed to download template. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return (
@@ -121,13 +139,20 @@ export default function TemplateStore() {
 
                 <button
                   onClick={() => handleDownload(tpl)}
+                  disabled={downloadingId === tpl.id}
                   className={`px-3 py-1.5 w-full xl:w-auto rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    tpl.can_download 
-                      ? 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-xs' 
-                      : 'bg-amber-500 hover:bg-amber-400 text-black shadow-xs'
+                    downloadingId === tpl.id 
+                      ? 'bg-slate-100 text-slate-400 cursor-wait' 
+                      : tpl.can_download 
+                        ? 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-xs' 
+                        : 'bg-amber-500 hover:bg-amber-400 text-black shadow-xs'
                   }`}
                 >
-                  {tpl.can_download ? (
+                  {downloadingId === tpl.id ? (
+                    <span className="flex items-center gap-2 animate-pulse">
+                      Downloading...
+                    </span>
+                  ) : tpl.can_download ? (
                     <>
                       <Download className="w-3 h-3" /> Download File
                     </>
