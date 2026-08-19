@@ -1498,17 +1498,17 @@ export default function AdminStudio() {
               onSave={handleSaveQuestion}
             />
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6 p-6">
-              <h2 className="font-display text-lg font-bold text-slate-900 mb-4">Domain Packs Pricing</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-4 p-4 max-w-4xl">
+              <h2 className="font-display text-sm font-bold text-slate-900 mb-3">Domain Packs Pricing</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {packs.map(pack => (
-                  <div key={pack.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center">
-                    <div>
-                      <div className="font-bold text-sm text-slate-900">{pack.title}</div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">{pack.id}</div>
+                  <div key={pack.id} className="p-3 bg-slate-50 border border-slate-200 rounded-md flex justify-between items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-slate-900 truncate">{pack.title}</div>
+                      <div className="text-[9px] text-slate-500 font-mono mt-0.5 truncate">{pack.id}</div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500 font-bold">$</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-slate-500 font-bold text-xs">$</span>
                       <input
                         type="number"
                         value={pack.price}
@@ -1517,7 +1517,7 @@ export default function AdminStudio() {
                           setPacks(updatedPacks);
                         }}
                         onBlur={(e) => handleSavePackPrice(pack.id, e.target.value)}
-                        className="w-16 px-2 py-1 text-sm font-bold border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-14 px-1.5 py-1 text-xs font-bold border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none text-right"
                       />
                     </div>
                   </div>
