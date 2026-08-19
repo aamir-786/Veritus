@@ -105,18 +105,26 @@ exports.downloadTemplate = async (req, res) => {
       const contentType = fileRes.headers.get('content-type') || 'application/octet-stream';
       res.setHeader('Content-Type', contentType);
       
-      // Try to extract a clean filename, or fallback to the template title
-      let filename = template.file_path.split('/').pop().split('?')[0];
-      if (!filename || filename.length < 3) {
-        filename = `${template.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      // Extract extension and build filename from template title
+      let ext = '.pdf';
+      if (template.file_path) {
+        const parts = template.file_path.split('?')[0].split('.');
+        if (parts.length > 1) ext = '.' + parts.pop().toLowerCase();
       }
+      const safeTitle = template.title.replace(/[^a-zA-Z0-9 \-_]/g, '').trim().replace(/\s+/g, '_');
+      const filename = `${safeTitle}${ext}`;
       
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       return res.send(buffer);
     } else {
       // Fallback for mock templates (which don't have a real URL)
-      // Send a dummy payload but with the exact requested filename and extension
-      const filename = template.file_path ? template.file_path.split('/').pop() : `template-${template.id}.pdf`;
+      let ext = '.pdf';
+      if (template.file_path) {
+        const parts = template.file_path.split('?')[0].split('.');
+        if (parts.length > 1) ext = '.' + parts.pop().toLowerCase();
+      }
+      const safeTitle = template.title.replace(/[^a-zA-Z0-9 \-_]/g, '').trim().replace(/\s+/g, '_');
+      const filename = `${safeTitle}${ext}`;
       
       let contentType = 'application/octet-stream';
       if (filename.endsWith('.pdf')) contentType = 'application/pdf';
