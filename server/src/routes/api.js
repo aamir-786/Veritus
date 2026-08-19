@@ -84,6 +84,7 @@ router.post('/admin/courses', authenticateToken, requireAdmin, adminController.c
 router.put('/admin/courses/:id', authenticateToken, requireAdmin, adminController.updateCourse);
 router.post('/admin/courses/:courseId/modules', authenticateToken, requireAdmin, adminController.addModuleToCourse);
 router.post('/admin/courses/:courseId/modules/:moduleId/lessons', authenticateToken, requireAdmin, adminController.addLessonToModule);
+router.put('/admin/courses/:courseId/modules/:moduleId/lessons/:lessonId', authenticateToken, requireAdmin, adminController.updateLesson);
 router.put('/admin/questions/:id', authenticateToken, requireAdmin, adminController.updateQuestion);
 router.post('/admin/questions', authenticateToken, requireAdmin, adminController.createQuestion);
 router.delete('/admin/questions/:id', authenticateToken, requireAdmin, adminController.deleteQuestion);

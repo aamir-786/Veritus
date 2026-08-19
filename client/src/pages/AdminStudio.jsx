@@ -79,7 +79,8 @@ export default function AdminStudio() {
 
   // Course Detailed Management State
   const [managingCourse, setManagingCourse] = useState(null);
-  const [previewLesson, setPreviewLesson] = useState(null);
+  const [managingLesson, setManagingLesson] = useState(null);
+  const [editingLesson, setEditingLesson] = useState(false);
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [activeModuleIdForLesson, setActiveModuleIdForLesson] = useState(null);
@@ -420,6 +421,30 @@ export default function AdminStudio() {
     }
   };
 
+  const handleUpdateLesson = async (e) => {
+    e.preventDefault();
+    if (!managingCourse || !managingLesson) return;
+    try {
+      const res = await api.updateLesson(managingCourse.id, managingLesson.module_id, managingLesson.id, {
+        title: newLessonTitle,
+        type: newLessonType,
+        duration_minutes: newLessonDuration,
+        video_url: newLessonUrl,
+        content: newLessonContent,
+        is_free_preview: newLessonFree
+      });
+      if (res.success) {
+        setManagingLesson(res.lesson);
+        setEditingLesson(false);
+        fetchData();
+        const detailsRes = await api.getCourseDetails(managingCourse.slug);
+        if (detailsRes.success) setManagingCourse(detailsRes.course);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -489,44 +514,6 @@ export default function AdminStudio() {
         </div>
       )}
 
-      {/* Lesson Preview Modal */}
-      {previewLesson && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm">
-          <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col border border-slate-800">
-            <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-black/50">
-              <h3 className="font-bold text-white flex items-center gap-2 text-sm">
-                <Video className="w-4 h-4 text-indigo-400" />
-                Lesson Preview: {previewLesson.title}
-              </h3>
-              <button 
-                onClick={() => setPreviewLesson(null)} 
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 bg-black flex-1 min-h-[50vh]">
-              {previewLesson.video_url ? (
-                <VideoPlayer 
-                  videoUrl={previewLesson.video_url} 
-                  title={previewLesson.title} 
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-500 py-20">
-                  <Video className="w-12 h-12 mb-4 opacity-50" />
-                  <p>No video URL provided for this lesson.</p>
-                </div>
-              )}
-              {previewLesson.content && (
-                <div className="mt-6 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Lesson Content</h4>
-                  <div className="text-slate-300 text-sm whitespace-pre-wrap">{previewLesson.content}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Inquiry Reply Modal */}
       {selectedInquiry && (
@@ -1255,6 +1242,96 @@ export default function AdminStudio() {
                   ))}
                 </div>
               </>
+            ) : managingLesson ? (
+              // Managing Lesson Detailed View
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300 max-w-4xl mx-auto">
+                <button
+                  onClick={() => { setManagingLesson(null); setEditingLesson(false); }}
+                  className="mb-4 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back to {managingCourse.title}
+                </button>
+                <div className="flex justify-between items-end mb-6">
+                  <div>
+                    <h1 className="font-display text-xl font-bold text-slate-900">{managingLesson.title}</h1>
+                    <p className="text-slate-500 text-xs mt-1">Preview and edit lesson details.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!editingLesson) {
+                        setNewLessonTitle(managingLesson.title);
+                        setNewLessonUrl(managingLesson.video_url || '');
+                        setNewLessonContent(managingLesson.content || '');
+                        setNewLessonDuration(managingLesson.duration_minutes || 10);
+                        setNewLessonFree(managingLesson.is_free_preview || false);
+                      }
+                      setEditingLesson(!editingLesson);
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide transition-all shadow-sm"
+                  >
+                    {editingLesson ? <X className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />} 
+                    {editingLesson ? 'Cancel Edit' : 'Edit Lesson'}
+                  </button>
+                </div>
+
+                {editingLesson ? (
+                  <div className="bg-white rounded-xl p-6 border border-indigo-100 shadow-sm mb-6">
+                    <form onSubmit={handleUpdateLesson} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Title</label>
+                          <input type="text" required value={newLessonTitle} onChange={e => setNewLessonTitle(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Duration (min)</label>
+                          <input type="number" required value={newLessonDuration} onChange={e => setNewLessonDuration(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                          <span>Video URL (or embed)</span>
+                          {isUploadingVideo && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
+                        </label>
+                        <div className="flex gap-2">
+                          <input type="text" required value={newLessonUrl} onChange={e => setNewLessonUrl(e.target.value)} className="flex-1 px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" placeholder="https://..." />
+                          <label className="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded text-[10px] font-bold text-slate-600 flex items-center shrink-0">
+                            Upload Video
+                            <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, setNewLessonUrl, setIsUploadingVideo)} disabled={isUploadingVideo} />
+                          </label>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Content (Text)</label>
+                        <textarea required value={newLessonContent} onChange={e => setNewLessonContent(e.target.value)} rows={6} className="w-full px-2.5 py-2 rounded bg-white border border-slate-200 text-xs resize-y font-mono" placeholder="Write lesson content here..."></textarea>
+                      </div>
+                      <div className="flex items-center gap-2 pb-2">
+                        <input type="checkbox" id="edit-free-preview" checked={newLessonFree} onChange={e => setNewLessonFree(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+                        <label htmlFor="edit-free-preview" className="text-[10px] font-bold text-slate-600">Available as Free Preview</label>
+                      </div>
+                      <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-indigo-700">Update Lesson</button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-800 p-4">
+                    {managingLesson.video_url ? (
+                      <div className="max-w-3xl mx-auto">
+                        <VideoPlayer videoUrl={managingLesson.video_url} title={managingLesson.title} />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-48 text-slate-500">
+                        <Video className="w-12 h-12 mb-4 opacity-50" />
+                        <p>No video URL provided for this lesson.</p>
+                      </div>
+                    )}
+                    {managingLesson.content && (
+                      <div className="mt-6 bg-slate-800/50 p-6 rounded-xl border border-slate-700 max-w-3xl mx-auto">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Lesson Content</h4>
+                        <div className="text-slate-300 text-sm whitespace-pre-wrap">{managingLesson.content}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
               // Managing Course Detailed View
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
@@ -1349,7 +1426,7 @@ export default function AdminStudio() {
                           <div key={lesson.id} className="px-5 py-3 flex justify-between items-center hover:bg-slate-50 group">
                             <div className="flex items-center gap-3">
                               <button 
-                                onClick={() => setPreviewLesson(lesson)}
+                                onClick={() => setManagingLesson(lesson)}
                                 className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all cursor-pointer shrink-0 shadow-sm"
                                 title="Preview Lesson"
                               >

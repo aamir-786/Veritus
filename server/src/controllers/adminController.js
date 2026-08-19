@@ -181,6 +181,41 @@ exports.addLessonToModule = async (req, res) => {
   }
 };
 
+exports.updateLesson = async (req, res) => {
+  const { lessonId } = req.params;
+  const { title, type, duration_minutes, video_url, content, is_free_preview } = req.body;
+
+  try {
+    const updates = {};
+    if (title !== undefined) updates.title = title;
+    if (type !== undefined) updates.type = type;
+    if (duration_minutes !== undefined) updates.duration_minutes = parseInt(duration_minutes) || 10;
+    if (video_url !== undefined) updates.video_url = video_url;
+    if (content !== undefined) updates.content = content;
+    if (is_free_preview !== undefined) updates.is_free_preview = !!is_free_preview;
+
+    const { data: updatedLesson, error } = await supabase
+      .from('lessons')
+      .update(updates)
+      .eq('id', lessonId)
+      .select()
+      .single();
+
+    if (error || !updatedLesson) {
+      return res.status(404).json({ success: false, error: 'Lesson not found or update failed' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Lesson updated successfully',
+      lesson: updatedLesson
+    });
+  } catch (err) {
+    console.error('updateLesson Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update lesson' });
+  }
+};
+
 
 // Edit Question Taxonomy & Guidance
 exports.updateQuestion = async (req, res) => {

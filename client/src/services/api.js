@@ -184,7 +184,7 @@ export const api = {
       headers: await getHeaders(),
       body: JSON.stringify({ replyMessage })
     });
-    
+
     // Check if the response is JSON before parsing to prevent SyntaxError
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -242,6 +242,15 @@ export const api = {
     });
     return res.json();
   },
+  updateLesson: async (courseId, moduleId, lessonId, lessonData) => {
+    const res = await fetch(`${API_BASE}/admin/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify(lessonData)
+    });
+    return res.json();
+  },
+
 
   updateQuestion: async (id, questionData) => {
     const res = await fetch(`${API_BASE}/admin/questions/${id}`, {
@@ -336,11 +345,11 @@ export const api = {
   uploadFile: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // We cannot use getHeaders directly since fetch shouldn't have 'Content-Type': 'application/json' for FormData
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    
+
     const res = await fetch(`${API_BASE}/admin/upload`, {
       method: 'POST',
       headers: {
