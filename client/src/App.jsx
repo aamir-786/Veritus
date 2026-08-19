@@ -6,6 +6,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
+import CookieConsent from './components/CookieConsent';
 
 // Pages
 import Home from './pages/Home';
@@ -84,6 +85,7 @@ const AppContent = () => {
       </div>
       {!hideLayout && <Footer />}
       <CartDrawer />
+      {!hideLayout && <CookieConsent />}
     </div>
   );
 };
