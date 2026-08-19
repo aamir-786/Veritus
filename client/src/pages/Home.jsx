@@ -45,6 +45,8 @@ export default function Home() {
   const [contactSuccess, setContactSuccess] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
 
+  const carouselRef = React.useRef(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -52,7 +54,11 @@ export default function Home() {
         if (qRes.success) setQuestions(qRes.questions.slice(0, 6));
 
         const cRes = await api.getCourses();
-        if (cRes.success) setCourses(cRes.courses);
+        if (cRes.success) {
+          // Shuffle courses to show random courses
+          const shuffled = cRes.courses.sort(() => 0.5 - Math.random());
+          setCourses(shuffled);
+        }
 
         const tRes = await api.getTemplates();
         if (tRes.success) setTemplates(tRes.templates);
@@ -62,6 +68,24 @@ export default function Home() {
     };
     fetchData();
   }, []);
+
+  // Horizontal scroll timer
+  useEffect(() => {
+    if (courses.length === 0) return;
+    const timer = setInterval(() => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        // If reached the end, snap back to start. Otherwise, scroll right by approx one card width.
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          // Scroll right by 320px (card width + gap)
+          carouselRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+        }
+      }
+    }, 3500); // 3.5 seconds timer
+    return () => clearInterval(timer);
+  }, [courses]);
 
   const handleContactSubmit = async (e) => {
     e.preventDefault();
@@ -317,9 +341,17 @@ export default function Home() {
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {courses.slice(0, 4).map((course, idx) => (
-              <ScrollReveal key={course.id} animation={idx === 0 ? 'slide-right' : 'slide-left'} delay={150 * idx}>
+          <style>{`
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+          `}</style>
+          
+          <div 
+            ref={carouselRef}
+            className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory scroll-smooth hide-scrollbar"
+            style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+          >
+            {courses.map((course, idx) => (
+              <ScrollReveal key={course.id} animation="zoom-in" delay={150 * (idx % 4)} className="shrink-0 w-[280px] sm:w-[320px] snap-center">
                 <div className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs transition-all group h-full">
                   <div>
                     <div className="relative overflow-hidden">
