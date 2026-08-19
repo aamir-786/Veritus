@@ -92,10 +92,33 @@ exports.downloadTemplate = async (req, res) => {
     // Increment download counter
     await supabase.from('templates').update({ downloads_count: template.downloads_count + 1 }).eq('id', template.id);
 
-    // Provide downloadable asset content stream
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${template.file_path}"`);
-    return res.send(`Veritus / Deciding in the Dark - Official Template Artifact\n\nTitle: ${template.title}\nCategory: ${template.category}\nDownloaded by: ${req.user ? req.user.email : 'Free Subscriber'}\nDate: ${new Date().toISOString()}\n\n---\nFramework Guidance & Content Asset Placeholder\n---`);
+    // Fetch actual file from URL and stream to client
+    if (template.file_path && template.file_path.startsWith('http')) {
+      const fileRes = await fetch(template.file_path);
+      if (!fileRes.ok) {
+        throw new Error('Failed to fetch file from storage');
+      }
+      
+      const arrayBuffer = await fileRes.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      const contentType = fileRes.headers.get('content-type') || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      
+      // Try to extract a clean filename, or fallback to the template title
+      let filename = template.file_path.split('/').pop().split('?')[0];
+      if (!filename || filename.length < 3) {
+        filename = `${template.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+      }
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(buffer);
+    } else {
+      // Fallback if not a URL (should not happen with our upload flow)
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="template-${template.id}.txt"`);
+      return res.send(`Template file path is invalid or missing: ${template.file_path}`);
+    }
   } catch (err) {
     console.error('downloadTemplate Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to initiate download' });
