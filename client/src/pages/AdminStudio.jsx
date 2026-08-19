@@ -1218,7 +1218,7 @@ export default function AdminStudio() {
               // Managing Course Detailed View
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <button
-                  onClick={() => { setManagingCourse(null); fetchData(); }}
+                  onClick={() => { setManagingCourse(null); }}
                   className="mb-4 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" /> Back to Courses
