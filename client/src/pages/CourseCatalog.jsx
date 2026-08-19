@@ -30,7 +30,7 @@ export default function CourseCatalog() {
         <title>Masterclasses | Veritus</title>
         <meta name="description" content="Browse our library of premium risk management masterclasses." />
       </Helmet>
-      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-8 py-10 space-y-8 text-slate-900 bg-[#F8FAFC]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-12 md:pb-16 space-y-6 md:space-y-8 text-slate-900 bg-[#F8FAFC]">
       
       {/* Header */}
       <div className="space-y-2">
