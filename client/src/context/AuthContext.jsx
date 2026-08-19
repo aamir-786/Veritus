@@ -41,8 +41,13 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.warn('Session error (possibly clock skew):', error);
+      }
       fetchProfileAndSetUser(session?.user ?? null);
+    }).catch(err => {
+      console.warn('Error fetching session:', err);
     });
 
     // Listen for changes on auth state (logged in, signed out, etc.)
@@ -61,6 +66,36 @@ export const AuthProvider = ({ children }) => {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  // Idle Timer: Auto-logout after 3 minutes of inactivity
+  useEffect(() => {
+    let timeoutId;
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (user) {
+        timeoutId = setTimeout(() => {
+          console.warn('Session expired due to inactivity.');
+          logout();
+        }, 3 * 60 * 1000); // 3 minutes
+      }
+    };
+
+    const handleActivity = () => {
+      resetTimer();
+    };
+
+    if (user) {
+      const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+      events.forEach(event => window.addEventListener(event, handleActivity));
+      resetTimer();
+
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        events.forEach(event => window.removeEventListener(event, handleActivity));
+      };
+    }
+  }, [user]);
 
   // Standard Email/Password Login
   const login = async (email, password) => {
