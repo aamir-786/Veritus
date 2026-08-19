@@ -20,7 +20,8 @@ import {
   Check,
   TrendingUp,
   ShieldCheck,
-  Cpu
+  Cpu,
+  PlayCircle
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { api } from '../services/api';
@@ -360,9 +361,21 @@ export default function Home() {
                         {course.tier}
                       </div>
                     </div>
-                    <div className="p-4 space-y-2">
+                    <div className="p-4 space-y-2 flex-grow">
                       <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-tight">{course.title}</h3>
-                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-3">{course.headline}</p>
+                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-2">{course.headline}</p>
+
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-3 mt-2 border-t border-slate-100 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Layers className="w-3 h-3 text-amber-700" /> {course.module_count} Modules
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <PlayCircle className="w-3 h-3 text-blue-700" /> {course.lesson_count} Lessons
+                        </span>
+                        <span className="flex items-center gap-1 text-emerald-700 font-semibold w-full mt-1">
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" /> Gated Access Verified
+                        </span>
+                      </div>
                     </div>
                   </div>
 
