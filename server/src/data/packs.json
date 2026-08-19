@@ -1,27 +1,27 @@
 [
   {
-    "id": "pack_governance",
-    "title": "Governance Risk Pack",
+    "id": "pack_risk",
+    "title": "Risk Pack",
     "price": 49
   },
   {
-    "id": "pack_operational_risk",
-    "title": "Operational Risk Pack",
+    "id": "pack_compliance",
+    "title": "Compliance Pack",
     "price": 49
   },
   {
-    "id": "pack_financial_market",
-    "title": "Financial & Market Risk Pack",
+    "id": "pack_cyber",
+    "title": "Cyber Pack",
     "price": 49
   },
   {
-    "id": "pack_cyber_tech_risk",
-    "title": "Cyber & Tech Risk Pack",
+    "id": "pack_resilience",
+    "title": "Resilience Pack",
     "price": 49
   },
   {
-    "id": "pack_regulatory_compliance",
-    "title": "Regulatory Compliance Pack",
+    "id": "pack_ai",
+    "title": "AI Pack",
     "price": 49
   },
   {
