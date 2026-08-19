@@ -1422,6 +1422,7 @@ export default function AdminStudio() {
                       <th className="px-5 py-4">Template Title</th>
                       <th className="px-5 py-4">Category</th>
                       <th className="px-5 py-4">Access</th>
+                      <th className="px-5 py-4">Price</th>
                       <th className="px-5 py-4">Downloads</th>
                       <th className="px-5 py-4 text-right">Actions</th>
                     </tr>
@@ -1437,6 +1438,9 @@ export default function AdminStudio() {
                           <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${t.is_free ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                             {t.is_free ? 'Free' : 'Premium'}
                           </span>
+                        </td>
+                        <td className="px-5 py-4 text-slate-900 font-bold">
+                          {t.is_free ? '—' : `$${t.price || 49}`}
                         </td>
                         <td className="px-5 py-4 text-slate-500 font-bold">{t.downloads_count || 0}</td>
                         <td className="px-5 py-4 text-right flex items-center justify-end gap-2">
@@ -1459,7 +1463,7 @@ export default function AdminStudio() {
                       </tr>
                     ))}
                     {templates.length === 0 && (
-                      <tr><td colSpan="5" className="px-5 py-8 text-center text-slate-400 italic">No templates available.</td></tr>
+                      <tr><td colSpan="6" className="px-5 py-8 text-center text-slate-400 italic">No templates available.</td></tr>
                     )}
                   </tbody>
                 </table>
