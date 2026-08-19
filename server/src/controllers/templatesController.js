@@ -114,10 +114,18 @@ exports.downloadTemplate = async (req, res) => {
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       return res.send(buffer);
     } else {
-      // Fallback if not a URL (should not happen with our upload flow)
-      res.setHeader('Content-Type', 'text/plain');
-      res.setHeader('Content-Disposition', `attachment; filename="template-${template.id}.txt"`);
-      return res.send(`Template file path is invalid or missing: ${template.file_path}`);
+      // Fallback for mock templates (which don't have a real URL)
+      // Send a dummy payload but with the exact requested filename and extension
+      const filename = template.file_path ? template.file_path.split('/').pop() : `template-${template.id}.pdf`;
+      
+      let contentType = 'application/octet-stream';
+      if (filename.endsWith('.pdf')) contentType = 'application/pdf';
+      else if (filename.endsWith('.xlsx')) contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      else if (filename.endsWith('.pptx')) contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(`Veritus Platform - This is a placeholder file for mock template: ${template.title}`);
     }
   } catch (err) {
     console.error('downloadTemplate Error:', err);
