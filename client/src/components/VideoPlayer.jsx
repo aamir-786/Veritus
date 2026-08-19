@@ -54,10 +54,14 @@ export default function VideoPlayer({ videoUrl, captionsVtt, title, onProgressUp
     }
   };
 
+  const containerRef = useRef(null);
+
   const toggleFullscreen = () => {
-    if (videoRef.current) {
-      if (videoRef.current.requestFullscreen) {
-        videoRef.current.requestFullscreen();
+    if (containerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen();
       }
     }
   };
@@ -93,7 +97,7 @@ export default function VideoPlayer({ videoUrl, captionsVtt, title, onProgressUp
           src={getYouTubeEmbedUrl(videoUrl)}
           title={title || "YouTube video"}
           className="w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
         ></iframe>
       </div>
@@ -101,13 +105,13 @@ export default function VideoPlayer({ videoUrl, captionsVtt, title, onProgressUp
   }
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl group">
+    <div ref={containerRef} className="relative rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl group w-full aspect-video flex flex-col">
       <video
         ref={videoRef}
         src={videoUrl}
         onTimeUpdate={handleTimeUpdate}
         onClick={togglePlay}
-        className="w-full aspect-video object-cover cursor-pointer"
+        className="w-full h-full object-contain cursor-pointer bg-black"
       >
         {captionsVtt && (
           <track

@@ -492,9 +492,9 @@ export default function AdminStudio() {
       {/* Lesson Preview Modal */}
       {previewLesson && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm">
-          <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col border border-slate-800">
+          <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col border border-slate-800">
             <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-black/50">
-              <h3 className="font-bold text-white flex items-center gap-2">
+              <h3 className="font-bold text-white flex items-center gap-2 text-sm">
                 <Video className="w-4 h-4 text-indigo-400" />
                 Lesson Preview: {previewLesson.title}
               </h3>
