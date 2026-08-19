@@ -68,6 +68,38 @@ export default function VideoPlayer({ videoUrl, captionsVtt, title, onProgressUp
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
+  const isYouTube = videoUrl?.includes('youtube.com') || videoUrl?.includes('youtu.be');
+  
+  const getYouTubeEmbedUrl = (url) => {
+    try {
+      let videoId = '';
+      if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0];
+      } else if (url.includes('youtube.com/watch')) {
+        videoId = new URLSearchParams(new URL(url).search).get('v');
+      } else if (url.includes('youtube.com/embed/')) {
+        videoId = url.split('youtube.com/embed/')[1].split('?')[0];
+      }
+      return `https://www.youtube.com/embed/${videoId}?rel=0`;
+    } catch(e) {
+      return url;
+    }
+  };
+
+  if (isYouTube) {
+    return (
+      <div className="relative rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl w-full aspect-video">
+        <iframe
+          src={getYouTubeEmbedUrl(videoUrl)}
+          title={title || "YouTube video"}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+      </div>
+    );
+  }
+
   return (
     <div className="relative rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl group">
       <video

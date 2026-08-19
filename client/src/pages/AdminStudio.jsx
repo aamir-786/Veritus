@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import EffectiveVeritusLogo from '../components/EffectiveVeritusLogo';
 import AdminQuestionModal from '../components/AdminQuestionModal';
+import VideoPlayer from '../components/VideoPlayer';
 import { supabase } from '../lib/supabase';
 
 export default function AdminStudio() {
@@ -78,6 +79,7 @@ export default function AdminStudio() {
 
   // Course Detailed Management State
   const [managingCourse, setManagingCourse] = useState(null);
+  const [previewLesson, setPreviewLesson] = useState(null);
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [activeModuleIdForLesson, setActiveModuleIdForLesson] = useState(null);
@@ -483,6 +485,45 @@ export default function AdminStudio() {
           <div className="bg-white/90 backdrop-blur-md px-6 py-4 rounded-2xl shadow-xl border border-slate-200 flex flex-col items-center gap-3 animate-in fade-in zoom-in-95 duration-200">
             <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-slate-600 font-bold text-[10px] tracking-widest uppercase">Syncing</p>
+          </div>
+        </div>
+      )}
+
+      {/* Lesson Preview Modal */}
+      {previewLesson && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm">
+          <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col border border-slate-800">
+            <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-black/50">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <Video className="w-4 h-4 text-indigo-400" />
+                Lesson Preview: {previewLesson.title}
+              </h3>
+              <button 
+                onClick={() => setPreviewLesson(null)} 
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 bg-black flex-1 min-h-[50vh]">
+              {previewLesson.video_url ? (
+                <VideoPlayer 
+                  videoUrl={previewLesson.video_url} 
+                  title={previewLesson.title} 
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-slate-500 py-20">
+                  <Video className="w-12 h-12 mb-4 opacity-50" />
+                  <p>No video URL provided for this lesson.</p>
+                </div>
+              )}
+              {previewLesson.content && (
+                <div className="mt-6 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Lesson Content</h4>
+                  <div className="text-slate-300 text-sm whitespace-pre-wrap">{previewLesson.content}</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1305,12 +1346,16 @@ export default function AdminStudio() {
 
                       <div className="divide-y divide-slate-100">
                         {(mod.lessons || []).map((lesson, lIdx) => (
-                          <div key={lesson.id} className="px-5 py-3 flex justify-between items-center hover:bg-slate-50">
+                          <div key={lesson.id} className="px-5 py-3 flex justify-between items-center hover:bg-slate-50 group">
                             <div className="flex items-center gap-3">
-                              <div className="w-6 h-6 rounded bg-slate-200 flex items-center justify-center text-slate-500">
-                                <PlayCircle className="w-3.5 h-3.5" />
-                              </div>
-                              <span className="text-xs font-bold text-slate-700">{lIdx + 1}. {lesson.title}</span>
+                              <button 
+                                onClick={() => setPreviewLesson(lesson)}
+                                className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all cursor-pointer shrink-0 shadow-sm"
+                                title="Preview Lesson"
+                              >
+                                <PlayCircle className="w-4 h-4" />
+                              </button>
+                              <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-900 transition-colors">{lIdx + 1}. {lesson.title}</span>
                             </div>
                             <span className="text-[10px] text-slate-400 font-bold">{lesson.duration_minutes} min</span>
                           </div>
