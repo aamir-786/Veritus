@@ -112,35 +112,79 @@ export default function AdminQuestionModal({ isOpen, onClose, question, onSave }
             <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Domain</label>
-                <input type="text" list="domain-options" required name="domain" value={formData.domain} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm" />
+                <select required name="domain" value={formData.domain} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm">
+                  <option value="Risk">Risk</option>
+                  <option value="Compliance">Compliance</option>
+                  <option value="Cyber">Cyber</option>
+                  <option value="Resilience">Resilience</option>
+                  <option value="AI">AI</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Effort</label>
-                <input type="text" list="effort-options" name="effort" value={formData.effort} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm" />
+                <select name="effort" value={formData.effort} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm">
+                  <option value="Quick Win">Quick Win</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="Project">Project</option>
+                  <option value="Transformation">Transformation</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Duration</label>
-                <input type="text" list="duration-options" name="duration" value={formData.duration} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm" />
+                <select name="duration" value={formData.duration} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm">
+                  <option value="< 2 weeks">&lt; 2 weeks</option>
+                  <option value="2-6 weeks">2-6 weeks</option>
+                  <option value="6-12 weeks">6-12 weeks</option>
+                  <option value="3-6 months">3-6 months</option>
+                  <option value="> 6 months">&gt; 6 months</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Tier</label>
-                <input type="text" list="tier-options" name="tier" value={formData.tier} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm" />
+                <select name="tier" value={formData.tier} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm">
+                  <option value="Foundational">Foundational</option>
+                  <option value="Tactical">Tactical</option>
+                  <option value="Strategic">Strategic</option>
+                  <option value="Transformational">Transformational</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">Regulator Pressure</label>
-                <input type="text" list="pressure-options" name="regulator_pressure" value={formData.regulator_pressure} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-bold outline-none shadow-sm" />
+                <select name="regulator_pressure" value={formData.regulator_pressure} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-bold outline-none shadow-sm">
+                  <option value="None">None</option>
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Cost</label>
-                <input type="text" list="cost-options" name="cost" value={formData.cost} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm" />
+                <select name="cost" value={formData.cost} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm">
+                  <option value="Low ($)">Low ($)</option>
+                  <option value="Medium ($$)">Medium ($$)</option>
+                  <option value="High ($$$)">High ($$$)</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">ROI (Payback)</label>
-                <input type="text" list="payback-options" name="payback" value={formData.payback} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm" />
+                <select name="payback" value={formData.payback} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm">
+                  <option value="Quick">Quick</option>
+                  <option value="Mid">Mid</option>
+                  <option value="Strategic">Strategic</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Leadership</label>
-                <input type="text" list="leadership-options" name="leadership_traits" value={formData.leadership_traits} onChange={handleChange} placeholder="e.g. Accountability" className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm" />
+                <select name="leadership_traits" value={formData.leadership_traits} onChange={handleChange} className="w-full px-2 py-1.5 rounded bg-white border border-slate-200 text-slate-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-[10px] font-medium outline-none shadow-sm">
+                  <option value="">Select Trait</option>
+                  <option value="Accountability">Accountability</option>
+                  <option value="Change">Change</option>
+                  <option value="Collaboration">Collaboration</option>
+                  <option value="Communication">Communication</option>
+                  <option value="Empathy">Empathy</option>
+                  <option value="Strategic">Strategic</option>
+                  <option value="Technical">Technical</option>
+                </select>
               </div>
             </div>
           </div>
@@ -158,71 +202,6 @@ export default function AdminQuestionModal({ isOpen, onClose, question, onSave }
             </div>
           </div>
           </div>
-
-          {/* Datalists for custom autocomplete */}
-          <datalist id="domain-options">
-            <option value="Risk" />
-            <option value="Governance" />
-            <option value="Operational Risk" />
-            <option value="Cyber & Tech Risk" />
-            <option value="Financial & Market" />
-            <option value="Regulatory & Compliance" />
-            <option value="Resilience" />
-            <option value="AI" />
-          </datalist>
-          <datalist id="effort-options">
-            <option value="Light" />
-            <option value="Low" />
-            <option value="Moderate" />
-            <option value="High" />
-            <option value="Project" />
-          </datalist>
-          <datalist id="duration-options">
-            <option value="S" />
-            <option value="M" />
-            <option value="L" />
-            <option value="1 Month" />
-            <option value="6-12 weeks" />
-            <option value="1 Quarter" />
-          </datalist>
-          <datalist id="tier-options">
-            <option value="Foundational" />
-            <option value="Tactical" />
-            <option value="Foundational (F)" />
-            <option value="Tactical (T)" />
-            <option value="Tier 1 (Critical)" />
-            <option value="Tier 2 (Core)" />
-          </datalist>
-          <datalist id="pressure-options">
-            <option value="Low" />
-            <option value="Moderate" />
-            <option value="High" />
-            <option value="None" />
-          </datalist>
-          <datalist id="cost-options">
-            <option value="$" />
-            <option value="$$" />
-            <option value="$$$" />
-            <option value="Low ($)" />
-            <option value="Moderate ($$)" />
-            <option value="High ($$$)" />
-          </datalist>
-          <datalist id="payback-options">
-            <option value="Quick" />
-            <option value="Mid" />
-            <option value="Long-term" />
-            <option value="Immediate" />
-            <option value="Medium-term" />
-          </datalist>
-          <datalist id="leadership-options">
-            <option value="Accountability" />
-            <option value="Change" />
-            <option value="Collaboration" />
-            <option value="Communication" />
-            <option value="Empathy" />
-            <option value="Strategic" />
-            <option value="Technical" />
-          </datalist>
 
           <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2 shrink-0 rounded-b-xl">
             <button type="button" onClick={onClose} className="px-4 py-1.5 rounded-lg text-slate-600 font-bold text-[10px] uppercase tracking-wide hover:bg-slate-200 transition-colors">
