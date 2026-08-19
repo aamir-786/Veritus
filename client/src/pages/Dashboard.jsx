@@ -4,6 +4,7 @@ import { PlayCircle, FileText, Download, Award, ShieldCheck } from 'lucide-react
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -11,6 +12,12 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const handleDownload = async (tpl) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || '';
+    window.open(`${API_BASE}/templates/download/${tpl.id}?token=${token}`, '_blank');
+  };
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -173,14 +180,12 @@ export default function Dashboard() {
 
               <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3 mt-auto">
                 <span className="text-[10px] text-slate-500 font-medium">Ready for download</span>
-                <a
-                  href={`${API_BASE}/templates/download/${tpl.id}`}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => handleDownload(tpl)}
                   className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs"
                 >
                   <Download className="w-3 h-3" /> Download
-                </a>
+                </button>
               </div>
             </div>
             ))}

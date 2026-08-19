@@ -4,6 +4,7 @@ import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Helmet } from 'react-helmet-async';
+import { supabase } from '../lib/supabase';
 
 export default function TemplateStore() {
   const { user } = useAuth();
@@ -31,13 +32,15 @@ export default function TemplateStore() {
     fetchTemplates();
   }, [category, search]);
 
-  const handleDownload = (tpl) => {
+  const handleDownload = async (tpl) => {
     if (!tpl.can_download) {
       addToCart({ ...tpl, type: 'Template' });
       return;
     }
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || '';
     // Direct file download stream trigger
-    window.open(`${API_BASE}/templates/download/${tpl.id}`, '_blank');
+    window.open(`${API_BASE}/templates/download/${tpl.id}?token=${token}`, '_blank');
   };
 
   return (

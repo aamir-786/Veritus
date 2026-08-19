@@ -1,10 +1,13 @@
 // auth.js - Express Middleware for Supabase Auth
 const supabase = require('../config/supabase');
 
-// Verify token from Authorization header (Bearer <token>) using Supabase Auth
+// Verify token from Authorization header (Bearer <token>) or query string
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  let token = authHeader && authHeader.split(' ')[1];
+  if (!token && req.query.token) {
+    token = req.query.token;
+  }
 
   if (!token) {
     return res.status(401).json({ success: false, error: 'Authentication token required' });
@@ -60,7 +63,10 @@ const authenticateToken = async (req, res, next) => {
 // Optional auth for public routes that enhance response if logged in
 const optionalToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  let token = authHeader && authHeader.split(' ')[1];
+  if (!token && req.query.token) {
+    token = req.query.token;
+  }
 
   if (token) {
     try {
