@@ -136,11 +136,11 @@ export default function QuestionsMatrix() {
               className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-medium"
             >
               <option value="All">All Domains</option>
-              <option value="Governance">Governance</option>
-              <option value="Operational Risk">Operational Risk</option>
-              <option value="Financial & Market">Financial & Market</option>
-              <option value="Cyber & Tech Risk">Cyber & Tech Risk</option>
-              <option value="Regulatory & Compliance">Regulatory</option>
+              <option value="Risk">Risk</option>
+              <option value="Compliance">Compliance</option>
+              <option value="Cyber">Cyber</option>
+              <option value="Resilience">Resilience</option>
+              <option value="AI">AI</option>
             </select>
           </div>
 
@@ -153,9 +153,10 @@ export default function QuestionsMatrix() {
               className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-medium"
             >
               <option value="All">All Pressure</option>
-              <option value="High">High Scrutiny</option>
-              <option value="Medium">Medium Scrutiny</option>
-              <option value="Low">Low Scrutiny</option>
+              <option value="None">None</option>
+              <option value="Low">Low</option>
+              <option value="Moderate">Moderate</option>
+              <option value="High">High</option>
             </select>
           </div>
 
@@ -168,9 +169,9 @@ export default function QuestionsMatrix() {
               className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-medium"
             >
               <option value="All">All Payback</option>
-              <option value="Immediate">Immediate</option>
-              <option value="Fast (< 3mo)">Fast (&lt; 3mo)</option>
-              <option value="Medium-term">Medium-term</option>
+              <option value="Quick">Quick</option>
+              <option value="Mid">Mid</option>
+              <option value="Strategic">Strategic</option>
             </select>
           </div>
 
@@ -183,9 +184,9 @@ export default function QuestionsMatrix() {
               className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-medium"
             >
               <option value="All">All Costs</option>
-              <option value="$">$ (Cheap)</option>
-              <option value="$$">$$ (Moderate)</option>
-              <option value="$$$">$$$ (Capital Heavy)</option>
+              <option value="Low ($)">Low ($)</option>
+              <option value="Medium ($$)">Medium ($$)</option>
+              <option value="High ($$$)">High ($$$)</option>
             </select>
           </div>
 
@@ -198,9 +199,11 @@ export default function QuestionsMatrix() {
               className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-medium"
             >
               <option value="All">All Timelines</option>
-              <option value="Fortnight">Fortnight (14d)</option>
-              <option value="1 Month">1 Month</option>
-              <option value="1 Quarter">1 Quarter</option>
+              <option value="< 2 weeks">&lt; 2 weeks</option>
+              <option value="2-6 weeks">2-6 weeks</option>
+              <option value="6-12 weeks">6-12 weeks</option>
+              <option value="3-6 months">3-6 months</option>
+              <option value="> 6 months">&gt; 6 months</option>
             </select>
           </div>
 
@@ -213,9 +216,10 @@ export default function QuestionsMatrix() {
               className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-medium"
             >
               <option value="All">All Effort</option>
-              <option value="Low">Low Effort</option>
-              <option value="Medium">Medium Effort</option>
-              <option value="High">High Effort</option>
+              <option value="Quick Win">Quick Win</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Project">Project</option>
+              <option value="Transformation">Transformation</option>
             </select>
           </div>
 
@@ -228,8 +232,10 @@ export default function QuestionsMatrix() {
               className="w-full px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-900 text-xs font-medium"
             >
               <option value="All">All Tiers</option>
-              <option value="Tier 1 (Critical)">Tier 1 (Critical)</option>
-              <option value="Tier 2 (Core)">Tier 2 (Core)</option>
+              <option value="Foundational">Foundational</option>
+              <option value="Tactical">Tactical</option>
+              <option value="Strategic">Strategic</option>
+              <option value="Transformational">Transformational</option>
             </select>
           </div>
 

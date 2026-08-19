@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Sparkles, Plus, BookOpen, Layers, Users, DollarSign, 
+import {
+  Sparkles, Plus, BookOpen, Layers, Users, DollarSign,
   BarChart3, Settings, ShieldCheck, Search, ChevronRight, Video, Edit2, PlayCircle, ShieldAlert,
   LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X, CheckCircle2, Send
 } from 'lucide-react';
@@ -26,13 +26,13 @@ export default function AdminStudio() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  
+
   // Inquiry Modal State
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [inquiryReplyText, setInquiryReplyText] = useState('');
   const [isReplying, setIsReplying] = useState(false);
   const [replyFeedback, setReplyFeedback] = useState(null);
-  
+
   // Navigation State
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('adminStudioActiveTab') || 'overview';
@@ -61,7 +61,7 @@ export default function AdminStudio() {
   // Question Form State
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
-  
+
   // Edit Question State
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -81,7 +81,7 @@ export default function AdminStudio() {
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [newModuleTitle, setNewModuleTitle] = useState('');
   const [activeModuleIdForLesson, setActiveModuleIdForLesson] = useState(null);
-  
+
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonType, setNewLessonType] = useState('video');
   const [newLessonDuration, setNewLessonDuration] = useState('10');
@@ -134,7 +134,7 @@ export default function AdminStudio() {
       if (tRes.success) setTemplates(tRes.templates);
       if (iRes && iRes.success) setInquiries(iRes.inquiries);
       if (oRes && oRes.success) setOrders(oRes.orders);
-      
+
       if (managingCourse) {
         const detailsRes = await api.getCourseDetails(managingCourse.slug);
         if (detailsRes.success) setManagingCourse(detailsRes.course);
@@ -469,14 +469,14 @@ export default function AdminStudio() {
     </div>
   );
 
-  const filteredQuestions = questions.filter(q => 
-    q.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredQuestions = questions.filter(q =>
+    q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     q.domain.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-[#F1F5F9] text-slate-900 flex flex-col md:flex-row font-sans relative">
-      
+
       {/* Background Refreshing Overlay */}
       {isRefreshing && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/10 backdrop-blur-[1px] transition-all pointer-events-none">
@@ -505,7 +505,7 @@ export default function AdminStudio() {
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Original Message:</span>
                 {selectedInquiry.message}
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-2">Your Reply (Sent via Email)</label>
                 <textarea
@@ -527,13 +527,13 @@ export default function AdminStudio() {
               </div>
             </div>
             <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
-              <button 
+              <button
                 onClick={() => { setSelectedInquiry(null); setInquiryReplyText(''); setReplyFeedback(null); }}
                 className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg"
               >
                 Close
               </button>
-              <button 
+              <button
                 onClick={handleReplyToInquiry}
                 disabled={isReplying || !inquiryReplyText.trim() || selectedInquiry.status === 'replied'}
                 className="px-5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 flex items-center gap-2 shadow-sm"
@@ -559,7 +559,7 @@ export default function AdminStudio() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto flex-1 bg-slate-50">
               {userDetailsLoading ? (
                 <div className="flex flex-col items-center justify-center h-48 gap-3">
@@ -638,7 +638,7 @@ export default function AdminStudio() {
               )}
             </div>
             <div className="p-4 border-t border-slate-100 bg-white flex justify-end">
-              <button 
+              <button
                 onClick={() => setSelectedUserForDetails(null)}
                 className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg"
               >
@@ -652,7 +652,7 @@ export default function AdminStudio() {
       {/* Mobile Header Bar */}
       <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40">
         <EffectiveVeritusLogo subtitle={true} variant="light" />
-        <button 
+        <button
           onClick={() => setMobileNavOpen(true)}
           className="p-2 bg-slate-800 rounded-lg text-slate-300 hover:text-white"
         >
@@ -662,83 +662,75 @@ export default function AdminStudio() {
 
       {/* Mobile Drawer Overlay */}
       {mobileNavOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 md:hidden"
           onClick={() => setMobileNavOpen(false)}
         />
       )}
 
       {/* Sidebar Navigation - Dark Theme for Admin Feel */}
-      <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 flex flex-col z-50 transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 md:h-screen text-slate-300 ${
-        mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 flex flex-col z-50 transition-transform duration-300 ease-in-out md:sticky md:top-0 md:translate-x-0 md:h-screen text-slate-300 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="px-5 py-3 border-b border-slate-800 flex items-center justify-between">
           <EffectiveVeritusLogo subtitle={true} variant="light" />
           <button className="md:hidden p-1 bg-slate-100 rounded text-slate-500" onClick={() => setMobileNavOpen(false)}>
             <X className="w-4 h-4" />
           </button>
         </div>
-        
+
         <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-          <button 
+          <button
             onClick={() => { setActiveTab('overview'); setMobileNavOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
           >
             <BarChart3 className="w-4 h-4" /> Platform Dashboard
           </button>
-          
-          <button 
+
+          <button
             onClick={() => { setActiveTab('courses'); setMobileNavOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'courses' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'courses' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
           >
             <PlayCircle className="w-4 h-4" /> Course Management
           </button>
-          
-          <button 
+
+          <button
             onClick={() => { setActiveTab('questions'); setMobileNavOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'questions' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'questions' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
           >
             <Layers className="w-4 h-4" /> Questions Taxonomy
           </button>
 
-          <button 
+          <button
             onClick={() => { setActiveTab('templates'); setMobileNavOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'templates' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'templates' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
           >
             <FileText className="w-4 h-4" /> Digital Templates
           </button>
 
-          <button 
+          <button
             onClick={() => { setActiveTab('users'); setMobileNavOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'users' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
           >
             <Users className="w-4 h-4" /> User Management
           </button>
 
-          <button 
+          <button
             onClick={() => { setActiveTab('inquiries'); setMobileNavOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'inquiries' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'inquiries' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
           >
             <Mail className="w-4 h-4" /> Contact Inquiries
           </button>
 
-          <button 
+          <button
             onClick={() => { setActiveTab('orders'); setMobileNavOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
           >
             <TrendingUp className="w-4 h-4" /> Orders
           </button>
@@ -759,17 +751,17 @@ export default function AdminStudio() {
               <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
-          
+
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto overflow-x-hidden">
-        
+
         {/* --- OVERVIEW TAB --- */}
         {activeTab === 'overview' && metrics && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
-            
+
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="font-display text-xl font-bold text-slate-900">Executive Dashboard</h1>
@@ -779,7 +771,7 @@ export default function AdminStudio() {
 
             {/* Premium Compact KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              
+
               <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between h-28 relative overflow-hidden group">
                 <div className="absolute -right-4 -top-4 w-16 h-16 bg-emerald-50 rounded-full blur-xl group-hover:bg-emerald-100 transition-colors"></div>
                 <div className="flex items-center justify-between relative z-10">
@@ -880,7 +872,7 @@ export default function AdminStudio() {
         {/* --- USERS TAB --- */}
         {activeTab === 'users' && metrics && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
-            
+
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="font-display text-xl font-bold text-slate-900">User Management</h1>
@@ -901,8 +893,8 @@ export default function AdminStudio() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {metrics.users_list.map((u) => (
-                      <tr 
-                        key={u.id} 
+                      <tr
+                        key={u.id}
                         onClick={() => handleOpenUserDetails(u.id)}
                         className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                       >
@@ -916,21 +908,20 @@ export default function AdminStudio() {
                         </td>
                         <td className="px-5 py-3 text-slate-500">{u.email}</td>
                         <td className="px-5 py-3">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide ${
-                            u.role === 'admin' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide ${u.role === 'admin' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
+                            }`}>
                             {u.role}
                           </span>
                         </td>
                         <td className="px-5 py-3">
                           <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <button 
+                            <button
                               onClick={(e) => { e.stopPropagation(); handleResetPassword(u.email); }}
                               className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded text-slate-600 hover:text-indigo-600 font-bold text-[10px] flex items-center gap-1 shadow-sm"
                             >
                               <KeyRound className="w-3 h-3" /> Reset Pwd
                             </button>
-                            <button 
+                            <button
                               onClick={(e) => { e.stopPropagation(); handleDeleteUser(u.id); }}
                               className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-bold text-[10px] flex items-center gap-1 transition-colors"
                             >
@@ -977,8 +968,8 @@ export default function AdminStudio() {
                       </tr>
                     ) : (
                       orders.map(order => (
-                        <tr 
-                          key={order.id} 
+                        <tr
+                          key={order.id}
                           className="hover:bg-slate-50 transition-colors cursor-pointer"
                           onClick={() => setSelectedOrder(order)}
                         >
@@ -994,12 +985,11 @@ export default function AdminStudio() {
                             {order.currency?.toUpperCase()} {order.amount?.toLocaleString()}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide ${
-                              order.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 
-                              order.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
-                              order.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
-                              'bg-amber-100 text-amber-700'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide ${order.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                                order.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
+                                  order.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
+                                    'bg-amber-100 text-amber-700'
+                              }`}>
                               {order.status}
                             </span>
                           </td>
@@ -1016,7 +1006,7 @@ export default function AdminStudio() {
         {/* --- INQUIRIES TAB --- */}
         {activeTab === 'inquiries' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
-            
+
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="font-display text-xl font-bold text-slate-900">Contact Inquiries</h1>
@@ -1043,8 +1033,8 @@ export default function AdminStudio() {
                       </tr>
                     ) : (
                       inquiries.map((inq) => (
-                        <tr 
-                          key={inq.id} 
+                        <tr
+                          key={inq.id}
                           onClick={() => setSelectedInquiry(inq)}
                           className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                         >
@@ -1056,11 +1046,10 @@ export default function AdminStudio() {
                               value={inq.status || 'pending'}
                               onChange={(e) => handleInquiryStatusChange(e, inq.id)}
                               onClick={(e) => e.stopPropagation()}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border-none outline-none cursor-pointer appearance-none ${
-                                inq.status === 'replied' 
-                                  ? 'bg-emerald-100 text-emerald-700 focus:ring-2 focus:ring-emerald-500/50' 
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border-none outline-none cursor-pointer appearance-none ${inq.status === 'replied'
+                                  ? 'bg-emerald-100 text-emerald-700 focus:ring-2 focus:ring-emerald-500/50'
                                   : 'bg-amber-100 text-amber-700 focus:ring-2 focus:ring-amber-500/50'
-                              }`}
+                                }`}
                             >
                               <option value="pending">Pending</option>
                               <option value="replied">Replied</option>
@@ -1082,7 +1071,7 @@ export default function AdminStudio() {
         {/* --- COURSES TAB --- */}
         {activeTab === 'courses' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
-            
+
             {!managingCourse ? (
               <>
                 <div className="flex justify-between items-end">
@@ -1090,7 +1079,7 @@ export default function AdminStudio() {
                     <h1 className="font-display text-xl font-bold text-slate-900">Course Management</h1>
                     <p className="text-slate-500 text-xs mt-1">Create and manage executive masterclasses.</p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setShowCourseForm(!showCourseForm)}
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide transition-all shadow-sm"
                   >
@@ -1171,8 +1160,8 @@ export default function AdminStudio() {
                 {/* Courses List Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map(course => (
-                    <div 
-                      key={course.id} 
+                    <div
+                      key={course.id}
                       onClick={async () => {
                         const res = await api.getCourseDetails(course.slug);
                         if (res.success) setManagingCourse(res.course);
@@ -1181,8 +1170,8 @@ export default function AdminStudio() {
                     >
                       <div>
                         <div className="relative overflow-hidden">
-                          <img 
-                            src={course.cover_image || course.thumbnail_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} 
+                          <img
+                            src={course.cover_image || course.thumbnail_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'}
                             alt={course.title}
                             className="w-full h-32 object-cover transition-transform duration-700 group-hover:scale-105"
                           />
@@ -1200,7 +1189,7 @@ export default function AdminStudio() {
                           <Layers className="w-3 h-3" /> {course.module_count || 0} Modules
                         </div>
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               openCourseForEditing(course);
@@ -1209,7 +1198,7 @@ export default function AdminStudio() {
                           >
                             <Edit2 className="w-3 h-3" /> Edit
                           </button>
-                          <button 
+                          <button
                             onClick={async (e) => {
                               e.stopPropagation();
                               const res = await api.getCourseDetails(course.slug);
@@ -1228,7 +1217,7 @@ export default function AdminStudio() {
             ) : (
               // Managing Course Detailed View
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <button 
+                <button
                   onClick={() => { setManagingCourse(null); fetchData(); }}
                   className="mb-4 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1"
                 >
@@ -1239,7 +1228,7 @@ export default function AdminStudio() {
                     <h1 className="font-display text-xl font-bold text-slate-900">{managingCourse.title}</h1>
                     <p className="text-slate-500 text-xs mt-1">Manage modules and curriculum.</p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setShowModuleForm(!showModuleForm)}
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide transition-all shadow-sm"
                   >
@@ -1267,7 +1256,7 @@ export default function AdminStudio() {
                     <div key={mod.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                       <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                         <h3 className="font-bold text-sm text-slate-900">Module {idx + 1}: {mod.title}</h3>
-                        <button 
+                        <button
                           onClick={() => setActiveModuleIdForLesson(activeModuleIdForLesson === mod.id ? null : mod.id)}
                           className="text-[10px] font-bold text-indigo-600 flex items-center gap-1 uppercase tracking-wide"
                         >
@@ -1345,7 +1334,7 @@ export default function AdminStudio() {
                 <h1 className="font-display text-xl font-bold text-slate-900">Digital Templates Library</h1>
                 <p className="text-slate-500 text-xs mt-1">Manage downloadable frameworks and assets.</p>
               </div>
-              <button 
+              <button
                 onClick={() => {
                   setEditingTemplateId(null);
                   setNewTemplateTitle('');
@@ -1428,52 +1417,52 @@ export default function AdminStudio() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <tr>
-                    <th className="px-5 py-4">Template Title</th>
-                    <th className="px-5 py-4">Category</th>
-                    <th className="px-5 py-4">Access</th>
-                    <th className="px-5 py-4">Downloads</th>
-                    <th className="px-5 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {templates.map(t => (
-                    <tr key={t.id} className="hover:bg-slate-50/80 group">
-                      <td className="px-5 py-4 font-bold text-slate-800 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-indigo-500" /> {t.title}
-                      </td>
-                      <td className="px-5 py-4 text-slate-500">{t.category}</td>
-                      <td className="px-5 py-4">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${t.is_free ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {t.is_free ? 'Free' : 'Premium'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-slate-500 font-bold">{t.downloads_count || 0}</td>
-                      <td className="px-5 py-4 text-right flex items-center justify-end gap-2">
-                        <button onClick={() => {
-                          setEditingTemplateId(t.id);
-                          setNewTemplateTitle(t.title);
-                          setNewTemplateDesc(t.description || '');
-                          setNewTemplateCategory(t.category);
-                          setNewTemplateFilePath(t.file_path);
-                          setNewTemplateIsFree(t.is_free);
-                          setNewTemplatePrice(t.price ? t.price.toString() : '49');
-                          setShowTemplateForm(true);
-                        }} className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded font-bold text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Edit2 className="w-3 h-3 inline mr-1" /> Edit
-                        </button>
-                        <button onClick={() => handleDeleteTemplate(t.id)} className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-bold text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-3 h-3 inline mr-1" /> Delete
-                        </button>
-                      </td>
+                  <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-5 py-4">Template Title</th>
+                      <th className="px-5 py-4">Category</th>
+                      <th className="px-5 py-4">Access</th>
+                      <th className="px-5 py-4">Downloads</th>
+                      <th className="px-5 py-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                  {templates.length === 0 && (
-                    <tr><td colSpan="5" className="px-5 py-8 text-center text-slate-400 italic">No templates available.</td></tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {templates.map(t => (
+                      <tr key={t.id} className="hover:bg-slate-50/80 group">
+                        <td className="px-5 py-4 font-bold text-slate-800 flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-indigo-500" /> {t.title}
+                        </td>
+                        <td className="px-5 py-4 text-slate-500">{t.category}</td>
+                        <td className="px-5 py-4">
+                          <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${t.is_free ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {t.is_free ? 'Free' : 'Premium'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-slate-500 font-bold">{t.downloads_count || 0}</td>
+                        <td className="px-5 py-4 text-right flex items-center justify-end gap-2">
+                          <button onClick={() => {
+                            setEditingTemplateId(t.id);
+                            setNewTemplateTitle(t.title);
+                            setNewTemplateDesc(t.description || '');
+                            setNewTemplateCategory(t.category);
+                            setNewTemplateFilePath(t.file_path);
+                            setNewTemplateIsFree(t.is_free);
+                            setNewTemplatePrice(t.price ? t.price.toString() : '49');
+                            setShowTemplateForm(true);
+                          }} className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded font-bold text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Edit2 className="w-3 h-3 inline mr-1" /> Edit
+                          </button>
+                          <button onClick={() => handleDeleteTemplate(t.id)} className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded font-bold text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="w-3 h-3 inline mr-1" /> Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {templates.length === 0 && (
+                      <tr><td colSpan="5" className="px-5 py-8 text-center text-slate-400 italic">No templates available.</td></tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1481,13 +1470,13 @@ export default function AdminStudio() {
         {/* --- QUESTIONS TAB --- */}
         {activeTab === 'questions' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
-            
+
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="font-display text-xl font-bold text-slate-900">Taxonomy Manager</h1>
                 <p className="text-slate-500 text-xs mt-1">Manage the 100 Risk Questions and regulator tags.</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowQuestionForm(!showQuestionForm)}
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide transition-all shadow-sm"
               >
@@ -1495,14 +1484,14 @@ export default function AdminStudio() {
               </button>
             </div>
 
-            <AdminQuestionModal 
-              isOpen={showQuestionForm || !!editingQuestion} 
+            <AdminQuestionModal
+              isOpen={showQuestionForm || !!editingQuestion}
               onClose={() => {
                 setShowQuestionForm(false);
                 setEditingQuestion(null);
-              }} 
-              question={editingQuestion} 
-              onSave={handleSaveQuestion} 
+              }}
+              question={editingQuestion}
+              onSave={handleSaveQuestion}
             />
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6 p-6">
@@ -1516,8 +1505,8 @@ export default function AdminStudio() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-slate-500 font-bold">$</span>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         value={pack.price}
                         onChange={(e) => {
                           const updatedPacks = packs.map(p => p.id === pack.id ? { ...p, price: Number(e.target.value) } : p);
@@ -1536,8 +1525,8 @@ export default function AdminStudio() {
               <div className="p-3 border-b border-slate-100 bg-slate-50/80">
                 <div className="relative max-w-sm">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Search taxonomy..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -1570,7 +1559,7 @@ export default function AdminStudio() {
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide
-                            ${q.regulator_pressure === 'High' ? 'bg-rose-50 text-rose-600' : 
+                            ${q.regulator_pressure === 'High' ? 'bg-rose-50 text-rose-600' :
                               q.regulator_pressure === 'Medium' || q.regulator_pressure === 'Moderate' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}
                           `}>
                             {q.regulator_pressure}
@@ -1622,7 +1611,7 @@ export default function AdminStudio() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
@@ -1643,12 +1632,11 @@ export default function AdminStudio() {
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</span>
-                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                    selectedOrder.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 
-                    selectedOrder.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
-                    selectedOrder.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
-                    'bg-amber-100 text-amber-700'
-                  }`}>
+                  <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${selectedOrder.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                      selectedOrder.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
+                        selectedOrder.status === 'cancelled' ? 'bg-slate-200 text-slate-700' :
+                          'bg-amber-100 text-amber-700'
+                    }`}>
                     {selectedOrder.status}
                   </span>
                 </div>
@@ -1661,17 +1649,17 @@ export default function AdminStudio() {
                     <p className="text-[11px] text-amber-700/80 mb-4 leading-relaxed">
                       Cancelling an order revokes access instantly. Processing a refund will automatically refund 75% of the transaction via Stripe (keeping a 25% cut) and revoke access.
                     </p>
-                    
+
                     <div className="flex gap-3">
-                      <button 
+                      <button
                         onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'cancelled')}
                         disabled={isUpdatingOrder === selectedOrder.id}
                         className="flex-1 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
                       >
                         Cancel Order (No Refund)
                       </button>
-                      
-                      <button 
+
+                      <button
                         onClick={() => handleRefundOrder(selectedOrder.id)}
                         disabled={isUpdatingOrder === selectedOrder.id}
                         className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2"
@@ -1689,7 +1677,7 @@ export default function AdminStudio() {
               )}
             </div>
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-              <button 
+              <button
                 onClick={() => setSelectedOrder(null)}
                 className="px-5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors"
               >

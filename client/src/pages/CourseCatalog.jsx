@@ -25,7 +25,7 @@ export default function CourseCatalog() {
   }, []);
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pt-24 pb-16">
+    <div className="bg-[#F8FAFC] min-h-screen pb-16">
       <Helmet>
         <title>Masterclasses | Veritus</title>
         <meta name="description" content="Browse our library of premium risk management masterclasses." />
