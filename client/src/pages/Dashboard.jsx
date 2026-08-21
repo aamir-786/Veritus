@@ -239,7 +239,8 @@ export default function Dashboard() {
 
       {/* Accessible Digital Templates */}
       {activeTab === 'assets' && (
-      <div className="space-y-4">
+      <>
+        <div className="space-y-4">
         <h2 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
           <FileText className="w-4 h-4 text-emerald-700" /> Accessible Digital Risk Frameworks
         </h2>
@@ -342,6 +343,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      </>
       )}
 
       {/* Review Modal */}
