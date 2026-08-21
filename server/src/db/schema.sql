@@ -182,3 +182,41 @@ CREATE POLICY "Inquiries are viewable by admins only." ON public.inquiries FOR A
     SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
   )
 );
+
+-- 11. Reviews Table
+CREATE TABLE public.reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  product_type TEXT CHECK (product_type IN ('course', 'question', 'template')),
+  product_id TEXT NOT NULL,
+  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  is_featured BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Reviews are viewable by everyone." ON public.reviews FOR SELECT USING (true);
+CREATE POLICY "Users can insert their own reviews." ON public.reviews FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Note: Admin policy needed for updates/deletes
+CREATE POLICY "Admins can manage all reviews." ON public.reviews FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
+  )
+);
+
+-- 12. Promotions Table
+CREATE TABLE public.promotions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  message TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.promotions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Promotions are viewable by everyone." ON public.promotions FOR SELECT USING (true);
+CREATE POLICY "Promotions are manageable by admins only." ON public.promotions FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
+  )
+);

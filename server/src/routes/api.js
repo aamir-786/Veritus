@@ -9,6 +9,8 @@ const templatesController = require('../controllers/templatesController');
 const commerceController = require('../controllers/commerceController');
 const dashboardController = require('../controllers/dashboardController');
 const adminController = require('../controllers/adminController');
+const reviewsController = require('../controllers/reviewsController');
+const promotionsController = require('../controllers/promotionsController');
 
 const { authenticateToken, optionalToken, requireAdmin } = require('../middleware/auth');
 const emailService = require('../services/emailService');
@@ -78,6 +80,10 @@ router.get('/orders', authenticateToken, commerceController.getUserOrders);
 router.get('/dashboard/summary', authenticateToken, dashboardController.getDashboardSummary);
 router.post('/dashboard/progress', authenticateToken, dashboardController.updateLessonProgress);
 
+// --- Reviews Routes ---
+router.get('/reviews/landing', reviewsController.getLandingPageReviews);
+router.post('/reviews', authenticateToken, reviewsController.createReview);
+
 // --- Admin Studio Routes (Protected: Admin Only) ---
 router.get('/admin/metrics', authenticateToken, requireAdmin, adminController.getAdminMetrics);
 router.post('/admin/courses', authenticateToken, requireAdmin, adminController.createCourse);
@@ -105,5 +111,18 @@ router.put('/admin/inquiries/:id/status', authenticateToken, requireAdmin, admin
 router.get('/admin/orders', authenticateToken, requireAdmin, adminController.getOrders);
 router.put('/admin/orders/:id/status', authenticateToken, requireAdmin, adminController.updateOrderStatus);
 router.post('/admin/orders/:id/refund', authenticateToken, requireAdmin, adminController.refundOrder);
+
+router.get('/admin/reviews', authenticateToken, requireAdmin, adminController.getAllReviews);
+router.delete('/admin/reviews/:id', authenticateToken, requireAdmin, adminController.deleteReview);
+router.put('/admin/reviews/:id/featured', authenticateToken, requireAdmin, adminController.toggleFeaturedReview);
+
+// --- Promotions Routes ---
+router.get('/promotions/active', promotionsController.getActivePromotion);
+router.get('/admin/promotions', authenticateToken, requireAdmin, adminController.getAllPromotions);
+router.post('/admin/promotions', authenticateToken, requireAdmin, adminController.createPromotion);
+router.put('/admin/promotions/:id', authenticateToken, requireAdmin, adminController.updatePromotion);
+router.put('/admin/promotions/:id/status', authenticateToken, requireAdmin, adminController.togglePromotionStatus);
+router.put('/admin/promotions/:id/banner', authenticateToken, requireAdmin, adminController.toggleBannerVisibility);
+router.delete('/admin/promotions/:id', authenticateToken, requireAdmin, adminController.deletePromotion);
 
 module.exports = router;

@@ -161,6 +161,16 @@ export const api = {
     return res.json();
   },
 
+  // Reviews API
+  createReview: async (payload) => {
+    const res = await fetch(`${API_BASE}/reviews`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  },
+
   // Admin Studio API
   getAdminMetrics: async () => {
     const res = await fetch(`${API_BASE}/admin/metrics`, { headers: await getHeaders() });
@@ -378,6 +388,87 @@ export const api = {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       body: formData
+    });
+    return res.json();
+  },
+
+  getAdminReviews: async () => {
+    const res = await fetch(`${API_BASE}/admin/reviews`, {
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  deleteAdminReview: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/reviews/${id}`, {
+      method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  toggleFeaturedReview: async (id, is_featured) => {
+    const res = await fetch(`${API_BASE}/admin/reviews/${id}/featured`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify({ is_featured })
+    });
+    return res.json();
+  },
+
+  // --- Promotions ---
+  getActivePromotion: async () => {
+    const res = await fetch(`${API_BASE}/promotions/active`);
+    return res.json();
+  },
+
+  getAdminPromotions: async () => {
+    const res = await fetch(`${API_BASE}/admin/promotions`, {
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  createPromotion: async (data) => {
+    const res = await fetch(`${API_BASE}/admin/promotions`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
+  deletePromotion: async (id) => {
+    const res = await fetch(`${API_BASE}/admin/promotions/${id}`, {
+      method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  updatePromotion: async (id, data) => {
+    const res = await fetch(`${API_BASE}/admin/promotions/${id}`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
+  togglePromotionStatus: async (id, is_active) => {
+    const res = await fetch(`${API_BASE}/admin/promotions/${id}/status`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify({ is_active })
+    });
+    return res.json();
+  },
+
+  toggleBannerVisibility: async (id, show_banner) => {
+    const res = await fetch(`${API_BASE}/admin/promotions/${id}/banner`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify({ show_banner })
     });
     return res.json();
   }

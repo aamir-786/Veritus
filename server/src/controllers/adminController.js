@@ -727,3 +727,304 @@ exports.updatePacks = (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to update packs' });
   }
 };
+
+// --- Admin Reviews Management ---
+
+exports.getAllReviews = async (req, res) => {
+  try {
+    const { data: reviews, error } = await supabase
+      .from('reviews')
+      .select('id, product_type, product_id, rating, comment, created_at, is_featured, profiles(full_name)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return res.json({ success: true, reviews });
+  } catch (err) {
+    console.error('getAllReviews Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch all reviews' });
+  }
+};
+
+exports.deleteReview = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('reviews').delete().eq('id', id);
+    if (error) throw error;
+
+    return res.json({ success: true, message: 'Review deleted successfully' });
+  } catch (err) {
+    console.error('deleteReview Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to delete review' });
+  }
+};
+
+exports.toggleFeaturedReview = async (req, res) => {
+  const { id } = req.params;
+  const { is_featured } = req.body;
+  
+  if (typeof is_featured !== 'boolean') {
+    return res.status(400).json({ success: false, error: 'is_featured must be a boolean' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .update({ is_featured })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return res.json({ success: true, message: 'Review status updated successfully', review: data });
+  } catch (err) {
+    console.error('toggleFeaturedReview Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update review status' });
+  }
+};
+
+// ==========================================
+// PROMOTIONS MANAGEMENT
+// ==========================================
+
+exports.getAllPromotions = async (req, res) => {
+  try {
+    const { data: promotions, error } = await supabase
+      .from('promotions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return res.json({ success: true, promotions: promotions || [] });
+  } catch (err) {
+    console.error('getAllPromotions Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch promotions' });
+  }
+};
+
+exports.createPromotion = async (req, res) => {
+  const { message, is_active, promo_code, discount_percentage, start_date, end_date, show_banner, max_redemptions } = req.body;
+  if (!message) return res.status(400).json({ success: false, error: 'Promotion message is required' });
+  if (!promo_code || !discount_percentage) return res.status(400).json({ success: false, error: 'Promo code and discount percentage are required' });
+
+  try {
+    let stripe_coupon_id = null;
+    let stripe_promo_id = null;
+
+    // Create Stripe Coupon and Promotion Code if promo_code is provided
+    if (promo_code && discount_percentage) {
+      const parsedDiscount = parseInt(discount_percentage);
+      if (parsedDiscount > 0 && parsedDiscount <= 100) {
+        // Create Coupon
+        const coupon = await stripe.coupons.create({
+          percent_off: parsedDiscount,
+          duration: 'once',
+          name: promo_code
+        });
+        stripe_coupon_id = coupon.id;
+
+        // Create Promotion Code
+        const promoParams = {
+          coupon: coupon.id,
+          code: promo_code,
+          active: !!is_active
+        };
+        
+        // Handle dates if provided (Stripe expects Unix timestamp in seconds)
+        if (end_date) {
+          const expiresAt = Math.floor(new Date(end_date).getTime() / 1000);
+          if (expiresAt > Math.floor(Date.now() / 1000)) {
+             promoParams.expires_at = expiresAt;
+          }
+        }
+
+        // Handle max_redemptions
+        if (max_redemptions) {
+          const parsedLimit = parseInt(max_redemptions);
+          if (parsedLimit > 0) {
+            promoParams.max_redemptions = parsedLimit;
+          }
+        }
+
+        const stripePromo = await stripe.promotionCodes.create(promoParams);
+        stripe_promo_id = stripePromo.id;
+      }
+    }
+
+    // If show_banner is true, deactivate show_banner for all other promotions first
+    if (show_banner) {
+      await supabase.from('promotions').update({ show_banner: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+    }
+
+    const { data, error } = await supabase
+      .from('promotions')
+      .insert([{ 
+        message, 
+        is_active: !!is_active,
+        promo_code,
+        discount_percentage: parseInt(discount_percentage),
+        start_date: start_date || null,
+        end_date: end_date || null,
+        stripe_coupon_id,
+        stripe_promo_id,
+        show_banner: !!show_banner,
+        max_redemptions: max_redemptions ? parseInt(max_redemptions) : null
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return res.status(201).json({ success: true, promotion: data });
+  } catch (err) {
+    console.error('createPromotion Error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to create promotion' });
+  }
+};
+
+exports.deletePromotion = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Fetch promotion first to get Stripe IDs
+    const { data: promo } = await supabase.from('promotions').select('*').eq('id', id).single();
+    
+    if (promo && promo.stripe_coupon_id) {
+      try {
+        await stripe.coupons.del(promo.stripe_coupon_id);
+      } catch (stripeErr) {
+        console.warn('Failed to delete Stripe coupon:', stripeErr.message);
+      }
+    }
+
+    const { error } = await supabase.from('promotions').delete().eq('id', id);
+    if (error) throw error;
+    return res.json({ success: true, message: 'Promotion deleted' });
+  } catch (err) {
+    console.error('deletePromotion Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to delete promotion' });
+  }
+};
+
+exports.updatePromotion = async (req, res) => {
+  const { id } = req.params;
+  const { message, start_date, end_date, max_redemptions } = req.body;
+  
+  if (!message) return res.status(400).json({ success: false, error: 'Promotion message is required' });
+  
+  try {
+    // Fetch existing promotion to check if max_redemptions changed
+    const { data: oldPromo, error: fetchErr } = await supabase.from('promotions').select('*').eq('id', id).single();
+    if (fetchErr) throw fetchErr;
+
+    const parsedMaxRedemptions = max_redemptions ? parseInt(max_redemptions) : null;
+    let newStripePromoId = oldPromo.stripe_promo_id;
+
+    // If limits changed and it has a stripe coupon, we must recreate the Stripe Promo Code
+    if (oldPromo.max_redemptions !== parsedMaxRedemptions && oldPromo.stripe_coupon_id && oldPromo.promo_code) {
+      if (oldPromo.stripe_promo_id) {
+        // Deactivate old code to free up the code text
+        try {
+          await stripe.promotionCodes.update(oldPromo.stripe_promo_id, { active: false });
+        } catch (e) {
+          console.warn('Failed to deactivate old Stripe promo code:', e.message);
+        }
+      }
+
+      // Create new promo code with same text
+      const promoParams = {
+        coupon: oldPromo.stripe_coupon_id,
+        code: oldPromo.promo_code,
+      };
+
+      if (parsedMaxRedemptions) {
+        promoParams.max_redemptions = parsedMaxRedemptions;
+      }
+
+      const stripePromo = await stripe.promotionCodes.create(promoParams);
+      newStripePromoId = stripePromo.id;
+    }
+
+    const { data, error } = await supabase
+      .from('promotions')
+      .update({ 
+        message, 
+        start_date: start_date ? start_date : null,
+        end_date: end_date ? end_date : null,
+        max_redemptions: parsedMaxRedemptions,
+        stripe_promo_id: newStripePromoId
+      })
+      .eq('id', id)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return res.json({ success: true, promotion: data });
+  } catch (err) {
+    console.error('updatePromotion Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update promotion' });
+  }
+};
+
+exports.togglePromotionStatus = async (req, res) => {
+  const { id } = req.params;
+  const { is_active } = req.body;
+  
+  if (typeof is_active !== 'boolean') {
+    return res.status(400).json({ success: false, error: 'is_active must be a boolean' });
+  }
+
+  try {
+    const { data: promo, error: fetchErr } = await supabase.from('promotions').select('*').eq('id', id).single();
+    if (fetchErr || !promo) throw new Error('Promotion not found');
+
+    // Update in Stripe
+    if (promo.stripe_promo_id) {
+      try {
+        const stripePromo = await stripe.promotionCodes.update(promo.stripe_promo_id, {
+          active: is_active
+        });
+      } catch (stripeErr) {
+        console.warn('Failed to update Stripe promotion code:', stripeErr.message);
+      }
+    }
+
+    // Update in Supabase
+    // If it's being deactivated, also ensure banner doesn't show
+    const updates = { is_active };
+    if (!is_active && promo.show_banner) {
+      updates.show_banner = false;
+    }
+
+    const { data, error } = await supabase.from('promotions').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    
+    return res.json({ success: true, promotion: data });
+  } catch (err) {
+    console.error('togglePromotionStatus Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update promotion status' });
+  }
+};
+
+exports.toggleBannerVisibility = async (req, res) => {
+  const { id } = req.params;
+  const { show_banner } = req.body;
+
+  if (typeof show_banner !== 'boolean') {
+    return res.status(400).json({ success: false, error: 'show_banner must be a boolean' });
+  }
+
+  try {
+    if (show_banner) {
+      // Deactivate all others first
+      await supabase.from('promotions').update({ show_banner: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+    }
+
+    const { data, error } = await supabase.from('promotions').update({ show_banner }).eq('id', id).select().single();
+    if (error) throw error;
+
+    return res.json({ success: true, promotion: data });
+  } catch (err) {
+    console.error('toggleBannerVisibility Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update banner visibility' });
+  }
+};

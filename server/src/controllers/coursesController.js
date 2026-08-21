@@ -35,9 +35,35 @@ exports.getCourses = async (req, res) => {
 
     if (error) throw error;
 
+    // Fetch reviews for courses
+    const { data: reviews, error: reviewError } = await supabase
+      .from('reviews')
+      .select('product_id, rating')
+      .eq('product_type', 'course');
+      
+    if (reviewError) throw reviewError;
+
+    // Group reviews by product_id
+    const courseRatings = {};
+    if (reviews) {
+      reviews.forEach(r => {
+        if (!courseRatings[r.product_id]) {
+          courseRatings[r.product_id] = { sum: 0, count: 0 };
+        }
+        if (r.rating) {
+          courseRatings[r.product_id].sum += r.rating;
+          courseRatings[r.product_id].count += 1;
+        }
+      });
+    }
+
     const formattedCourses = courses.map(c => {
       const module_count = c.modules ? c.modules.length : 0;
       const lesson_count = c.modules ? c.modules.reduce((acc, m) => acc + (m.lessons ? m.lessons.length : 0), 0) : 0;
+      
+      const ratingData = courseRatings[c.id];
+      const rating_count = ratingData ? ratingData.count : 0;
+      const rating_avg = ratingData && ratingData.count > 0 ? (ratingData.sum / ratingData.count).toFixed(1) : "0.0";
 
       return {
         id: c.id,
@@ -51,7 +77,9 @@ exports.getCourses = async (req, res) => {
         author_name: c.author_name,
         cover_image: c.cover_image,
         module_count,
-        lesson_count
+        lesson_count,
+        rating_avg,
+        rating_count
       };
     });
 
@@ -111,6 +139,22 @@ exports.getCourseDetails = async (req, res) => {
       }))
     }));
 
+    // Fetch Course Reviews
+    const { data: reviews } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('product_type', 'course')
+      .eq('product_id', course.id);
+
+    let rating_avg = "0.0";
+    let rating_count = 0;
+    
+    if (reviews && reviews.length > 0) {
+      rating_count = reviews.length;
+      const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+      rating_avg = (sum / rating_count).toFixed(1);
+    }
+
     return res.json({
       success: true,
       course: {
@@ -125,7 +169,9 @@ exports.getCourseDetails = async (req, res) => {
         author_name: course.author_name,
         cover_image: course.cover_image,
         is_enrolled: isEnrolled,
-        modules: sanitizedModules
+        modules: sanitizedModules,
+        rating_avg,
+        rating_count
       }
     });
   } catch (err) {

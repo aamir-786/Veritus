@@ -21,7 +21,8 @@ import {
   TrendingUp,
   ShieldCheck,
   Cpu,
-  PlayCircle
+  PlayCircle,
+  Star
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { api } from '../services/api';
@@ -34,6 +35,7 @@ export default function Home() {
   const [questions, setQuestions] = useState([]);
   const [courses, setCourses] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [copilotQuestion, setCopilotQuestion] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
@@ -63,6 +65,13 @@ export default function Home() {
 
         const tRes = await api.getTemplates();
         if (tRes.success) setTemplates(tRes.templates);
+
+        try {
+          const rRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reviews/landing`).then(res => res.json());
+          if (rRes.success) setReviews(rRes.reviews);
+        } catch (err) {
+          console.error("Failed to fetch reviews", err);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -363,8 +372,22 @@ export default function Home() {
                     </div>
                     <div className="p-4 space-y-2 flex-grow">
                       <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-tight">{course.title}</h3>
-                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-2">{course.headline}</p>
+                      
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div className={`flex ${course.rating_count > 0 ? 'text-emerald-500' : 'text-slate-300'}`}>
+                          {[1,2,3,4,5].map(i => (
+                            <Star 
+                              key={i} 
+                              className={`w-3 h-3 ${course.rating_count > 0 && course.rating_avg >= i ? 'fill-emerald-500 text-emerald-500' : (course.rating_count > 0 && course.rating_avg >= i - 0.5 ? 'fill-emerald-500 text-emerald-500 opacity-50' : 'fill-slate-200 text-slate-200')}`} 
+                            />
+                          ))}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-600">
+                          {course.rating_count > 0 ? `${course.rating_avg} (${course.rating_count} reviews)` : 'No reviews'}
+                        </span>
+                      </div>
 
+                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-2 mt-2">{course.headline}</p>
                       <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-3 mt-2 border-t border-slate-100 font-medium">
                         <span className="flex items-center gap-1">
                           <Layers className="w-3 h-3 text-amber-700" /> {course.module_count} Modules
@@ -508,6 +531,46 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* 6.5 User Reviews Section */}
+      {reviews.length > 0 && (
+        <section className="py-14 bg-section-reviews border-y border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <ScrollReveal animation="slide-down" delay={0}>
+              <div className="text-center max-w-2xl mx-auto space-y-1">
+                <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider font-mono">Testimonials</span>
+                <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">Is Veritus worth it? Hear from our users</h2>
+              </div>
+            </ScrollReveal>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviews.map((review, idx) => (
+                <ScrollReveal key={review.id} animation="zoom-in" delay={idx * 100}>
+                  <div className="glass-card rounded-2xl p-6 border border-slate-200 space-y-4 shadow-sm h-full flex flex-col transition-all hover:border-emerald-300">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold shrink-0 text-lg">
+                        {review.profiles?.full_name ? review.profiles.full_name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900 text-sm">{review.profiles?.full_name || 'Anonymous User'}</div>
+                        <div className="flex items-center text-emerald-500">
+                          {[...Array(review.rating)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-emerald-500" />)}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed italic flex-grow">
+                      "{review.comment}"
+                    </p>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                      Reviewed a {review.product_type}
+                    </div>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 7. FAQ Section */}
       <section className="py-10 bg-section-faq">

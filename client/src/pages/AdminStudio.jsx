@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Sparkles, Plus, BookOpen, Layers, Users, DollarSign,
   BarChart3, Settings, ShieldCheck, Search, ChevronRight, Video, Edit2, PlayCircle, ShieldAlert,
-  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X, CheckCircle2, Send
+  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X, CheckCircle2, Send, Star, Megaphone
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import EffectiveVeritusLogo from '../components/EffectiveVeritusLogo';
 import AdminQuestionModal from '../components/AdminQuestionModal';
 import VideoPlayer from '../components/VideoPlayer';
+import Toast from '../components/Toast';
+import ConfirmModal from '../components/ConfirmModal';
 import { supabase } from '../lib/supabase';
 
 export default function AdminStudio() {
@@ -22,11 +24,30 @@ export default function AdminStudio() {
   const [templates, setTemplates] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [promotions, setPromotions] = useState([]);
+  const [newPromotionMessage, setNewPromotionMessage] = useState('');
+  const [newPromoCode, setNewPromoCode] = useState('');
+  const [newPromoDiscount, setNewPromoDiscount] = useState('');
+  const [newPromoStart, setNewPromoStart] = useState('');
+  const [newPromoEnd, setNewPromoEnd] = useState('');
+  const [newPromoLimit, setNewPromoLimit] = useState('');
+  const [newPromoShowBanner, setNewPromoShowBanner] = useState(true);
+  const [selectedPromoDetails, setSelectedPromoDetails] = useState(null); // For Promo modal
+  const [editPromotion, setEditPromotion] = useState(null); // For editing promotion
   const [selectedOrder, setSelectedOrder] = useState(null); // For order details modal
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(null); // stores order ID being updated
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Modern UI State
+  const [toastConfig, setToastConfig] = useState({ isOpen: false, message: '', type: 'success' });
+  const [promoDeleteConfig, setPromoDeleteConfig] = useState({ isOpen: false, promoId: null });
+
+  const showToast = (message, type = 'success') => {
+    setToastConfig({ isOpen: true, message, type });
+  };
 
   // Inquiry Modal State
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -121,14 +142,16 @@ export default function AdminStudio() {
       setIsRefreshing(true);
     }
     try {
-      const [mRes, cRes, qRes, tRes, iRes, oRes, pRes] = await Promise.all([
+      const [mRes, cRes, qRes, tRes, iRes, oRes, pRes, rRes, prRes] = await Promise.all([
         api.getAdminMetrics(),
         api.getCourses(),
         api.getQuestions(),
         api.getTemplates(),
         api.getAdminInquiries(),
         api.getAdminOrders(),
-        api.getPacks()
+        api.getPacks(),
+        api.getAdminReviews ? api.getAdminReviews() : fetch(`${API_BASE}/admin/reviews`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(r => r.json()),
+        api.getAdminPromotions ? api.getAdminPromotions() : fetch(`${API_BASE}/admin/promotions`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(r => r.json())
       ]);
       if (mRes.success) setMetrics(mRes.metrics);
       if (cRes.success) setCourses(cRes.courses);
@@ -137,6 +160,9 @@ export default function AdminStudio() {
       if (tRes.success) setTemplates(tRes.templates);
       if (iRes && iRes.success) setInquiries(iRes.inquiries);
       if (oRes && oRes.success) setOrders(oRes.orders);
+      if (rRes && rRes.success) setReviews(rRes.reviews);
+      if (prRes && prRes.success) setPromotions(prRes.promotions);
+      if (rRes && rRes.success) setReviews(rRes.reviews);
 
       if (managingCourse) {
         const detailsRes = await api.getCourseDetails(managingCourse.slug);
@@ -238,6 +264,19 @@ export default function AdminStudio() {
     setNewCourseTier(course.tier || 'Executive Tier');
     setNewCourseCover(course.cover_image || '');
     setShowCourseForm(true);
+  };
+
+  const handleToggleCourseForm = () => {
+    if (!showCourseForm) {
+      setEditingCourseId(null);
+      setNewCourseTitle('');
+      setNewCourseHeadline('');
+      setNewCourseDescription('');
+      setNewCoursePrice('199');
+      setNewCourseTier('Executive Tier');
+      setNewCourseCover('');
+    }
+    setShowCourseForm(!showCourseForm);
   };
 
   const handleOpenUserDetails = async (userId) => {
@@ -484,6 +523,148 @@ export default function AdminStudio() {
     } catch (err) {
       console.error(err);
       alert('Error updating status');
+    }
+  };
+
+  const handleDeleteReview = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return;
+    try {
+      const res = await api.deleteAdminReview(id);
+      if (res.success) {
+        setReviews(reviews.filter(r => r.id !== id));
+      } else {
+        alert(res.error || 'Failed to delete review');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting review');
+    }
+  };
+
+  const handleToggleFeaturedReview = async (id, currentStatus) => {
+    try {
+      const res = await api.toggleFeaturedReview(id, !currentStatus);
+      if (res.success) {
+        setReviews(reviews.map(r => r.id === id ? { ...r, is_featured: !currentStatus } : r));
+      } else {
+        alert(res.error || 'Failed to update review status');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating review status');
+    }
+  };
+
+  const handleCreatePromotion = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.createPromotion({ 
+        message: newPromotionMessage, 
+        is_active: true,
+        promo_code: newPromoCode,
+        discount_percentage: newPromoDiscount,
+        start_date: newPromoStart ? new Date(newPromoStart).toISOString() : '',
+        end_date: newPromoEnd ? new Date(newPromoEnd).toISOString() : '',
+        show_banner: newPromoShowBanner,
+        max_redemptions: newPromoLimit
+      });
+      if (res.success) {
+        // If this one is set to show banner, deactivate banner on all others in state
+        let updatedPromos = promotions;
+        if (newPromoShowBanner) {
+          updatedPromos = promotions.map(p => ({ ...p, show_banner: false }));
+        }
+        setPromotions([res.promotion, ...updatedPromos]);
+        
+        setNewPromotionMessage('');
+        setNewPromoCode('');
+        setNewPromoDiscount('');
+        setNewPromoStart('');
+        setNewPromoEnd('');
+        setNewPromoLimit('');
+        setNewPromoShowBanner(true);
+        showToast('Promotion created successfully!', 'success');
+      } else {
+        showToast(res.error || 'Failed to create promotion', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error creating promotion', 'error');
+    }
+  };
+
+  const handleUpdatePromotion = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        message: editPromotion.message,
+        start_date: editPromotion.start_date ? new Date(editPromotion.start_date).toISOString() : '',
+        end_date: editPromotion.end_date ? new Date(editPromotion.end_date).toISOString() : '',
+        max_redemptions: editPromotion.max_redemptions
+      };
+      const res = await api.updatePromotion(editPromotion.id, payload);
+      if (res.success) {
+        setPromotions(promotions.map(p => p.id === editPromotion.id ? { ...p, ...res.promotion } : p));
+        setEditPromotion(null);
+        showToast('Promotion updated successfully!', 'success');
+      } else {
+        showToast(res.error || 'Failed to update promotion', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error updating promotion', 'error');
+    }
+  };
+
+  const handleToggleBannerVisibility = async (id, currentStatus) => {
+    try {
+      const res = await api.toggleBannerVisibility(id, !currentStatus);
+      if (res.success) {
+        setPromotions(promotions.map(p => {
+          if (p.id === id) return { ...p, show_banner: !currentStatus };
+          if (!currentStatus) return { ...p, show_banner: false }; // deactivate others if this one was turned on
+          return p;
+        }));
+        showToast('Banner visibility updated', 'success');
+      } else {
+        showToast(res.error || 'Failed to update banner visibility', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error updating banner visibility', 'error');
+    }
+  };
+
+  const handleDeletePromotion = async (id) => {
+    setPromoDeleteConfig({ isOpen: true, promoId: id });
+  };
+
+  const confirmDeletePromotion = async () => {
+    const id = promoDeleteConfig.promoId;
+    setPromoDeleteConfig({ isOpen: false, promoId: null });
+    
+    try {
+      const res = await api.deletePromotion(id);
+      if (res.success) {
+        setPromotions(promotions.filter(p => p.id !== id));
+        showToast('Promotion deleted successfully', 'success');
+      } else {
+        showToast('Failed to delete promotion', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error deleting promotion', 'error');
+    }
+  };
+
+  const handleTogglePromotionStatus = async (id, currentStatus) => {
+    try {
+      const res = await api.togglePromotionStatus(id, !currentStatus);
+      if (res.success) {
+        setPromotions(promotions.map(p => p.id === id ? { ...p, is_active: !currentStatus } : p));
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -761,6 +942,22 @@ export default function AdminStudio() {
               }`}
           >
             <TrendingUp className="w-4 h-4" /> Orders
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('reviews'); setMobileNavOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'reviews' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+          >
+            <Star className="w-4 h-4" /> Reviews
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('promotions'); setMobileNavOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'promotions' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+          >
+            <Megaphone className="w-4 h-4" /> Promotions
           </button>
         </nav>
 
@@ -1108,10 +1305,10 @@ export default function AdminStudio() {
                     <p className="text-slate-500 text-xs mt-1">Create and manage executive masterclasses.</p>
                   </div>
                   <button
-                    onClick={() => setShowCourseForm(!showCourseForm)}
+                    onClick={handleToggleCourseForm}
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] uppercase tracking-wide transition-all shadow-sm"
                   >
-                    <Plus className="w-3.5 h-3.5" /> {showCourseForm ? 'Cancel' : 'New Masterclass'}
+                    {!showCourseForm && <Plus className="w-3.5 h-3.5" />} {showCourseForm ? 'Cancel' : 'New Masterclass'}
                   </button>
                 </div>
 
@@ -1720,6 +1917,291 @@ export default function AdminStudio() {
 
           </div>
         )}
+        {/* --- REVIEWS TAB --- */}
+        {activeTab === 'reviews' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
+            <div className="flex justify-between items-end">
+              <div>
+                <h1 className="font-display text-xl font-bold text-slate-900">Reviews & Testimonials</h1>
+                <p className="text-slate-500 text-xs mt-1">Manage, delete, and feature user reviews on the landing page.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/80 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="p-4 font-bold">User</th>
+                      <th className="p-4 font-bold">Product</th>
+                      <th className="p-4 font-bold">Rating</th>
+                      <th className="p-4 font-bold">Comment</th>
+                      <th className="p-4 font-bold text-center">Featured</th>
+                      <th className="p-4 font-bold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {reviews.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="p-8 text-center text-slate-500 text-xs">No reviews found.</td>
+                      </tr>
+                    ) : (
+                      reviews.map(review => (
+                        <tr key={review.id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="p-4">
+                            <div className="font-bold text-slate-900">{review.profiles?.full_name || 'Unknown'}</div>
+                            <div className="text-[10px] text-slate-400">{new Date(review.created_at).toLocaleDateString()}</div>
+                          </td>
+                          <td className="p-4">
+                            <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
+                              {review.product_type}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center text-emerald-500">
+                              {[...Array(review.rating)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-emerald-500" />)}
+                            </div>
+                          </td>
+                          <td className="p-4 max-w-xs">
+                            <p className="text-xs text-slate-600 truncate" title={review.comment}>
+                              {review.comment || <span className="text-slate-400 italic">No comment</span>}
+                            </p>
+                          </td>
+                          <td className="p-4 text-center">
+                            <button
+                              onClick={() => handleToggleFeaturedReview(review.id, review.is_featured)}
+                              className={`px-3 py-1 text-[10px] font-bold rounded-full transition-colors border ${review.is_featured ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}`}
+                            >
+                              {review.is_featured ? '★ Featured' : 'Feature'}
+                            </button>
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              onClick={() => handleDeleteReview(review.id)}
+                              className="p-1.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              title="Delete Review"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- PROMOTIONS TAB --- */}
+        {activeTab === 'promotions' && (
+          <div className="space-y-6 max-w-5xl">
+            <div>
+              <h2 className="font-display font-extrabold text-2xl text-slate-900 tracking-tight">Global Promotions</h2>
+              <p className="text-sm text-slate-500 mt-1">Manage site-wide promotional banners and coupons.</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+              <h3 className="font-bold text-slate-900 mb-4">Create New Promotion</h3>
+              <form onSubmit={handleCreatePromotion} className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700">Banner Message *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newPromotionMessage}
+                    onChange={e => setNewPromotionMessage(e.target.value)}
+                    placeholder="e.g., Get back to achieving your goals. Save up to 20% with code ACTION2026"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">Promo Code *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newPromoCode}
+                      onChange={e => setNewPromoCode(e.target.value)}
+                      placeholder="e.g., SUMMER25"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">Discount % *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="100"
+                      value={newPromoDiscount}
+                      onChange={e => setNewPromoDiscount(e.target.value)}
+                      placeholder="e.g., 25"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">Start Date</label>
+                    <input
+                      type="datetime-local"
+                      value={newPromoStart}
+                      onChange={e => setNewPromoStart(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">End Date</label>
+                    <input
+                      type="datetime-local"
+                      value={newPromoEnd}
+                      onChange={e => setNewPromoEnd(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">Usage Limit</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newPromoLimit}
+                      onChange={e => setNewPromoLimit(e.target.value)}
+                      placeholder="e.g. 15 (blank = unlimited)"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pb-2 pl-2">
+                    <input
+                      type="checkbox"
+                      id="showBannerCheck"
+                      checked={newPromoShowBanner}
+                      onChange={e => setNewPromoShowBanner(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                    />
+                    <label htmlFor="showBannerCheck" className="text-sm font-bold text-slate-700 cursor-pointer">
+                      Show Banner
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button type="submit" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-colors shadow-sm flex items-center gap-2">
+                    <Megaphone className="w-4 h-4" /> Publish Banner & Code
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-800">Promotion History</h3>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                      <th className="p-4 font-bold">Status</th>
+                      <th className="p-4 font-bold w-1/3">Message</th>
+                      <th className="p-4 font-bold">Details</th>
+                      <th className="p-4 font-bold">Dates</th>
+                      <th className="p-4 font-bold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {promotions.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="p-8 text-center text-slate-500 text-sm">No promotions found. Create one above!</td>
+                      </tr>
+                    ) : (
+                      promotions.map(promo => (
+                        <tr 
+                          key={promo.id} 
+                          className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedPromoDetails(promo)}
+                        >
+                          <td className="p-4">
+                            <div className="flex flex-col gap-2">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleTogglePromotionStatus(promo.id, promo.is_active); }}
+                                className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest transition-colors w-24 ${promo.is_active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                              >
+                                {promo.is_active ? 'Active' : 'Inactive'}
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleBannerVisibility(promo.id, promo.show_banner); }}
+                                className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest transition-colors w-24 ${promo.show_banner ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                              >
+                                {promo.show_banner ? 'Banner ON' : 'Banner OFF'}
+                              </button>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <p className="text-sm text-slate-700 font-medium">{promo.message}</p>
+                            <div className="text-xs text-slate-400 mt-1">Created: {new Date(promo.created_at).toLocaleDateString()}</div>
+                          </td>
+                          <td className="p-4">
+                            {promo.promo_code ? (
+                              <div>
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100 mb-1">{promo.promo_code}</span>
+                                <div className="text-xs font-medium text-slate-600">{promo.discount_percentage}% OFF</div>
+                                <div className="text-[10px] uppercase font-bold text-slate-400 mt-1">{promo.max_redemptions ? `${promo.max_redemptions} Uses Max` : 'Unlimited'}</div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400 italic">No code</span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                             {(promo.start_date || promo.end_date) ? (
+                               <div className="text-xs text-slate-600 space-y-1">
+                                 <div><span className="text-slate-400">Starts:</span> {promo.start_date ? new Date(promo.start_date).toLocaleString() : 'Now'}</div>
+                                 <div><span className="text-slate-400">Ends:</span> {promo.end_date ? new Date(promo.end_date).toLocaleString() : 'Never'}</div>
+                               </div>
+                             ) : (
+                               <span className="text-xs text-slate-400 italic">Always valid</span>
+                             )}
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  const toDatetimeLocal = (iso) => {
+                                    if (!iso) return '';
+                                    const d = new Date(iso);
+                                    const tzOffset = d.getTimezoneOffset() * 60000;
+                                    return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+                                  };
+                                  setEditPromotion({
+                                    ...promo,
+                                    start_date: toDatetimeLocal(promo.start_date),
+                                    end_date: toDatetimeLocal(promo.end_date)
+                                  }); 
+                                }}
+                                className="p-2 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                title="Edit Promotion"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeletePromotion(promo.id); }}
+                                className="p-2 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                title="Delete Promotion"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
       </main>
 
@@ -1810,6 +2292,224 @@ export default function AdminStudio() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modern UI Components */}
+      <Toast 
+        message={toastConfig.message} 
+        type={toastConfig.type} 
+        onClose={() => setToastConfig({ ...toastConfig, isOpen: false, message: '' })} 
+      />
+      <ConfirmModal 
+        isOpen={promoDeleteConfig.isOpen}
+        title="Delete Promotion"
+        message="Are you sure you want to delete this promotion? This action will permanently remove it and disable the associated Stripe promo code if applicable. This action cannot be undone."
+        onConfirm={confirmDeletePromotion}
+        onCancel={() => setPromoDeleteConfig({ isOpen: false, promoId: null })}
+        confirmText="Delete Promotion"
+        cancelText="Cancel"
+        type="danger"
+      />
+
+      {/* Promotion Details Modal */}
+      {selectedPromoDetails && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in-fade" onClick={() => setSelectedPromoDetails(null)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in-zoom">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner">
+                  <Megaphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-lg">Promotion Details</h3>
+                  <p className="text-xs text-slate-500">ID: {selectedPromoDetails.id.split('-')[0]}...</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedPromoDetails(null)}
+                className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Banner Message</p>
+                <p className="text-sm text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  {selectedPromoDetails.message}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Promo Code</p>
+                  <p className="font-mono font-bold text-indigo-600">{selectedPromoDetails.promo_code || 'N/A'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Discount</p>
+                  <p className="font-bold text-emerald-600">{selectedPromoDetails.discount_percentage ? `${selectedPromoDetails.discount_percentage}% OFF` : 'N/A'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Usage Limit</p>
+                  <p className="font-bold text-slate-700">{selectedPromoDetails.max_redemptions ? `${selectedPromoDetails.max_redemptions} Uses Max` : 'Unlimited'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Created At</p>
+                  <p className="font-bold text-slate-700 text-sm">{new Date(selectedPromoDetails.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Start Date</p>
+                  <p className="font-bold text-slate-700 text-sm">{selectedPromoDetails.start_date ? new Date(selectedPromoDetails.start_date).toLocaleString() : 'Immediately'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date (End)</p>
+                  <p className="font-bold text-slate-700 text-sm">{selectedPromoDetails.end_date ? new Date(selectedPromoDetails.end_date).toLocaleString() : 'Never expires'}</p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex gap-4 justify-between items-center">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      handleTogglePromotionStatus(selectedPromoDetails.id, selectedPromoDetails.is_active);
+                      setSelectedPromoDetails({...selectedPromoDetails, is_active: !selectedPromoDetails.is_active});
+                    }}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${selectedPromoDetails.is_active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
+                    {selectedPromoDetails.is_active ? 'Stripe Active' : 'Stripe Inactive'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleToggleBannerVisibility(selectedPromoDetails.id, selectedPromoDetails.show_banner);
+                      setSelectedPromoDetails({...selectedPromoDetails, show_banner: !selectedPromoDetails.show_banner});
+                    }}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${selectedPromoDetails.show_banner ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
+                    {selectedPromoDetails.show_banner ? 'Banner is ON' : 'Banner is OFF'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- EDIT PROMOTION MODAL --- */}
+      {editPromotion && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditPromotion(null)}></div>
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                  <Edit2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-lg">Edit Promotion</h3>
+                  <p className="text-xs text-slate-500">ID: {editPromotion.id.split('-')[0]}...</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditPromotion(null)}
+                className="p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdatePromotion} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700">Banner Message</label>
+                <input
+                  type="text"
+                  required
+                  value={editPromotion.message}
+                  onChange={e => setEditPromotion({...editPromotion, message: e.target.value})}
+                  className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="opacity-50 pointer-events-none cursor-not-allowed">
+                  <label className="text-xs font-bold text-slate-700">Promo Code (Read-only)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={editPromotion.promo_code || 'N/A'}
+                    className="w-full mt-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm"
+                  />
+                </div>
+                <div className="opacity-50 pointer-events-none cursor-not-allowed">
+                  <label className="text-xs font-bold text-slate-700">Discount (Read-only)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={editPromotion.discount_percentage ? `${editPromotion.discount_percentage}% OFF` : 'N/A'}
+                    className="w-full mt-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700">Start Date</label>
+                  <input
+                    type="datetime-local"
+                    value={editPromotion.start_date || ''}
+                    onChange={e => setEditPromotion({...editPromotion, start_date: e.target.value})}
+                    className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700">End Date</label>
+                  <input
+                    type="datetime-local"
+                    value={editPromotion.end_date || ''}
+                    onChange={e => setEditPromotion({...editPromotion, end_date: e.target.value})}
+                    className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700">Usage Limit</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editPromotion.max_redemptions || ''}
+                  onChange={e => setEditPromotion({...editPromotion, max_redemptions: e.target.value})}
+                  placeholder="e.g. 15 (blank = unlimited)"
+                  className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                />
+              </div>
+
+              <p className="text-[10px] text-slate-500 text-center px-4">
+                Note: Updating Usage Limit will seamlessly regenerate your Stripe limits behind the scenes. Promo codes and discounts cannot be modified.
+              </p>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditPromotion(null)}
+                  className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

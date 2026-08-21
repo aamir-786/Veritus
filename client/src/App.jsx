@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import CookieConsent from './components/CookieConsent';
+import PromoBanner from './components/PromoBanner';
 
 // Pages
 import Home from './pages/Home';
@@ -24,6 +25,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import LegalPages from './pages/LegalPages';
+import Certificate from './pages/Certificate';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -42,15 +44,21 @@ const AppContent = () => {
   
   const isAdmin = user?.role === 'admin';
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isCertificateRoute = location.pathname.startsWith('/certificate');
 
-  // Completely hide header/footer if the user is on the admin route
-  const hideLayout = isAdminRoute;
+  // Completely hide header/footer if the user is on the admin or certificate route
+  const hideLayout = isAdminRoute || isCertificateRoute;
 
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col justify-between selection:bg-amber-400 selection:text-black">
       <div>
-        {!hideLayout && <Navbar />}
+        {!hideLayout && (
+          <>
+            <PromoBanner />
+            <Navbar />
+          </>
+        )}
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -64,6 +72,12 @@ const AppContent = () => {
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/certificate/:courseId" element={
+              <ProtectedRoute>
+                <Certificate />
               </ProtectedRoute>
             } />
 

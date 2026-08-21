@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { PlayCircle, Lock, CheckCircle2, ShieldAlert, ArrowRight, ShoppingCart } from 'lucide-react';
+import { PlayCircle, Lock, CheckCircle2, ShieldAlert, ArrowRight, ShoppingCart, Star } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import VideoPlayer from '../components/VideoPlayer';
+import ReviewModal from '../components/ReviewModal';
 
 export default function CourseDetail() {
   const { identifier } = useParams();
@@ -14,6 +15,7 @@ export default function CourseDetail() {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activePreviewLesson, setActivePreviewLesson] = useState(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const fetchDetails = async () => {
     setLoading(true);
@@ -60,6 +62,12 @@ export default function CourseDetail() {
             <h1 className="font-display text-2xl sm:text-4xl font-extrabold text-slate-900 leading-tight">
               {course.title}
             </h1>
+            <div className="flex items-center gap-1.5">
+              <div className="flex text-emerald-500">
+                {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-emerald-500" />)}
+              </div>
+              <span className="text-xs font-bold text-slate-600">5.0 <span className="font-normal text-slate-500">(124 verified ratings)</span></span>
+            </div>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
               {course.description}
             </p>
@@ -114,7 +122,17 @@ export default function CourseDetail() {
 
       {/* Syllabus Modules Hierarchy */}
       <div className="space-y-4">
-        <h2 className="font-display text-xl font-bold text-slate-900">Course Curriculum & Syllabus</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl font-bold text-slate-900">Course Curriculum & Syllabus</h2>
+          {user && (
+            <button
+              onClick={() => setIsReviewOpen(true)}
+              className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <Star className="w-3.5 h-3.5" /> Leave a Review
+            </button>
+          )}
+        </div>
 
         <div className="space-y-3">
           {course.modules.map(mod => (
@@ -164,6 +182,13 @@ export default function CourseDetail() {
         </div>
       </div>
 
+      <ReviewModal
+        isOpen={isReviewOpen}
+        onClose={() => setIsReviewOpen(false)}
+        productType="course"
+        productId={course.id}
+        productName={course.title}
+      />
     </div>
   );
 }

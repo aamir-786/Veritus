@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Idle Timer: Auto-logout after 3 minutes of inactivity
+  // Idle Timer: Auto-logout after 2 hours of inactivity
   useEffect(() => {
     let timeoutId;
 
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
         timeoutId = setTimeout(() => {
           console.warn('Session expired due to inactivity.');
           logout();
-        }, 3 * 60 * 1000); // 3 minutes
+        }, 2 * 60 * 60 * 1000); // 2 hours
       }
     };
 

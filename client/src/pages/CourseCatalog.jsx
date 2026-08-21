@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, ArrowRight, ShieldCheck, PlayCircle, Layers, ShoppingCart } from 'lucide-react';
+import { BookOpen, ArrowRight, ShieldCheck, PlayCircle, Layers, ShoppingCart, Star } from 'lucide-react';
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { Helmet } from 'react-helmet-async';
@@ -59,7 +59,22 @@ export default function CourseCatalog() {
 
               <div className="p-3 space-y-2">
                 <h3 className="font-display text-base font-bold text-slate-900 leading-tight">{course.title}</h3>
-                <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">{course.headline}</p>
+                
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className={`flex ${course.rating_count > 0 ? 'text-emerald-500' : 'text-slate-300'}`}>
+                    {[1,2,3,4,5].map(i => (
+                      <Star 
+                        key={i} 
+                        className={`w-3 h-3 ${course.rating_count > 0 && course.rating_avg >= i ? 'fill-emerald-500 text-emerald-500' : (course.rating_count > 0 && course.rating_avg >= i - 0.5 ? 'fill-emerald-500 text-emerald-500 opacity-50' : 'fill-slate-200 text-slate-200')}`} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-600">
+                    {course.rating_count > 0 ? `${course.rating_avg} (${course.rating_count} reviews)` : 'No reviews'}
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 mt-1">{course.headline}</p>
 
                 <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-2 border-t border-slate-100 font-medium">
                   <span className="flex items-center gap-1">
@@ -77,8 +92,11 @@ export default function CourseCatalog() {
 
             <div className="p-3 border-t border-slate-100 bg-slate-50 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 mt-auto">
               <div>
-                <div className="text-lg font-extrabold text-emerald-800">${course.price}</div>
-                <div className="text-[9px] text-slate-500 uppercase font-mono font-medium">Single Pay License</div>
+                <div className="flex items-baseline gap-2">
+                  <div className="text-lg font-extrabold text-emerald-800">${course.price}</div>
+                  <div className="text-[10px] font-bold text-slate-400 line-through">${(course.price * 1.5).toFixed(0)}</div>
+                </div>
+                <div className="text-[9px] text-slate-500 uppercase font-mono font-medium mt-0.5">Single Pay License</div>
               </div>
               <div className="flex gap-2 w-full xl:w-auto">
                 <button

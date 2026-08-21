@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { X, Sparkles, ShieldAlert, Clock, DollarSign, Zap, Layers, Lock, ArrowRight, CheckCircle2, ShoppingCart } from 'lucide-react';
+import { X, Sparkles, ShieldAlert, Clock, DollarSign, Zap, Layers, Lock, ArrowRight, CheckCircle2, ShoppingCart, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
+import ReviewModal from './ReviewModal';
 
 export default function QuestionDetailModal({ question, unlockedDomains, packs, onClose, onAskCopilot }) {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
   if (!question) return null;
 
   // Prepare text based on auth state
@@ -184,16 +186,27 @@ export default function QuestionDetailModal({ question, unlockedDomains, packs, 
 
         {/* Footer */}
         <div className="shrink-0 p-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-slate-50 rounded-b-2xl">
-          <button
-            onClick={() => {
-              onClose();
-              onAskCopilot(question);
-            }}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 flex items-center gap-2 shadow-sm transition-all"
-          >
-            <Sparkles className="w-4 h-4" />
-            Tailor to My Organization with AI Copilot
-          </button>
+          <div className="flex gap-3 items-center flex-wrap">
+            <button
+              onClick={() => {
+                onClose();
+                onAskCopilot(question);
+              }}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 text-black hover:bg-amber-400 flex items-center gap-2 shadow-sm transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              Tailor to My Organization with AI Copilot
+            </button>
+            {user && (
+              <button
+                onClick={() => setIsReviewOpen(true)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 flex items-center gap-2 shadow-sm transition-all"
+              >
+                <Star className="w-4 h-4" />
+                Leave a Review
+              </button>
+            )}
+          </div>
 
           <button
             onClick={onClose}
@@ -203,6 +216,13 @@ export default function QuestionDetailModal({ question, unlockedDomains, packs, 
           </button>
         </div>
 
+        <ReviewModal
+          isOpen={isReviewOpen}
+          onClose={() => setIsReviewOpen(false)}
+          productType="question"
+          productId={question.id}
+          productName={question.title}
+        />
       </div>
     </div>
   );

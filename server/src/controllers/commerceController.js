@@ -104,7 +104,7 @@ exports.createMultiCheckoutSession = async (req, res) => {
       } else if (item.type === 'Template' || item.type === 'template') {
         const { data } = await supabase.from('templates').select('*').eq('id', item.id).single();
         dbItem = data;
-      } else if (item.type === 'Pack' || item.type === 'pack') {
+      } else if (item.type === 'Pack' || item.type === 'pack' || item.type === 'Domain Pack') {
         const packs = getDomainPacks();
         dbItem = packs[item.id] || { 
           id: item.id, 
@@ -156,6 +156,7 @@ exports.createMultiCheckoutSession = async (req, res) => {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
+      allow_promotion_codes: true,
       customer_email: userEmail || undefined,
       client_reference_id: userId || undefined,
       metadata: {

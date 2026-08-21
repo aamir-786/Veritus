@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Lock, Search, CheckCircle2, ShoppingCart } from 'lucide-react';
+import { FileText, Download, Lock, Search, CheckCircle2, ShoppingCart, Star } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../lib/supabase';
+import ReviewModal from '../components/ReviewModal';
 
 export default function TemplateStore() {
   const { user } = useAuth();
@@ -13,6 +14,8 @@ export default function TemplateStore() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewProduct, setReviewProduct] = useState(null);
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -137,38 +140,61 @@ export default function TemplateStore() {
                   {tpl.downloads_count} Downloads
                 </div>
 
-                <button
-                  onClick={() => handleDownload(tpl)}
-                  disabled={downloadingId === tpl.id}
-                  className={`px-3 py-1.5 w-full xl:w-auto rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                    downloadingId === tpl.id 
-                      ? 'bg-slate-100 text-slate-400 cursor-wait' 
-                      : tpl.can_download 
-                        ? 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-xs' 
-                        : 'bg-amber-500 hover:bg-amber-400 text-black shadow-xs'
-                  }`}
-                >
-                  {downloadingId === tpl.id ? (
-                    <span className="flex items-center gap-2 animate-pulse">
-                      Downloading...
-                    </span>
-                  ) : tpl.can_download ? (
-                    <>
-                      <Download className="w-3 h-3" /> Download File
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-3 h-3" /> Add — ${tpl.price}
-                    </>
+                <div className="flex gap-2 w-full xl:w-auto">
+                  {user && tpl.can_download && (
+                    <button
+                      onClick={() => {
+                        setReviewProduct(tpl);
+                        setIsReviewOpen(true);
+                      }}
+                      className="px-2 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+                      title="Leave a Review"
+                    >
+                      <Star className="w-4 h-4" />
+                    </button>
                   )}
-                </button>
+                  <button
+                    onClick={() => handleDownload(tpl)}
+                    disabled={downloadingId === tpl.id}
+                    className={`px-3 py-1.5 w-full xl:w-auto rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      downloadingId === tpl.id 
+                        ? 'bg-slate-100 text-slate-400 cursor-wait' 
+                        : tpl.can_download 
+                          ? 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-xs' 
+                          : 'bg-amber-500 hover:bg-amber-400 text-black shadow-xs'
+                    }`}
+                  >
+                    {downloadingId === tpl.id ? (
+                      <span className="flex items-center gap-2 animate-pulse">
+                        Downloading...
+                      </span>
+                    ) : tpl.can_download ? (
+                      <>
+                        <Download className="w-3 h-3" /> Download File
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-3 h-3" /> Add — ${tpl.price}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Checkout Modal Removed in favor of CartDrawer */}
+      <ReviewModal
+        isOpen={isReviewOpen}
+        onClose={() => {
+          setIsReviewOpen(false);
+          setTimeout(() => setReviewProduct(null), 300); // clear after animation
+        }}
+        productType="template"
+        productId={reviewProduct?.id}
+        productName={reviewProduct?.title}
+      />
     </div>
   );
 }
