@@ -79,7 +79,37 @@ const sendEmail = async ({ to, subject, text, html }) => {
     html
   };
 
-  // 1. Try OAuth2 Transporter if configured
+  // 1. Try Resend HTTP API if RESEND_API_KEY is configured (Recommended for Vercel Serverless)
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: process.env.FROM_EMAIL || 'Veritus Effective RM <onboarding@resend.dev>',
+          to: Array.isArray(to) ? to : [to],
+          subject,
+          text,
+          html
+        })
+      });
+      const data = await response.json();
+      if (response.ok && data.id) {
+        console.log('[EmailService] Email sent via Resend HTTP API successfully:', data.id);
+        return { success: true, method: 'resend-api', messageId: data.id };
+      } else {
+        console.warn('[EmailService] Resend API error:', data);
+      }
+    } catch (err) {
+      console.warn('[EmailService] Resend API call failed:', err.message, '- attempting SMTP fallbacks...');
+    }
+  }
+
+  // 2. Try OAuth2 Transporter if configured
   if (!cachedOAuthTransporter) {
     cachedOAuthTransporter = createOAuthTransporter();
   }
