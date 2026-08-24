@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('mylearning');
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewCourseId, setReviewCourseId] = useState(null);
+  const [copiedCertId, setCopiedCertId] = useState(null);
 
   const handleDownload = async (tpl) => {
     try {
@@ -427,12 +428,17 @@ export default function Dashboard() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(verifyUrl);
-                          alert(`Verification link copied to clipboard!\n${verifyUrl}`);
+                          setCopiedCertId(cert.id);
+                          setTimeout(() => setCopiedCertId(null), 2500);
                         }}
-                        className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
                         title="Copy public verification link"
                       >
-                        Copy URL
+                        {copiedCertId === cert.id ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">✓ Copied</span>
+                        ) : (
+                          'Copy URL'
+                        )}
                       </button>
                     </div>
                   </div>
