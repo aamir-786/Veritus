@@ -75,11 +75,7 @@ const AppContent = () => {
               </ProtectedRoute>
             } />
 
-            <Route path="/certificate/:courseId" element={
-              <ProtectedRoute>
-                <Certificate />
-              </ProtectedRoute>
-            } />
+            <Route path="/certificate/:courseId" element={<Certificate />} />
 
             <Route path="/admin/*" element={
               <ProtectedRoute requireAdmin={true}>

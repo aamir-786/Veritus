@@ -49,8 +49,18 @@ export default function Certificate() {
     fetchDetails();
   }, [courseId]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 text-sm">Loading executive certificate...</div>;
-  if (!course) return <Navigate to="/dashboard" />;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 text-sm font-mono">Verifying certificate credential...</div>;
+
+  if (!course) return (
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center space-y-4">
+      <ShieldCheck className="w-12 h-12 text-rose-500" />
+      <h1 className="font-display text-xl font-bold text-white">Certificate Credential Not Found</h1>
+      <p className="text-xs text-slate-400 max-w-sm leading-relaxed">The certificate identifier or public verification URL you entered could not be verified in our executive record registry.</p>
+      <a href="/" className="px-4 py-2 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 transition-colors shadow-md">
+        Return to Home Page
+      </a>
+    </div>
+  );
 
   const handlePrint = () => {
     window.print();
