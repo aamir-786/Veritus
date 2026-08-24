@@ -4,45 +4,27 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 require('dotenv').config({ path: path.join(__dirname, '../../../.env') });
 
-let cachedOAuthTransporter = null;
 let cachedSmtpTransporter = null;
 let cachedEtherealTransporter = null;
 
-const createOAuthTransporter = () => {
-  const smtpUser = process.env.SMTP_USER || 'mr.amir.mangrio@gmail.com';
-  const gmailClientId = process.env.GMAIL_CLIENT_ID;
-  const gmailClientSecret = process.env.GMAIL_CLIENT_SECRET;
-  const gmailRefreshToken = process.env.GMAIL_REFRESH_TOKEN;
-
-  if (gmailClientId && gmailClientSecret && gmailRefreshToken) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        type: 'OAuth2',
-        user: smtpUser,
-        clientId: gmailClientId,
-        clientSecret: gmailClientSecret,
-        refreshToken: gmailRefreshToken
-      }
-    });
-  }
-  return null;
-};
-
 const createSmtpTransporter = () => {
-  const smtpUser = process.env.SMTP_USER || 'mr.amir.mangrio@gmail.com';
-  const smtpPass = process.env.SMTP_PASS;
+  const smtpUser = process.env.SMTP_USER || 'aamir.fss22@gmail.com';
+  const smtpPass = process.env.SMTP_PASS || 'podjgxpjrkoghkmv';
   const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
   const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
 
   if (smtpUser && smtpPass) {
     return nodemailer.createTransport({
+      service: smtpHost.includes('gmail') ? 'gmail' : undefined,
       host: smtpHost,
       port: smtpPort,
       secure: smtpPort === 465,
       auth: {
         user: smtpUser,
         pass: smtpPass
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
   }
@@ -66,11 +48,11 @@ const createEtherealTransporter = async () => {
 };
 
 /**
- * Send an email notification with automatic failover (OAuth2 -> SMTP -> Ethereal Sandbox)
+ * Send an email notification via Gmail SMTP with automatic sandbox fallback
  * @param {Object} options - { to, subject, text, html }
  */
 const sendEmail = async ({ to, subject, text, html }) => {
-  const fromAddress = process.env.FROM_EMAIL || process.env.SMTP_USER || 'mr.amir.mangrio@gmail.com';
+  const fromAddress = process.env.FROM_EMAIL || process.env.SMTP_USER || 'aamir.fss22@gmail.com';
   const mailOptions = {
     from: `"Veritus Effective RM" <${fromAddress}>`,
     to,
@@ -79,80 +61,34 @@ const sendEmail = async ({ to, subject, text, html }) => {
     html
   };
 
-  // 1. Try Resend HTTP API if RESEND_API_KEY is configured (Recommended for Vercel Serverless)
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (resendApiKey) {
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: process.env.FROM_EMAIL || 'Veritus Effective RM <onboarding@resend.dev>',
-          to: Array.isArray(to) ? to : [to],
-          subject,
-          text,
-          html
-        })
-      });
-      const data = await response.json();
-      if (response.ok && data.id) {
-        console.log('[EmailService] Email sent via Resend HTTP API successfully:', data.id);
-        return { success: true, method: 'resend-api', messageId: data.id };
-      } else {
-        console.warn('[EmailService] Resend API error:', data);
-      }
-    } catch (err) {
-      console.warn('[EmailService] Resend API call failed:', err.message, '- attempting SMTP fallbacks...');
-    }
-  }
-
-  // 2. Try OAuth2 Transporter if configured
-  if (!cachedOAuthTransporter) {
-    cachedOAuthTransporter = createOAuthTransporter();
-  }
-  if (cachedOAuthTransporter) {
-    try {
-      const info = await cachedOAuthTransporter.sendMail(mailOptions);
-      console.log('[EmailService] Email sent via Gmail OAuth2 successfully:', info.messageId);
-      return { success: true, method: 'gmail-oauth2', messageId: info.messageId };
-    } catch (err) {
-      console.warn('[EmailService] Gmail OAuth2 failed:', err.message, '- attempting standard SMTP fallback...');
-    }
-  }
-
-  // 2. Try Standard SMTP Transporter
+  // 1. Primary: Standard Gmail SMTP Transporter
   if (!cachedSmtpTransporter) {
     cachedSmtpTransporter = createSmtpTransporter();
   }
   if (cachedSmtpTransporter) {
     try {
       const info = await cachedSmtpTransporter.sendMail(mailOptions);
-      console.log('[EmailService] Email sent via Standard SMTP successfully:', info.messageId);
-      return { success: true, method: 'smtp', messageId: info.messageId };
+      console.log('[EmailService] Email sent via Gmail SMTP successfully:', info.messageId);
+      return { success: true, method: 'gmail-smtp', messageId: info.messageId };
     } catch (err) {
-      console.warn('[EmailService] Standard SMTP failed:', err.message, '- attempting Ethereal test transport fallback...');
+      console.warn('[EmailService] Gmail SMTP failed:', err.message, '- attempting Ethereal test transport fallback...');
     }
   }
 
-  // 3. Fallback to Ethereal Test Transport (ensures delivery preview URL during dev/testing)
+  // 2. Fallback to Ethereal Test Transport
   try {
     const etherealTransporter = await createEtherealTransporter();
-    const info = await etherealTransporter.sendMail({
-      ...mailOptions,
-      from: `"Veritus Sandbox" <test@ethereal.email>`
-    });
+    const info = await etherealTransporter.sendMail(mailOptions);
     const previewUrl = nodemailer.getTestMessageUrl(info);
     console.log('[EmailService] Email sent via Ethereal Sandbox successfully!');
     console.log('[EmailService] Preview URL:', previewUrl);
+
     return {
       success: true,
       method: 'ethereal-sandbox',
       messageId: info.messageId,
       previewUrl,
-      note: 'Primary SMTP/OAuth credentials failed or expired; delivered to sandbox.'
+      note: 'Gmail SMTP credentials failed or expired; delivered to sandbox.'
     };
   } catch (err) {
     console.error('[EmailService] All email transports failed:', err.message);

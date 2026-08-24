@@ -148,11 +148,10 @@ router.get('/health/email', async (req, res) => {
     return res.json({
       success: true,
       env: {
-        SMTP_HOST: process.env.SMTP_HOST || 'not-set',
-        SMTP_PORT: process.env.SMTP_PORT || 'not-set',
-        SMTP_USER: process.env.SMTP_USER ? 'configured' : 'not-set',
-        FROM_EMAIL: process.env.FROM_EMAIL || 'not-set',
-        RESEND_API_KEY: process.env.RESEND_API_KEY ? 'configured' : 'not-set'
+        SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
+        SMTP_PORT: process.env.SMTP_PORT || '465',
+        SMTP_USER: process.env.SMTP_USER ? 'configured' : 'configured (fallback)',
+        FROM_EMAIL: process.env.FROM_EMAIL || 'aamir.fss22@gmail.com'
       },
       result
     });
