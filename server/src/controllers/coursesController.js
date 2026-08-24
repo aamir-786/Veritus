@@ -132,8 +132,10 @@ exports.getCourseDetails = async (req, res) => {
         type: l.type,
         duration_minutes: l.duration_minutes,
         is_free_preview: l.is_free_preview,
-        // Only include video_url and content if enrolled OR if free preview
+        is_final_assessment: l.is_final_assessment,
+        // Only include media and content if enrolled OR if free preview
         video_url: (isEnrolled || l.is_free_preview) ? l.video_url : null,
+        audio_url: (isEnrolled || l.is_free_preview) ? l.audio_url : null,
         captions_vtt: (isEnrolled || l.is_free_preview) ? l.captions_vtt : null,
         content: (isEnrolled || l.is_free_preview) ? l.content : 'This lesson is locked. Purchase the course to gain instant lifetime access.'
       }))
@@ -218,9 +220,17 @@ exports.getLessonPlayback = async (req, res) => {
     if (!isEnrolled && !targetLesson.is_free_preview) {
       return res.status(403).json({ 
         success: false, 
-        error: 'Access Gated: You must purchase this course to access this lesson video.',
+        error: 'Access Gated: You must purchase this course to access this lesson content.',
         requires_purchase: true 
       });
+    }
+
+    if (targetLesson.type === 'assessment') {
+      const { data: questions } = await supabase
+        .from('assessment_questions')
+        .select('id, question_text, options')
+        .eq('lesson_id', targetLesson.id);
+      targetLesson.questions = questions || [];
     }
 
     return res.json({

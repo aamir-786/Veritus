@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { PlayCircle, Lock, CheckCircle2, ShieldAlert, ArrowRight, ShoppingCart, Star } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { PlayCircle, Lock, CheckCircle2, ShieldAlert, ArrowRight, ShoppingCart, Star, ArrowLeft } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -11,6 +11,7 @@ export default function CourseDetail() {
   const { identifier } = useParams();
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,8 +47,16 @@ export default function CourseDetail() {
   if (!course) return <div className="py-16 text-center text-rose-600 text-xs font-bold">Course not found.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-slate-900 bg-[#F8FAFC]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 text-slate-900 bg-[#F8FAFC]">
       
+      {/* Back Button */}
+      <button 
+        onClick={() => navigate(-1)} 
+        className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" /> Back
+      </button>
+
       {/* Course Hero Banner */}
       <div className="glass-card rounded-3xl p-8 border border-slate-200 space-y-6 relative overflow-hidden bg-gradient-to-r from-blue-50/50 via-white to-white shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -63,10 +72,19 @@ export default function CourseDetail() {
               {course.title}
             </h1>
             <div className="flex items-center gap-1.5">
-              <div className="flex text-emerald-500">
-                {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-emerald-500" />)}
+              <div className={`flex ${course.rating_count > 0 ? 'text-emerald-500' : 'text-slate-300'}`}>
+                {[1,2,3,4,5].map(i => (
+                  <Star 
+                    key={i} 
+                    className={`w-4 h-4 ${course.rating_count > 0 && course.rating_avg >= i ? 'fill-emerald-500 text-emerald-500' : (course.rating_count > 0 && course.rating_avg >= i - 0.5 ? 'fill-emerald-500 text-emerald-500 opacity-50' : 'fill-slate-200 text-slate-200')}`} 
+                  />
+                ))}
               </div>
-              <span className="text-xs font-bold text-slate-600">5.0 <span className="font-normal text-slate-500">(124 verified ratings)</span></span>
+              <span className="text-xs font-bold text-slate-600">
+                {course.rating_count > 0 ? (
+                  <>{course.rating_avg} <span className="font-normal text-slate-500">({course.rating_count} verified ratings)</span></>
+                ) : 'No reviews'}
+              </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
               {course.description}

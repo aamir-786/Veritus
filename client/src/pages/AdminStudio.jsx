@@ -12,7 +12,29 @@ import AdminQuestionModal from '../components/AdminQuestionModal';
 import VideoPlayer from '../components/VideoPlayer';
 import Toast from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
+import AssessmentBuilderModal from '../components/AssessmentBuilderModal';
+import ModuleManagementModal from '../components/ModuleManagementModal';
+import AssessmentPreview from '../components/AssessmentPreview';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { supabase } from '../lib/supabase';
+
+const usePersistedState = (key, defaultValue) => {
+  const [state, setState] = useState(() => {
+    try {
+      const item = localStorage.getItem(key);
+      if (item !== null) return JSON.parse(item);
+    } catch (e) {}
+    return defaultValue;
+  });
+
+  useEffect(() => {
+    if (state === null || state === undefined) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+
+  return [state, setState];
+};
 
 export default function AdminStudio() {
   const { user, logout, sendPasswordReset } = useAuth();
@@ -33,10 +55,10 @@ export default function AdminStudio() {
   const [newPromoEnd, setNewPromoEnd] = useState('');
   const [newPromoLimit, setNewPromoLimit] = useState('');
   const [newPromoShowBanner, setNewPromoShowBanner] = useState(true);
-  const [selectedPromoDetails, setSelectedPromoDetails] = useState(null); // For Promo modal
-  const [editPromotion, setEditPromotion] = useState(null); // For editing promotion
-  const [selectedOrder, setSelectedOrder] = useState(null); // For order details modal
-  const [isUpdatingOrder, setIsUpdatingOrder] = useState(null); // stores order ID being updated
+  const [selectedPromoDetails, setSelectedPromoDetails] = usePersistedState('admin_selectedPromoDetails', null);
+  const [editPromotion, setEditPromotion] = usePersistedState('admin_editPromotion', null);
+  const [selectedOrder, setSelectedOrder] = usePersistedState('admin_selectedOrder', null);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -44,13 +66,28 @@ export default function AdminStudio() {
   // Modern UI State
   const [toastConfig, setToastConfig] = useState({ isOpen: false, message: '', type: 'success' });
   const [promoDeleteConfig, setPromoDeleteConfig] = useState({ isOpen: false, promoId: null });
+  const [genericConfirm, setGenericConfirm] = useState({ isOpen: false, title: '', message: '', onConfirm: null, confirmText: 'Confirm', type: 'danger' });
+
+  const confirmAction = (title, message, onConfirm, confirmText = 'Confirm', type = 'danger') => {
+    setGenericConfirm({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: async () => {
+        await onConfirm();
+        setGenericConfirm(prev => ({ ...prev, isOpen: false }));
+      },
+      confirmText,
+      type
+    });
+  };
 
   const showToast = (message, type = 'success') => {
     setToastConfig({ isOpen: true, message, type });
   };
 
   // Inquiry Modal State
-  const [selectedInquiry, setSelectedInquiry] = useState(null);
+  const [selectedInquiry, setSelectedInquiry] = usePersistedState('admin_selectedInquiry', null);
   const [inquiryReplyText, setInquiryReplyText] = useState('');
   const [isReplying, setIsReplying] = useState(false);
   const [replyFeedback, setReplyFeedback] = useState(null);
@@ -65,8 +102,8 @@ export default function AdminStudio() {
   }, [activeTab]);
 
   // Course Form State
-  const [showCourseForm, setShowCourseForm] = useState(false);
-  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [showCourseForm, setShowCourseForm] = usePersistedState('admin_showCourseForm', false);
+  const [editingCourseId, setEditingCourseId] = usePersistedState('admin_editingCourseId', null);
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [newCoursePrice, setNewCoursePrice] = useState('199');
   const [newCourseTier, setNewCourseTier] = useState('Executive Tier');
@@ -76,20 +113,20 @@ export default function AdminStudio() {
   const [isUploadingCourseCover, setIsUploadingCourseCover] = useState(false);
 
   // User Profile Details State
-  const [selectedUserForDetails, setSelectedUserForDetails] = useState(null);
+  const [selectedUserForDetails, setSelectedUserForDetails] = usePersistedState('admin_selectedUserForDetails', null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
 
   // Question Form State
-  const [showQuestionForm, setShowQuestionForm] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [showQuestionForm, setShowQuestionForm] = usePersistedState('admin_showQuestionForm', false);
+  const [editingQuestion, setEditingQuestion] = usePersistedState('admin_editingQuestion', null);
 
   // Edit Question State
   const [searchQuery, setSearchQuery] = useState('');
 
   // Template Form State
-  const [showTemplateForm, setShowTemplateForm] = useState(false);
-  const [editingTemplateId, setEditingTemplateId] = useState(null);
+  const [showTemplateForm, setShowTemplateForm] = usePersistedState('admin_showTemplateForm', false);
+  const [editingTemplateId, setEditingTemplateId] = usePersistedState('admin_editingTemplateId', null);
   const [newTemplateTitle, setNewTemplateTitle] = useState('');
   const [newTemplateDesc, setNewTemplateDesc] = useState('');
   const [newTemplateCategory, setNewTemplateCategory] = useState('Frameworks');
@@ -99,20 +136,26 @@ export default function AdminStudio() {
   const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
 
   // Course Detailed Management State
-  const [managingCourse, setManagingCourse] = useState(null);
-  const [managingLesson, setManagingLesson] = useState(null);
-  const [editingLesson, setEditingLesson] = useState(false);
-  const [showModuleForm, setShowModuleForm] = useState(false);
+  const [managingCourse, setManagingCourse] = usePersistedState('admin_managingCourse', null);
+  const [managingLesson, setManagingLesson] = usePersistedState('admin_managingLesson', null);
+  const [editingLesson, setEditingLesson] = usePersistedState('admin_editingLesson', false);
+  const [showModuleForm, setShowModuleForm] = usePersistedState('admin_showModuleForm', false);
   const [newModuleTitle, setNewModuleTitle] = useState('');
-  const [activeModuleIdForLesson, setActiveModuleIdForLesson] = useState(null);
+  const [moduleEditModalOpen, setModuleEditModalOpen] = useState(false);
+  const [moduleToEdit, setModuleToEdit] = useState(null);
+  const [activeModuleIdForLesson, setActiveModuleIdForLesson] = usePersistedState('admin_activeModuleId', null);
+  const [assessmentBuilderLesson, setAssessmentBuilderLesson] = usePersistedState('admin_assessmentBuilderLesson', null);
 
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonType, setNewLessonType] = useState('video');
   const [newLessonDuration, setNewLessonDuration] = useState('10');
   const [newLessonUrl, setNewLessonUrl] = useState('');
+  const [newLessonAudioUrl, setNewLessonAudioUrl] = useState('');
   const [newLessonContent, setNewLessonContent] = useState('');
   const [newLessonFree, setNewLessonFree] = useState(false);
+  const [newLessonFinal, setNewLessonFinal] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
 
   const handleFileUpload = async (e, setUrlCallback, setLoadingCallback) => {
     const file = e.target.files?.[0];
@@ -163,10 +206,34 @@ export default function AdminStudio() {
       if (rRes && rRes.success) setReviews(rRes.reviews);
       if (prRes && prRes.success) setPromotions(prRes.promotions);
       if (rRes && rRes.success) setReviews(rRes.reviews);
-
+      if (rRes && rRes.success) setReviews(rRes.reviews);
+      if (prRes && prRes.success) setPromotions(prRes.promotions);
+      
       if (managingCourse) {
         const detailsRes = await api.getCourseDetails(managingCourse.slug);
-        if (detailsRes.success) setManagingCourse(detailsRes.course);
+        if (detailsRes.success) {
+          setManagingCourse(detailsRes.course);
+          
+          if (managingLesson) {
+            for (const mod of detailsRes.course.modules || []) {
+              const foundLesson = mod.lessons?.find(l => l.id === managingLesson.id);
+              if (foundLesson) {
+                setManagingLesson(foundLesson);
+                break;
+              }
+            }
+          }
+
+          if (assessmentBuilderLesson) {
+            for (const mod of detailsRes.course.modules || []) {
+              const foundLesson = mod.lessons?.find(l => l.id === assessmentBuilderLesson.id);
+              if (foundLesson) {
+                setAssessmentBuilderLesson(foundLesson);
+                break;
+              }
+            }
+          }
+        }
       }
     } catch (err) {
       console.error(err);
@@ -196,26 +263,31 @@ export default function AdminStudio() {
     }
   };
 
-  const handleRefundOrder = async (orderId) => {
-    if (!window.confirm("Are you sure you want to process a Stripe refund (25% fee)? This action cannot be undone.")) return;
-    setIsUpdatingOrder(orderId);
-    try {
-      const res = await api.refundOrder(orderId);
-      if (res.success) {
-        setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'refunded' } : o));
-        if (selectedOrder && selectedOrder.id === orderId) {
-          setSelectedOrder({ ...selectedOrder, status: 'refunded' });
+  const handleRefundOrder = (orderId) => {
+    confirmAction(
+      "Refund Order",
+      "Are you sure you want to process a Stripe refund (25% fee)? This action cannot be undone.",
+      async () => {
+        setIsUpdatingOrder(orderId);
+        try {
+          const res = await api.refundOrder(orderId);
+          if (res.success) {
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'refunded' } : o));
+            if (selectedOrder && selectedOrder.id === orderId) {
+              setSelectedOrder({ ...selectedOrder, status: 'refunded' });
+            }
+            showToast('Order refunded successfully');
+          } else {
+            alert(res.error || 'Failed to refund order');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('An error occurred while refunding the order.');
+        } finally {
+          setIsUpdatingOrder(null);
         }
-        alert("Refund processed successfully!");
-      } else {
-        alert(res.error || 'Failed to process refund');
       }
-    } catch (err) {
-      console.error(err);
-      alert('An error occurred while processing the refund.');
-    } finally {
-      setIsUpdatingOrder(null);
-    }
+    );
   };
 
   useEffect(() => {
@@ -320,16 +392,19 @@ export default function AdminStudio() {
     }
   };
 
-  const handleDeleteQuestion = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this question?")) return;
-    try {
-      const res = await api.deleteQuestion(id);
-      if (res.success) {
-        fetchData();
+  const handleDeleteQuestion = (id) => {
+    confirmAction("Delete Question", "Are you sure you want to delete this question?", async () => {
+      try {
+        const res = await api.deleteQuestion(id);
+        if (res.success) {
+          showToast('Question deleted successfully');
+          fetchData();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error deleting question');
       }
-    } catch (err) {
-      console.error(err);
-    }
+    });
   };
 
   const handleSavePackPrice = async (packId, newPrice) => {
@@ -346,32 +421,35 @@ export default function AdminStudio() {
     }
   };
 
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm("Are you sure you want to completely delete this user? This cannot be undone.")) return;
-    try {
-      const res = await api.deleteUser(id);
-      if (res.success) {
-        fetchData();
-      } else {
-        alert(res.error || "Failed to delete user");
+  const handleDeleteUser = (id) => {
+    confirmAction("Delete User", "Are you sure you want to completely delete this user? This cannot be undone.", async () => {
+      try {
+        const res = await api.deleteUser(id);
+        if (res.success) {
+          showToast('User deleted successfully');
+          fetchData(); // This will refresh users from metrics
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error deleting user');
       }
-    } catch (err) {
-      console.error(err);
-    }
+    });
   };
 
-  const handleResetPassword = async (email) => {
-    if (!window.confirm(`Send a password reset email to ${email}?`)) return;
-    try {
-      const res = await api.adminResetPassword(email);
-      if (res.success) {
-        alert('Password reset email sent!');
-      } else {
-        alert(res.error || "Failed to send reset email");
+  const handleResetPassword = (email) => {
+    confirmAction("Reset Password", `Send a password reset email to ${email}?`, async () => {
+      try {
+        const res = await api.adminResetPassword(email);
+        if (res.success) {
+          showToast(`Password reset link sent to ${email}`);
+        } else {
+          alert('Failed to send reset link');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error sending reset link');
       }
-    } catch (err) {
-      console.error(err);
-    }
+    }, "Send Link", "primary");
   };
 
   const handleSaveTemplate = async (e) => {
@@ -409,31 +487,75 @@ export default function AdminStudio() {
     }
   };
 
-  const handleDeleteTemplate = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this template?")) return;
-    try {
-      const res = await api.deleteTemplate(id);
-      if (res.success) {
-        fetchData();
+  const handleDeleteTemplate = (id) => {
+    confirmAction("Delete Template", "Are you sure you want to delete this template?", async () => {
+      try {
+        const res = await api.deleteTemplate(id);
+        if (res.success) {
+          showToast('Template deleted successfully');
+          fetchData();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error deleting template');
       }
-    } catch (err) {
-      console.error(err);
-    }
+    });
   };
 
   const handleCreateModule = async (e) => {
     e.preventDefault();
-    if (!managingCourse) return;
+    if (!newModuleTitle || !managingCourse) return;
     try {
       const res = await api.addModuleToCourse(managingCourse.id, newModuleTitle);
       if (res.success) {
+        showToast('Module added successfully.');
         setNewModuleTitle('');
         setShowModuleForm(false);
-        fetchData();
+        const updatedCourse = await api.getCourseDetails(managingCourse.slug);
+        if (updatedCourse.success) setManagingCourse(updatedCourse.course);
+      } else {
+        alert(res.error || 'Failed to add module');
       }
     } catch (err) {
       console.error(err);
+      alert('Error adding module');
     }
+  };
+
+  const handleUpdateModule = async (moduleId, title) => {
+    if (!title || !managingCourse || !moduleId) return;
+    try {
+      const res = await api.updateModule(managingCourse.id, moduleId, title);
+      if (res.success) {
+        showToast('Module title updated successfully.');
+        const updatedCourse = await api.getCourseDetails(managingCourse.slug);
+        if (updatedCourse.success) setManagingCourse(updatedCourse.course);
+      } else {
+        alert(res.error || 'Failed to update module');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating module');
+    }
+  };
+
+  const handleDeleteModule = (moduleId) => {
+    confirmAction("Delete Module", "Are you sure you want to delete this module? All lessons inside will be permanently deleted.", async () => {
+      try {
+        const res = await api.deleteModule(managingCourse.id, moduleId);
+        if (res.success) {
+          showToast('Module deleted successfully.');
+          if (activeModuleIdForLesson === moduleId) setActiveModuleIdForLesson(null);
+          const updatedCourse = await api.getCourseDetails(managingCourse.slug);
+          if (updatedCourse.success) setManagingCourse(updatedCourse.course);
+        } else {
+          alert(res.error || 'Failed to delete module');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error deleting module');
+      }
+    });
   };
 
   const handleCreateLesson = async (e) => {
@@ -445,13 +567,18 @@ export default function AdminStudio() {
         type: newLessonType,
         duration_minutes: newLessonDuration,
         video_url: newLessonUrl,
+        audio_url: newLessonAudioUrl,
         content: newLessonContent,
-        is_free_preview: newLessonFree
+        is_free_preview: newLessonFree,
+        is_final_assessment: newLessonFinal
       });
       if (res.success) {
         setNewLessonTitle('');
         setNewLessonUrl('');
+        setNewLessonAudioUrl('');
         setNewLessonContent('');
+        setNewLessonType('video');
+        setNewLessonFinal(false);
         setActiveModuleIdForLesson(null);
         fetchData();
       }
@@ -469,8 +596,10 @@ export default function AdminStudio() {
         type: newLessonType,
         duration_minutes: newLessonDuration,
         video_url: newLessonUrl,
+        audio_url: newLessonAudioUrl,
         content: newLessonContent,
-        is_free_preview: newLessonFree
+        is_free_preview: newLessonFree,
+        is_final_assessment: newLessonFinal
       });
       if (res.success) {
         setManagingLesson(res.lesson);
@@ -526,19 +655,25 @@ export default function AdminStudio() {
     }
   };
 
-  const handleDeleteReview = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this review?")) return;
-    try {
-      const res = await api.deleteAdminReview(id);
-      if (res.success) {
-        setReviews(reviews.filter(r => r.id !== id));
-      } else {
-        alert(res.error || 'Failed to delete review');
+  const handleDeleteReview = (id) => {
+    confirmAction("Delete Review", "Are you sure you want to delete this review?", async () => {
+      try {
+        const res = await fetch(`${API_BASE}/admin/reviews/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Review deleted successfully');
+          fetchData();
+        } else {
+          alert('Failed to delete review');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error deleting review');
       }
-    } catch (err) {
-      console.error(err);
-      alert('Error deleting review');
-    }
+    });
   };
 
   const handleToggleFeaturedReview = async (id, currentStatus) => {
@@ -1441,7 +1576,7 @@ export default function AdminStudio() {
               </>
             ) : managingLesson ? (
               // Managing Lesson Detailed View
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300 max-w-4xl mx-auto">
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300 w-full">
                 <button
                   onClick={() => { setManagingLesson(null); setEditingLesson(false); }}
                   className="mb-4 text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1"
@@ -1453,14 +1588,26 @@ export default function AdminStudio() {
                     <h1 className="font-display text-xl font-bold text-slate-900">{managingLesson.title}</h1>
                     <p className="text-slate-500 text-xs mt-1">Preview and edit lesson details.</p>
                   </div>
-                  <button
+                  <div className="flex gap-2">
+                    {managingLesson.type === 'assessment' && (
+                      <button
+                        onClick={() => setAssessmentBuilderLesson(managingLesson)}
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] uppercase tracking-wide transition-all shadow-sm"
+                      >
+                        <Settings className="w-3.5 h-3.5" /> Manage Questions
+                      </button>
+                    )}
+                    <button
                     onClick={() => {
                       if (!editingLesson) {
                         setNewLessonTitle(managingLesson.title);
+                        setNewLessonType(managingLesson.type || 'video');
                         setNewLessonUrl(managingLesson.video_url || '');
+                        setNewLessonAudioUrl(managingLesson.audio_url || '');
                         setNewLessonContent(managingLesson.content || '');
                         setNewLessonDuration(managingLesson.duration_minutes || 10);
                         setNewLessonFree(managingLesson.is_free_preview || false);
+                        setNewLessonFinal(managingLesson.is_final_assessment || false);
                       }
                       setEditingLesson(!editingLesson);
                     }}
@@ -1470,63 +1617,146 @@ export default function AdminStudio() {
                     {editingLesson ? 'Cancel Edit' : 'Edit Lesson'}
                   </button>
                 </div>
+              </div>
 
-                {editingLesson ? (
+              {editingLesson ? (
                   <div className="bg-white rounded-xl p-6 border border-indigo-100 shadow-sm mb-6">
                     <form onSubmit={handleUpdateLesson} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Title</label>
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                            {newLessonType === 'assessment' ? 'Assessment Name' : newLessonType === 'reading' ? 'Document Title' : 'Lesson Title'}
+                          </label>
                           <input type="text" required value={newLessonTitle} onChange={e => setNewLessonTitle(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Duration (min)</label>
                           <input type="number" required value={newLessonDuration} onChange={e => setNewLessonDuration(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
                         </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Type</label>
+                          <select value={newLessonType} onChange={e => setNewLessonType(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs">
+                            <option value="reading">Reading</option>
+                            <option value="video">Lecture Video</option>
+                            <option value="assessment">Assessment</option>
+                          </select>
+                        </div>
                       </div>
+                      
+                      {newLessonType === 'video' && (
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                            <span>Video URL (or embed)</span>
+                            {isUploadingVideo && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
+                          </label>
+                          <div className="flex gap-2">
+                            <input type="text" value={newLessonUrl} onChange={e => setNewLessonUrl(e.target.value)} className="flex-1 px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" placeholder="https://..." />
+                            <label className="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded text-[10px] font-bold text-slate-600 flex items-center shrink-0">
+                              Upload Video
+                              <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, setNewLessonUrl, setIsUploadingVideo)} disabled={isUploadingVideo} />
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
-                          <span>Video URL (or embed)</span>
-                          {isUploadingVideo && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
+                          <span>Audio / Voice URL (Optional)</span>
+                          {isUploadingAudio && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
                         </label>
                         <div className="flex gap-2">
-                          <input type="text" required value={newLessonUrl} onChange={e => setNewLessonUrl(e.target.value)} className="flex-1 px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" placeholder="https://..." />
+                          <input type="text" value={newLessonAudioUrl} onChange={e => setNewLessonAudioUrl(e.target.value)} className="flex-1 px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" placeholder="https://..." />
                           <label className="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded text-[10px] font-bold text-slate-600 flex items-center shrink-0">
-                            Upload Video
-                            <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, setNewLessonUrl, setIsUploadingVideo)} disabled={isUploadingVideo} />
+                            Upload Audio
+                            <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, setNewLessonAudioUrl, setIsUploadingAudio)} disabled={isUploadingAudio} />
                           </label>
                         </div>
                       </div>
+
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Content (Text)</label>
-                        <textarea required value={newLessonContent} onChange={e => setNewLessonContent(e.target.value)} rows={6} className="w-full px-2.5 py-2 rounded bg-white border border-slate-200 text-xs resize-y font-mono" placeholder="Write lesson content here..."></textarea>
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+                          {newLessonType === 'assessment' ? 'Assessment Instructions' : newLessonType === 'reading' ? 'Reading Content' : 'Lesson Content (Text)'}
+                        </label>
+                        <ReactQuill theme="snow" value={newLessonContent} onChange={setNewLessonContent} className="bg-white rounded" placeholder={newLessonType === 'assessment' ? 'Write instructions here...' : 'Write content here...'} />
                       </div>
-                      <div className="flex items-center gap-2 pb-2">
-                        <input type="checkbox" id="edit-free-preview" checked={newLessonFree} onChange={e => setNewLessonFree(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
-                        <label htmlFor="edit-free-preview" className="text-[10px] font-bold text-slate-600">Available as Free Preview</label>
+
+                      <div className="flex items-center gap-4 pb-2">
+                        <div className="flex items-center gap-2">
+                          <input type="checkbox" id="edit-free-preview" checked={newLessonFree} onChange={e => setNewLessonFree(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+                          <label htmlFor="edit-free-preview" className="text-[10px] font-bold text-slate-600">Available as Free Preview</label>
+                        </div>
+                        {newLessonType === 'assessment' && (
+                          <div className="flex items-center gap-2">
+                            <input type="checkbox" id="edit-final-assessment" checked={newLessonFinal} onChange={e => setNewLessonFinal(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+                            <label htmlFor="edit-final-assessment" className="text-[10px] font-bold text-slate-600">Is Final Assessment (Mandatory for Course Completion)</label>
+                          </div>
+                        )}
                       </div>
                       <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-indigo-700">Update Lesson</button>
                     </form>
                   </div>
                 ) : (
-                  <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-800 p-4">
-                    {managingLesson.video_url ? (
-                      <div className="max-w-3xl mx-auto">
-                        <VideoPlayer videoUrl={managingLesson.video_url} title={managingLesson.title} />
+                  <>
+                    {managingLesson.type === 'assessment' ? (
+                      <div className="space-y-6 mt-6 w-full">
+                        {managingLesson.content && (
+                          <div className="bg-white/60 backdrop-blur-md rounded-2xl p-6 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none shadow-sm" dangerouslySetInnerHTML={{ __html: managingLesson.content }} />
+                        )}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center">
+                          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4 text-blue-600">
+                            <CheckCircle2 className="w-8 h-8" />
+                          </div>
+                          <h2 className="font-display text-xl font-bold text-slate-900 mb-2">Assessment Knowledge Check</h2>
+                          <p className="text-sm text-slate-600 mb-6 max-w-md mx-auto">
+                            This is how learners will view the assessment. Use the "Manage Questions" button above to add interactive questions.
+                          </p>
+                          <div className="text-left">
+                            <AssessmentPreview lessonId={managingLesson.id} />
+                          </div>
+                        </div>
+                      </div>
+                    ) : managingLesson.type === 'reading' ? (
+                      <div className="mt-6 w-full">
+                        <div className="bg-white/60 backdrop-blur-md rounded-2xl p-8 border border-slate-200 shadow-sm">
+                          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                              <FileText className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-display text-lg font-bold text-slate-900">Reading Material</h3>
+                              <p className="text-xs text-slate-500">Document or text-based lesson</p>
+                            </div>
+                          </div>
+                          {managingLesson.content ? (
+                            <div className="text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: managingLesson.content }} />
+                          ) : (
+                            <div className="text-center py-8 text-slate-400 text-sm italic">
+                              No reading content provided for this lesson.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-                        <Video className="w-12 h-12 mb-4 opacity-50" />
-                        <p>No video URL provided for this lesson.</p>
+                      <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-800 p-4 w-full">
+                        {managingLesson.video_url ? (
+                          <div className="w-full">
+                            <VideoPlayer videoUrl={managingLesson.video_url} title={managingLesson.title} />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-48 text-slate-500">
+                            <Video className="w-12 h-12 mb-4 opacity-50" />
+                            <p>No video URL provided for this lesson.</p>
+                          </div>
+                        )}
+                        {managingLesson.content && (
+                          <div className="mt-6 bg-slate-800/50 p-6 rounded-xl border border-slate-700 w-full">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Lesson Notes</h4>
+                            <div className="text-slate-300 text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: managingLesson.content }} />
+                          </div>
+                        )}
                       </div>
                     )}
-                    {managingLesson.content && (
-                      <div className="mt-6 bg-slate-800/50 p-6 rounded-xl border border-slate-700 max-w-3xl mx-auto">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Lesson Content</h4>
-                        <div className="text-slate-300 text-sm whitespace-pre-wrap">{managingLesson.content}</div>
-                      </div>
-                    )}
-                  </div>
+                  </>
                 )}
               </div>
             ) : (
@@ -1569,50 +1799,102 @@ export default function AdminStudio() {
                 <div className="space-y-4">
                   {(managingCourse.modules || []).map((mod, idx) => (
                     <div key={mod.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                      <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                        <h3 className="font-bold text-sm text-slate-900">Module {idx + 1}: {mod.title}</h3>
-                        <button
-                          onClick={() => setActiveModuleIdForLesson(activeModuleIdForLesson === mod.id ? null : mod.id)}
-                          className="text-[10px] font-bold text-indigo-600 flex items-center gap-1 uppercase tracking-wide"
-                        >
-                          <Plus className="w-3 h-3" /> Add Lesson
-                        </button>
+                      <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center group">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-sm text-slate-900">Module {idx + 1}: {mod.title}</h3>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setModuleToEdit(mod);
+                                setModuleEditModalOpen(true);
+                              }}
+                              className="text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Manage Module"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => setActiveModuleIdForLesson(activeModuleIdForLesson === mod.id ? null : mod.id)}
+                            className="text-[10px] font-bold text-indigo-600 flex items-center gap-1 uppercase tracking-wide shrink-0"
+                          >
+                            <Plus className="w-3 h-3" /> Add Lesson
+                          </button>
                       </div>
 
                       {activeModuleIdForLesson === mod.id && (
                         <div className="p-5 border-b border-slate-100 bg-indigo-50/30">
                           <form onSubmit={handleCreateLesson} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-1">
-                                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Title</label>
-                                <input type="text" required value={newLessonTitle} onChange={e => setNewLessonTitle(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                                    {newLessonType === 'assessment' ? 'Assessment Name' : newLessonType === 'reading' ? 'Document Title' : 'Lesson Title'}
+                                  </label>
+                                  <input type="text" required value={newLessonTitle} onChange={e => setNewLessonTitle(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Duration (min)</label>
+                                  <input type="number" required value={newLessonDuration} onChange={e => setNewLessonDuration(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Type</label>
+                                  <select value={newLessonType} onChange={e => setNewLessonType(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs">
+                                    <option value="reading">Reading</option>
+                                    <option value="video">Lecture Video</option>
+                                    <option value="assessment">Assessment</option>
+                                  </select>
+                                </div>
                               </div>
+                              
+                              {newLessonType === 'video' && (
+                                <div className="space-y-1">
+                                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                                    <span>Video URL (or embed)</span>
+                                    {isUploadingVideo && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
+                                  </label>
+                                  <div className="flex gap-2">
+                                    <input type="text" value={newLessonUrl} onChange={e => setNewLessonUrl(e.target.value)} className="flex-1 px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" placeholder="https://..." />
+                                    <label className="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded text-[10px] font-bold text-slate-600 flex items-center shrink-0">
+                                      Upload Video
+                                      <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, setNewLessonUrl, setIsUploadingVideo)} disabled={isUploadingVideo} />
+                                    </label>
+                                  </div>
+                                </div>
+                              )}
+                              
                               <div className="space-y-1">
-                                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Duration (min)</label>
-                                <input type="number" required value={newLessonDuration} onChange={e => setNewLessonDuration(e.target.value)} className="w-full px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" />
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
-                                <span>Video URL (or embed)</span>
-                                {isUploadingVideo && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
-                              </label>
-                              <div className="flex gap-2">
-                                <input type="text" required value={newLessonUrl} onChange={e => setNewLessonUrl(e.target.value)} className="flex-1 px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" placeholder="https://..." />
-                                <label className="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded text-[10px] font-bold text-slate-600 flex items-center shrink-0">
-                                  Upload Video
-                                  <input type="file" className="hidden" accept="video/*" onChange={e => handleFileUpload(e, setNewLessonUrl, setIsUploadingVideo)} disabled={isUploadingVideo} />
+                                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                                  <span>Audio / Voice URL (Optional)</span>
+                                  {isUploadingAudio && <span className="text-indigo-600 animate-pulse">Uploading...</span>}
                                 </label>
+                                <div className="flex gap-2">
+                                  <input type="text" value={newLessonAudioUrl} onChange={e => setNewLessonAudioUrl(e.target.value)} className="flex-1 px-2.5 py-1.5 rounded bg-white border border-slate-200 text-xs" placeholder="https://..." />
+                                  <label className="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded text-[10px] font-bold text-slate-600 flex items-center shrink-0">
+                                    Upload Audio
+                                    <input type="file" className="hidden" accept="audio/*" onChange={e => handleFileUpload(e, setNewLessonAudioUrl, setIsUploadingAudio)} disabled={isUploadingAudio} />
+                                  </label>
+                                </div>
                               </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Lesson Content (Text)</label>
-                              <textarea required value={newLessonContent} onChange={e => setNewLessonContent(e.target.value)} rows={4} className="w-full px-2.5 py-2 rounded bg-white border border-slate-200 text-xs resize-y font-mono" placeholder="Write lesson content here..."></textarea>
-                            </div>
-                            <div className="flex items-center gap-2 pb-2">
-                              <input type="checkbox" id={`free-${mod.id}`} checked={newLessonFree} onChange={e => setNewLessonFree(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
-                              <label htmlFor={`free-${mod.id}`} className="text-[10px] font-bold text-slate-600">Available as Free Preview</label>
-                            </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 block">
+                                  {newLessonType === 'assessment' ? 'Assessment Instructions' : newLessonType === 'reading' ? 'Reading Content' : 'Lesson Content (Text)'}
+                                </label>
+                                <ReactQuill theme="snow" value={newLessonContent} onChange={setNewLessonContent} className="bg-white rounded" placeholder={newLessonType === 'assessment' ? 'Write instructions here...' : 'Write content here...'} />
+                              </div>
+
+                              <div className="flex items-center gap-4 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <input type="checkbox" id={`free-${mod.id}`} checked={newLessonFree} onChange={e => setNewLessonFree(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+                                  <label htmlFor={`free-${mod.id}`} className="text-[10px] font-bold text-slate-600">Available as Free Preview</label>
+                                </div>
+                                {newLessonType === 'assessment' && (
+                                  <div className="flex items-center gap-2">
+                                    <input type="checkbox" id={`final-${mod.id}`} checked={newLessonFinal} onChange={e => setNewLessonFinal(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+                                    <label htmlFor={`final-${mod.id}`} className="text-[10px] font-bold text-slate-600">Is Final Assessment (Mandatory for Course Completion)</label>
+                                  </div>
+                                )}
+                              </div>
                             <button type="submit" className="px-4 py-1.5 bg-indigo-600 text-white rounded text-[10px] font-bold shadow-sm">Save Lesson</button>
                           </form>
                         </div>
@@ -1620,11 +1902,10 @@ export default function AdminStudio() {
 
                       <div className="divide-y divide-slate-100">
                         {(mod.lessons || []).map((lesson, lIdx) => (
-                          <div key={lesson.id} className="px-5 py-3 flex justify-between items-center hover:bg-slate-50 group">
+                          <div key={lesson.id} onClick={() => setManagingLesson(lesson)} className="px-5 py-3 flex justify-between items-center hover:bg-slate-50 group cursor-pointer">
                             <div className="flex items-center gap-3">
                               <button 
-                                onClick={() => setManagingLesson(lesson)}
-                                className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all cursor-pointer shrink-0 shadow-sm"
+                                className="w-7 h-7 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all cursor-pointer shrink-0 shadow-sm"
                                 title="Preview Lesson"
                               >
                                 <PlayCircle className="w-4 h-4" />
@@ -1806,6 +2087,13 @@ export default function AdminStudio() {
                 <Plus className="w-3.5 h-3.5" /> {showQuestionForm ? 'Cancel' : 'New Question'}
               </button>
             </div>
+
+      {assessmentBuilderLesson && (
+        <AssessmentBuilderModal
+          lesson={assessmentBuilderLesson}
+          onClose={() => setAssessmentBuilderLesson(null)}
+        />
+      )}
 
             <AdminQuestionModal
               isOpen={showQuestionForm || !!editingQuestion}
@@ -2312,6 +2600,16 @@ export default function AdminStudio() {
         cancelText="Cancel"
         type="danger"
       />
+      <ConfirmModal 
+        isOpen={genericConfirm.isOpen}
+        title={genericConfirm.title}
+        message={genericConfirm.message}
+        onConfirm={genericConfirm.onConfirm}
+        onCancel={() => setGenericConfirm(prev => ({ ...prev, isOpen: false }))}
+        confirmText={genericConfirm.confirmText}
+        cancelText="Cancel"
+        type={genericConfirm.type}
+      />
 
       {/* Promotion Details Modal */}
       {selectedPromoDetails && (
@@ -2513,6 +2811,22 @@ export default function AdminStudio() {
           </div>
         </div>
       )}
+
+      {/* Assessment Builder Modal */}
+      {assessmentBuilderLesson && (
+        <AssessmentBuilderModal
+          lesson={assessmentBuilderLesson}
+          onClose={() => setAssessmentBuilderLesson(null)}
+        />
+      )}
+
+      <ModuleManagementModal
+        isOpen={moduleEditModalOpen}
+        module={moduleToEdit}
+        onClose={() => setModuleEditModalOpen(false)}
+        onSave={handleUpdateModule}
+        onDelete={handleDeleteModule}
+      />
 
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Compass, 
   BookOpen, 
@@ -47,6 +47,7 @@ export default function Home() {
   const [contactMessage, setContactMessage] = useState('');
   const [contactSuccess, setContactSuccess] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+  const navigate = useNavigate();
 
   const carouselRef = React.useRef(null);
 
@@ -362,7 +363,10 @@ export default function Home() {
           >
             {courses.map((course, idx) => (
               <ScrollReveal key={course.id} animation="zoom-in" delay={150 * (idx % 4)} className="shrink-0 w-[280px] sm:w-[320px] snap-center">
-                <div className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs transition-all group h-full">
+                <div 
+                  onClick={() => navigate(`/courses/${course.slug}`)}
+                  className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs transition-all group h-full cursor-pointer"
+                >
                   <div>
                     <div className="relative overflow-hidden">
                       <img src={course.cover_image || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} alt={course.title} className="w-full h-40 object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -408,6 +412,7 @@ export default function Home() {
                     </div>
                     <Link
                       to={`/courses/${course.slug}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="px-3 py-1.5 rounded-lg bg-blue-900 text-white font-bold hover:bg-blue-800 transition-colors text-[11px] flex items-center gap-1 shadow-xs"
                     >
                       Syllabus <ArrowRight className="w-3 h-3" />

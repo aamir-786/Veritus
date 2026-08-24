@@ -10,6 +10,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { cartItems, removeFromCart } = useCart();
   const [data, setData] = useState(null);
+  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -78,14 +79,18 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await api.getDashboardSummary();
-        if (res.success) {
-          setData(res);
+        const [dashRes, certRes] = await Promise.all([
+          api.getDashboardSummary(),
+          api.getCertificates()
+        ]);
+        
+        if (dashRes.success) {
+          setData(dashRes);
           
           // Auto-remove any already purchased items from the local cart
           const ownedIds = [
-            ...res.enrolled_courses.map(c => c.id),
-            ...res.accessible_templates.map(t => t.id)
+            ...dashRes.enrolled_courses.map(c => c.id),
+            ...dashRes.accessible_templates.map(t => t.id)
           ];
           
           cartItems.forEach(item => {
@@ -93,6 +98,10 @@ export default function Dashboard() {
               removeFromCart(item.id);
             }
           });
+        }
+        
+        if (certRes.success) {
+          setCertificates(certRes.certificates);
         }
       } catch (err) {
         console.error(err);
@@ -131,6 +140,10 @@ export default function Dashboard() {
             <div className="text-lg font-extrabold text-emerald-700 font-display">{data.accessible_templates.length}</div>
             <div className="text-[10px] text-slate-500 font-medium">Unlocked Assets</div>
           </div>
+          <div className="flex-1 md:flex-none p-3 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[110px]">
+            <div className="text-lg font-extrabold text-amber-600 font-display">{certificates.length}</div>
+            <div className="text-[10px] text-slate-500 font-medium">Certificates</div>
+          </div>
         </div>
       </div>
 
@@ -149,6 +162,13 @@ export default function Dashboard() {
         >
           Digital Assets
           {activeTab === 'assets' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
+        </button>
+        <button
+          onClick={() => setActiveTab('certificates')}
+          className={`pb-4 text-sm font-bold transition-colors relative ${activeTab === 'certificates' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
+        >
+          My Certificates
+          {activeTab === 'certificates' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
       </div>
 
@@ -202,7 +222,7 @@ export default function Dashboard() {
                 <div className="p-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-auto">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{course.completed_lessons} / {course.total_lessons} Lessons</span>
                   
-                  {course.progress_percent === 100 ? (
+                  {course.is_completed ? (
                     <div className="flex gap-2 w-full sm:w-auto">
                       <button
                         onClick={() => {
@@ -344,6 +364,50 @@ export default function Dashboard() {
         )}
       </div>
       </>
+      )}
+
+      {/* Certificates Tab */}
+      {activeTab === 'certificates' && (
+        <div className="space-y-4">
+          <h2 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Award className="w-4 h-4 text-amber-500" /> My Certificates
+          </h2>
+
+          {certificates.length === 0 ? (
+            <div className="glass-card rounded-2xl p-8 text-center space-y-3">
+              <p className="text-slate-600 text-xs font-medium">You have not earned any certificates yet. Complete a masterclass and pass the final assessment to earn one.</p>
+              <button onClick={() => setActiveTab('mylearning')} className="inline-block px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+                Go to My Learning
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {certificates.map(cert => (
+                <div key={cert.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-amber-200 flex flex-col justify-between shadow-xs h-full bg-gradient-to-br from-white to-amber-50/50">
+                  <div className="p-5 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-sm">
+                      <Award className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-display font-bold text-lg text-slate-900 leading-snug">Certificate of Completion</h3>
+                    <p className="text-xs text-slate-600 font-medium">{cert.courses?.title}</p>
+                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-2">
+                      Issued: {new Date(cert.issued_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="p-4 border-t border-amber-100 bg-white/60 flex items-center justify-center mt-auto">
+                    <Link
+                      to={`/certificate/${cert.course_id}`}
+                      target="_blank"
+                      className="w-full px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] flex items-center justify-center gap-2 transition-all shadow-sm"
+                    >
+                      <Award className="w-3.5 h-3.5" /> View Certificate
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Review Modal */}

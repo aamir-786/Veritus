@@ -161,6 +161,20 @@ export const api = {
     return res.json();
   },
 
+  submitAssessment: async (lessonId, payload) => {
+    const res = await fetch(`${API_BASE}/dashboard/assessments/${lessonId}/submit`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  },
+
+  getCertificates: async () => {
+    const res = await fetch(`${API_BASE}/dashboard/certificates`, { headers: await getHeaders() });
+    return res.json();
+  },
+
   // Reviews API
   createReview: async (payload) => {
     const res = await fetch(`${API_BASE}/reviews`, {
@@ -266,6 +280,23 @@ export const api = {
     return res.json();
   },
 
+  deleteModule: async (courseId, moduleId) => {
+    const res = await fetch(`${API_BASE}/admin/courses/${courseId}/modules/${moduleId}`, {
+      method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  updateModule: async (courseId, moduleId, title) => {
+    const res = await fetch(`${API_BASE}/admin/courses/${courseId}/modules/${moduleId}`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify({ title })
+    });
+    return res.json();
+  },
+
   addLessonToModule: async (courseId, moduleId, lessonData) => {
     const res = await fetch(`${API_BASE}/admin/courses/${courseId}/modules/${moduleId}/lessons`, {
       method: 'POST',
@@ -283,6 +314,36 @@ export const api = {
     return res.json();
   },
 
+  getAssessmentQuestions: async (lessonId) => {
+    const res = await fetch(`${API_BASE}/admin/lessons/${lessonId}/assessment-questions`, { headers: await getHeaders() });
+    return res.json();
+  },
+
+  addAssessmentQuestion: async (lessonId, questionData) => {
+    const res = await fetch(`${API_BASE}/admin/lessons/${lessonId}/assessment-questions`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(questionData)
+    });
+    return res.json();
+  },
+
+  updateAssessmentQuestion: async (questionId, questionData) => {
+    const res = await fetch(`${API_BASE}/admin/assessment-questions/${questionId}`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify(questionData)
+    });
+    return res.json();
+  },
+
+  deleteAssessmentQuestion: async (questionId) => {
+    const res = await fetch(`${API_BASE}/admin/assessment-questions/${questionId}`, {
+      method: 'DELETE',
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
 
   updateQuestion: async (id, questionData) => {
     const res = await fetch(`${API_BASE}/admin/questions/${id}`, {
@@ -424,6 +485,40 @@ export const api = {
 
   getAdminPromotions: async () => {
     const res = await fetch(`${API_BASE}/admin/promotions`, {
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  // Assessment Questions Management
+  getAssessmentQuestions: async (lessonId) => {
+    const res = await fetch(`${API_BASE}/admin/lessons/${lessonId}/assessment-questions`, {
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  addAssessmentQuestion: async (lessonId, data) => {
+    const res = await fetch(`${API_BASE}/admin/lessons/${lessonId}/assessment-questions`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
+  updateAssessmentQuestion: async (questionId, data) => {
+    const res = await fetch(`${API_BASE}/admin/assessment-questions/${questionId}`, {
+      method: 'PUT',
+      headers: await getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
+  deleteAssessmentQuestion: async (questionId) => {
+    const res = await fetch(`${API_BASE}/admin/assessment-questions/${questionId}`, {
+      method: 'DELETE',
       headers: await getHeaders()
     });
     return res.json();

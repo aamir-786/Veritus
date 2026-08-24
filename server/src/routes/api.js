@@ -79,6 +79,8 @@ router.get('/orders', authenticateToken, commerceController.getUserOrders);
 // --- Dashboard & Learning Progress Routes ---
 router.get('/dashboard/summary', authenticateToken, dashboardController.getDashboardSummary);
 router.post('/dashboard/progress', authenticateToken, dashboardController.updateLessonProgress);
+router.post('/dashboard/assessments/:lessonId/submit', authenticateToken, dashboardController.submitAssessment);
+router.get('/dashboard/certificates', authenticateToken, dashboardController.getCertificates);
 
 // --- Reviews Routes ---
 router.get('/reviews/landing', reviewsController.getLandingPageReviews);
@@ -89,8 +91,16 @@ router.get('/admin/metrics', authenticateToken, requireAdmin, adminController.ge
 router.post('/admin/courses', authenticateToken, requireAdmin, adminController.createCourse);
 router.put('/admin/courses/:id', authenticateToken, requireAdmin, adminController.updateCourse);
 router.post('/admin/courses/:courseId/modules', authenticateToken, requireAdmin, adminController.addModuleToCourse);
+router.put('/admin/courses/:courseId/modules/:moduleId', authenticateToken, requireAdmin, adminController.updateModule);
+router.delete('/admin/courses/:courseId/modules/:moduleId', authenticateToken, requireAdmin, adminController.deleteModule);
 router.post('/admin/courses/:courseId/modules/:moduleId/lessons', authenticateToken, requireAdmin, adminController.addLessonToModule);
 router.put('/admin/courses/:courseId/modules/:moduleId/lessons/:lessonId', authenticateToken, requireAdmin, adminController.updateLesson);
+
+router.get('/admin/lessons/:lessonId/assessment-questions', authenticateToken, requireAdmin, adminController.getAssessmentQuestions);
+router.post('/admin/lessons/:lessonId/assessment-questions', authenticateToken, requireAdmin, adminController.addAssessmentQuestion);
+router.put('/admin/assessment-questions/:questionId', authenticateToken, requireAdmin, adminController.updateAssessmentQuestion);
+router.delete('/admin/assessment-questions/:questionId', authenticateToken, requireAdmin, adminController.deleteAssessmentQuestion);
+
 router.put('/admin/questions/:id', authenticateToken, requireAdmin, adminController.updateQuestion);
 router.post('/admin/questions', authenticateToken, requireAdmin, adminController.createQuestion);
 router.delete('/admin/questions/:id', authenticateToken, requireAdmin, adminController.deleteQuestion);

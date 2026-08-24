@@ -13,13 +13,16 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin') {
+      const from = searchParams.get('from');
+      if (from) {
+        navigate(from);
+      } else if (user.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/dashboard');
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

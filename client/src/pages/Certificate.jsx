@@ -17,7 +17,7 @@ export default function Certificate() {
         const res = await api.getDashboardSummary();
         if (res.success) {
           const enrolled = res.enrolled_courses.find(c => c.id === courseId);
-          if (enrolled && enrolled.progress_percent === 100) {
+          if (enrolled && enrolled.is_completed) {
             setCourse(enrolled);
           } else {
             // Not completed or not found

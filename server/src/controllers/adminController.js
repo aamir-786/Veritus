@@ -151,9 +151,53 @@ exports.addModuleToCourse = async (req, res) => {
   }
 };
 
+exports.updateModule = async (req, res) => {
+  const { moduleId } = req.params;
+  const { title } = req.body;
+
+  try {
+    const { data: updatedModule, error } = await supabase
+      .from('modules')
+      .update({ title })
+      .eq('id', moduleId)
+      .select()
+      .single();
+
+    if (error || !updatedModule) {
+      return res.status(404).json({ success: false, error: 'Module not found or update failed' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Module updated successfully',
+      module: updatedModule
+    });
+  } catch (err) {
+    console.error('updateModule Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update module' });
+  }
+};
+
+exports.deleteModule = async (req, res) => {
+  const { moduleId } = req.params;
+
+  try {
+    const { error } = await supabase.from('modules').delete().eq('id', moduleId);
+
+    if (error) {
+      return res.status(400).json({ success: false, error: 'Failed to delete module' });
+    }
+
+    return res.json({ success: true, message: 'Module deleted successfully' });
+  } catch (err) {
+    console.error('deleteModule Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to delete module' });
+  }
+};
+
 exports.addLessonToModule = async (req, res) => {
   const { courseId, moduleId } = req.params;
-  const { title, type, duration_minutes, video_url, content, is_free_preview } = req.body;
+  const { title, type, duration_minutes, video_url, audio_url, content, is_free_preview, is_final_assessment } = req.body;
 
   try {
     const newLesson = {
@@ -162,9 +206,11 @@ exports.addLessonToModule = async (req, res) => {
       title: title || 'New Lesson',
       type: type || 'video',
       duration_minutes: parseInt(duration_minutes) || 10,
-      video_url: video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      video_url: video_url || '',
+      audio_url: audio_url || '',
       content: content || 'Lesson content instructions.',
-      is_free_preview: !!is_free_preview
+      is_free_preview: !!is_free_preview,
+      is_final_assessment: !!is_final_assessment
     };
 
     const { error } = await supabase.from('lessons').insert([newLesson]);
@@ -183,7 +229,7 @@ exports.addLessonToModule = async (req, res) => {
 
 exports.updateLesson = async (req, res) => {
   const { lessonId } = req.params;
-  const { title, type, duration_minutes, video_url, content, is_free_preview } = req.body;
+  const { title, type, duration_minutes, video_url, audio_url, content, is_free_preview, is_final_assessment } = req.body;
 
   try {
     const updates = {};
@@ -191,8 +237,10 @@ exports.updateLesson = async (req, res) => {
     if (type !== undefined) updates.type = type;
     if (duration_minutes !== undefined) updates.duration_minutes = parseInt(duration_minutes) || 10;
     if (video_url !== undefined) updates.video_url = video_url;
+    if (audio_url !== undefined) updates.audio_url = audio_url;
     if (content !== undefined) updates.content = content;
     if (is_free_preview !== undefined) updates.is_free_preview = !!is_free_preview;
+    if (is_final_assessment !== undefined) updates.is_final_assessment = !!is_final_assessment;
 
     const { data: updatedLesson, error } = await supabase
       .from('lessons')
@@ -1026,5 +1074,106 @@ exports.toggleBannerVisibility = async (req, res) => {
   } catch (err) {
     console.error('toggleBannerVisibility Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to update banner visibility' });
+  }
+};
+
+// --- Assessment Questions CRUD ---
+
+exports.getAssessmentQuestions = async (req, res) => {
+  const { lessonId } = req.params;
+  try {
+    const { data: questions, error } = await supabase
+      .from('assessment_questions')
+      .select('*')
+      .eq('lesson_id', lessonId);
+      
+    if (error) throw error;
+    return res.json({ success: true, questions });
+  } catch (err) {
+    console.error('getAssessmentQuestions Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch assessment questions' });
+  }
+};
+
+exports.addAssessmentQuestion = async (req, res) => {
+  const { lessonId } = req.params;
+  const { question_text, options, correct_option_index, question_type } = req.body;
+  
+  const type = question_type || 'mcq';
+
+  if (!question_text) {
+    console.log('422 Error: Question text missing', req.body);
+    return res.status(422).json({ success: false, error: 'Question text is required' });
+  }
+
+  if ((type === 'mcq' || type === 'true_false') && (!Array.isArray(options) || options.length < 2 || typeof correct_option_index !== 'number')) {
+    return res.status(400).json({ success: false, error: 'Invalid question data: Options and correct index required for MCQ/TF' });
+  }
+
+  const payloadOptions = (type === 'descriptive') ? [] : options;
+  const payloadCorrectIndex = (type === 'descriptive') ? 0 : correct_option_index;
+  
+  try {
+    const { data, error } = await supabase
+      .from('assessment_questions')
+      .insert([{
+        lesson_id: lessonId,
+        question_text,
+        options: payloadOptions,
+        correct_option_index: payloadCorrectIndex,
+        question_type: type
+      }])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return res.status(201).json({ success: true, question: data });
+  } catch (err) {
+    console.error('addAssessmentQuestion Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to add assessment question' });
+  }
+};
+
+exports.updateAssessmentQuestion = async (req, res) => {
+  const { questionId } = req.params;
+  let { question_text, options, correct_option_index, question_type } = req.body;
+  const type = question_type || 'mcq';
+
+  if (type === 'descriptive') {
+    if (options !== undefined) options = [];
+    if (correct_option_index !== undefined) correct_option_index = 0;
+  }
+
+  try {
+    const updates = {};
+    if (question_text !== undefined) updates.question_text = question_text;
+    if (options !== undefined) updates.options = options;
+    if (correct_option_index !== undefined) updates.correct_option_index = correct_option_index;
+    if (question_type !== undefined) updates.question_type = question_type;
+    
+    const { data, error } = await supabase
+      .from('assessment_questions')
+      .update(updates)
+      .eq('id', questionId)
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return res.json({ success: true, question: data });
+  } catch (err) {
+    console.error('updateAssessmentQuestion Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update assessment question' });
+  }
+};
+
+exports.deleteAssessmentQuestion = async (req, res) => {
+  const { questionId } = req.params;
+  try {
+    const { error } = await supabase.from('assessment_questions').delete().eq('id', questionId);
+    if (error) throw error;
+    return res.json({ success: true, message: 'Question deleted successfully' });
+  } catch (err) {
+    console.error('deleteAssessmentQuestion Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to delete assessment question' });
   }
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowRight, ShieldCheck, PlayCircle, Layers, ShoppingCart, Star } from 'lucide-react';
 import { api } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -9,6 +9,7 @@ export default function CourseCatalog() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -48,7 +49,11 @@ export default function CourseCatalog() {
       {/* Course Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map(course => (
-          <div key={course.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs group h-full">
+          <div 
+            key={course.id} 
+            onClick={() => navigate(`/courses/${course.slug}`)}
+            className="bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 border border-slate-200 group flex flex-col cursor-pointer"
+          >
             <div>
               <div className="relative overflow-hidden">
                 <img src={course.cover_image || 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800'} alt={course.title} className="w-full h-32 object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -100,13 +105,17 @@ export default function CourseCatalog() {
               </div>
               <div className="flex gap-2 w-full xl:w-auto">
                 <button
-                  onClick={() => addToCart({ ...course, type: 'Course' })}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToCart({ ...course, type: 'Course' });
+                  }}
                   className="px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 font-bold hover:bg-emerald-200 transition-colors text-[11px] flex items-center gap-1 shadow-xs flex-1 justify-center xl:flex-none"
                 >
                   <ShoppingCart className="w-3 h-3" /> Add
                 </button>
                 <Link
                   to={`/courses/${course.slug}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="px-3 py-1.5 rounded-lg bg-blue-900 text-white font-bold hover:bg-blue-800 transition-colors text-[11px] flex items-center gap-1 shadow-xs flex-1 justify-center xl:flex-none"
                 >
                   Syllabus <ArrowRight className="w-3 h-3" />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ShoppingCart, X, Trash2, ArrowRight } from 'lucide-react';
@@ -9,6 +9,7 @@ export default function CartDrawer() {
   const { cartItems, removeFromCart, cartTotal, isCartOpen, closeCart, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
   const handleCheckout = async () => {
@@ -16,7 +17,7 @@ export default function CartDrawer() {
     
     if (!user) {
       closeCart();
-      navigate('/login?redirect=checkout');
+      navigate(`/login?redirect=checkout&from=${encodeURIComponent(location.pathname)}`);
       return;
     }
 

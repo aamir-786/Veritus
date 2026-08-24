@@ -220,3 +220,54 @@ CREATE POLICY "Promotions are manageable by admins only." ON public.promotions F
     SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
   )
 );
+
+-- 13. Add new columns to lessons table (For reference; apply via ALTER TABLE manually if needed)
+-- ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS audio_url TEXT;
+-- ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS is_final_assessment BOOLEAN DEFAULT false;
+
+-- 14. Assessment Questions Table
+CREATE TABLE public.assessment_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lesson_id TEXT REFERENCES public.lessons ON DELETE CASCADE,
+  question_text TEXT NOT NULL,
+  options JSONB NOT NULL,
+  correct_option_index INTEGER NOT NULL
+);
+
+ALTER TABLE public.assessment_questions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Questions viewable by everyone." ON public.assessment_questions FOR SELECT USING (true);
+CREATE POLICY "Admins can manage questions." ON public.assessment_questions FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- 15. Assessment Submissions Table
+CREATE TABLE public.assessment_submissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  lesson_id TEXT REFERENCES public.lessons ON DELETE CASCADE,
+  score INTEGER,
+  passed BOOLEAN,
+  agreed BOOLEAN DEFAULT false,
+  submitted_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, lesson_id)
+);
+
+ALTER TABLE public.assessment_submissions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own submissions." ON public.assessment_submissions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own submissions." ON public.assessment_submissions FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- 16. Certificates Table
+CREATE TABLE public.certificates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
+  course_id TEXT REFERENCES public.courses ON DELETE CASCADE,
+  issued_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, course_id)
+);
+
+ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own certificates." ON public.certificates FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admins can insert certificates." ON public.certificates FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin') 
+  OR auth.uid() = user_id
+);

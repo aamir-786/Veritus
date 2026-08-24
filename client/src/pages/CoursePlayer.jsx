@@ -15,6 +15,12 @@ export default function CoursePlayer() {
   const [loading, setLoading] = useState(true);
   const [gatedError, setGatedError] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
+  
+  // Assessment State
+  const [assessmentAnswers, setAssessmentAnswers] = useState({});
+  const [assessmentAgreed, setAssessmentAgreed] = useState(false);
+  const [assessmentSubmitting, setAssessmentSubmitting] = useState(false);
+  const [assessmentResult, setAssessmentResult] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -35,6 +41,10 @@ export default function CoursePlayer() {
 
         if (lRes.success) {
           setActiveLesson(lRes.lesson);
+          setAssessmentAnswers({});
+          setAssessmentAgreed(false);
+          setAssessmentResult(null);
+          setIsCompleted(false);
         } else {
           setGatedError(lRes.error || 'Access Gated: You must purchase this course to view this lesson.');
         }
@@ -46,6 +56,42 @@ export default function CoursePlayer() {
     };
     loadData();
   }, [courseSlug, lessonId]);
+
+  const handleSubmitAssessment = async (e) => {
+    e.preventDefault();
+    if (!assessmentAgreed) {
+      alert("You must agree that this is your own work.");
+      return;
+    }
+    
+    // Ensure all questions are answered
+    if (activeLesson?.questions?.length > 0 && Object.keys(assessmentAnswers).length < activeLesson.questions.length) {
+      alert("Please answer all questions before submitting.");
+      return;
+    }
+
+    setAssessmentSubmitting(true);
+    try {
+      const res = await api.submitAssessment(activeLesson.id, {
+        courseId: course.id,
+        answers: assessmentAnswers,
+        agreed: assessmentAgreed
+      });
+      
+      if (res.success) {
+        setAssessmentResult(res);
+        if (res.passed) {
+          setIsCompleted(true);
+        }
+      } else {
+        alert(res.error || "Failed to submit assessment.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred during submission.");
+    }
+    setAssessmentSubmitting(false);
+  };
 
   const handleMarkComplete = async () => {
     if (!course || !activeLesson) return;
@@ -171,34 +217,147 @@ export default function CoursePlayer() {
                     </a>
                   </div>
                 ) : (
-                  <div className="glass-card rounded-2xl p-6 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none">
-                    {block.content}
-                  </div>
+                  <div className="glass-card rounded-2xl p-6 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                 )}
               </div>
             ))}
           </div>
         ) : activeLesson.type === 'video' ? (
-          <VideoPlayer
-            videoUrl={activeLesson.video_url}
-            captionsVtt={activeLesson.captions_vtt}
-            title={activeLesson.title}
-            onCompleted={handleMarkComplete}
-          />
-        ) : activeLesson.type === 'document' ? (
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 space-y-3">
-            <h3 className="font-display text-base font-bold text-slate-900">Downloadable Framework Resource</h3>
-            <p className="text-xs text-slate-600">{activeLesson.content}</p>
-            <a
-              href={activeLesson.resource_url}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-xs hover:bg-blue-800 transition-colors shadow-xs"
-            >
-              <Download className="w-4 h-4" /> Download Resource File
-            </a>
+          <div className="space-y-6">
+            <VideoPlayer
+              videoUrl={activeLesson.video_url}
+              captionsVtt={activeLesson.captions_vtt}
+              title={activeLesson.title}
+              onCompleted={handleMarkComplete}
+            />
+            {activeLesson.content && (
+              <div className="glass-card rounded-2xl p-6 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
+            )}
+          </div>
+        ) : activeLesson.type === 'assessment' ? (
+          <div className="space-y-8">
+            {activeLesson.content && (
+              <div className="glass-card rounded-2xl p-6 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
+            )}
+            
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+              <h2 className="font-display text-xl font-bold text-slate-900 mb-6">Assessment Knowledge Check</h2>
+              
+              {assessmentResult ? (
+                <div className={`p-6 rounded-xl border ${assessmentResult.passed ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'} mb-6`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    {assessmentResult.passed ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> : <ShieldAlert className="w-6 h-6 text-rose-500" />}
+                    <h3 className="font-bold text-lg">{assessmentResult.passed ? 'Assessment Passed!' : 'Assessment Failed'}</h3>
+                  </div>
+                  <p className="font-medium text-sm">Your score: <strong className="text-xl">{assessmentResult.score}%</strong></p>
+                  <p className="text-sm mt-2 opacity-80">
+                    {assessmentResult.passed 
+                      ? "Great job! You have successfully completed this assessment."
+                      : "You did not meet the required passing score of 80%. Please review the material and try again."}
+                  </p>
+                  {assessmentResult.certificateIssued && (
+                    <div className="mt-4 p-4 bg-white/60 rounded-lg border border-emerald-100 flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-emerald-900">Congratulations!</p>
+                        <p className="text-xs text-emerald-800">You have earned a certificate for completing this course.</p>
+                      </div>
+                      <Link to="/dashboard" className="px-4 py-2 bg-emerald-600 text-white rounded font-bold text-xs shadow-sm">View Certificate</Link>
+                    </div>
+                  )}
+                  {!assessmentResult.passed && (
+                    <button onClick={() => setAssessmentResult(null)} className="mt-4 px-4 py-2 bg-rose-600 text-white rounded font-bold text-xs shadow-sm">
+                      Retry Assessment
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitAssessment} className="space-y-8">
+                  {activeLesson.questions?.map((q, idx) => (
+                    <div key={q.id} className="space-y-4 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                      <h3 className="font-bold text-slate-800 text-sm">
+                        <span className="text-blue-600 mr-2">{idx + 1}.</span> {q.question_text}
+                      </h3>
+                      <div className="space-y-2 pl-6">
+                        {q.question_type === 'descriptive' ? (
+                          <div className="space-y-1 mt-2">
+                            <textarea
+                              rows={5}
+                              placeholder="Type your detailed answer here... (Max 300 words)"
+                              value={assessmentAnswers[q.id] || ''}
+                              onChange={(e) => {
+                                const text = e.target.value;
+                                const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+                                if (words <= 300 || text.length < (assessmentAnswers[q.id] || '').length) {
+                                  setAssessmentAnswers({...assessmentAnswers, [q.id]: text});
+                                }
+                              }}
+                              className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm resize-y"
+                            />
+                            <div className="text-right text-xs font-bold text-slate-400">
+                              {((assessmentAnswers[q.id] || '').trim().split(/\s+/).filter(w => w.length > 0).length)} / 300 words
+                            </div>
+                          </div>
+                        ) : (
+                          q.options?.map((opt, oIdx) => (
+                            <label key={oIdx} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${assessmentAnswers[q.id] === oIdx ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200 hover:border-blue-300'}`}>
+                              <input 
+                                type="radio" 
+                                name={`question-${q.id}`} 
+                                value={oIdx}
+                                checked={assessmentAnswers[q.id] === oIdx}
+                                onChange={() => setAssessmentAnswers({...assessmentAnswers, [q.id]: oIdx})}
+                                className="mt-0.5 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-slate-700 font-medium">{opt}</span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {activeLesson.questions?.length > 0 && (
+                    <div className="pt-4 border-t border-slate-200">
+                      <label className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer mb-6">
+                        <input 
+                          type="checkbox" 
+                          checked={assessmentAgreed}
+                          onChange={(e) => setAssessmentAgreed(e.target.checked)}
+                          className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 rounded"
+                        />
+                        <span className="text-xs text-slate-600 font-medium leading-relaxed">
+                          By checking this box, I confirm that the answers submitted are my own original work, and I have not received unauthorized assistance in completing this assessment.
+                        </span>
+                      </label>
+                      <button 
+                        type="submit" 
+                        disabled={assessmentSubmitting || !assessmentAgreed}
+                        className={`w-full py-3 rounded-xl font-bold text-sm text-white shadow-sm transition-colors flex justify-center items-center gap-2 ${assessmentSubmitting || !assessmentAgreed ? 'bg-slate-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                      >
+                        {assessmentSubmitting ? 'Submitting...' : 'Submit Assessment'}
+                      </button>
+                    </div>
+                  )}
+                  {(!activeLesson.questions || activeLesson.questions.length === 0) && (
+                    <div className="p-6 text-center text-slate-500 text-sm italic">
+                      No questions have been added to this assessment yet.
+                    </div>
+                  )}
+                </form>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="glass-card rounded-2xl p-6 border border-slate-200 text-xs text-slate-700 leading-relaxed font-medium">
-            {activeLesson.content}
+          <div className="space-y-6">
+            {activeLesson.audio_url && (
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Listen to this lesson</span>
+                <audio controls className="w-full h-10 outline-none" src={activeLesson.audio_url}>
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            )}
+            <div className="glass-card rounded-2xl p-8 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
           </div>
         )}
 

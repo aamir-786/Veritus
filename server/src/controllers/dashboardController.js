@@ -65,6 +65,7 @@ exports.getDashboardSummary = async (req, res) => {
         total_lessons: allLessonIds.length,
         completed_lessons: completedCount,
         progress_percent: progressPercent,
+        is_completed: progressPercent === 100 && allLessonIds.length > 0,
         resume_lesson: resumeLesson
       };
     });
@@ -142,5 +143,112 @@ exports.updateLessonProgress = async (req, res) => {
   } catch (err) {
     console.error('updateLessonProgress Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to update progress' });
+  }
+};
+
+exports.submitAssessment = async (req, res) => {
+  const userId = req.user.id;
+  const { lessonId } = req.params;
+  const { courseId, answers, agreed } = req.body;
+
+  if (!agreed) {
+    return res.status(400).json({ success: false, error: 'You must agree and confirm your submission.' });
+  }
+
+  try {
+    // Get lesson details
+    const { data: lesson } = await supabase.from('lessons').select('*').eq('id', lessonId).single();
+    if (!lesson || lesson.type !== 'assessment') {
+      return res.status(400).json({ success: false, error: 'Invalid assessment lesson.' });
+    }
+
+    // Get correct answers
+    const { data: questions } = await supabase.from('assessment_questions').select('*').eq('lesson_id', lessonId);
+    
+    let correctCount = 0;
+    const totalQuestions = questions ? questions.length : 0;
+
+    if (totalQuestions > 0) {
+      questions.forEach(q => {
+        const userAnswer = answers[q.id];
+        if (userAnswer === q.correct_option_index) {
+          correctCount++;
+        }
+      });
+    }
+
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 100;
+    const passed = score >= 80; // Pass threshold, you can adjust as needed
+
+    // Save submission
+    await supabase.from('assessment_submissions').upsert({
+      user_id: userId,
+      lesson_id: lessonId,
+      score,
+      passed,
+      agreed,
+      submitted_at: new Date().toISOString()
+    }, { onConflict: 'user_id,lesson_id' });
+
+    let certificateIssued = false;
+
+    if (passed) {
+      // Mark progress as completed
+      await supabase.from('progress').upsert({
+        user_id: userId,
+        course_id: courseId,
+        lesson_id: lessonId,
+        completed: true,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,lesson_id' });
+
+      if (lesson.is_final_assessment) {
+        // Check if all lessons in the course are completed
+        const { data: course } = await supabase.from('courses').select('modules(lessons(id))').eq('id', courseId).single();
+        const allLessonIds = course.modules.flatMap(m => m.lessons.map(l => l.id));
+        
+        const { data: userProgress } = await supabase.from('progress').select('lesson_id').eq('user_id', userId).eq('course_id', courseId).eq('completed', true);
+        const completedLessonIds = userProgress.map(p => p.lesson_id);
+        
+        const allCompleted = allLessonIds.every(id => completedLessonIds.includes(id));
+
+        if (allCompleted) {
+          const { error: certError } = await supabase.from('certificates').insert([{
+            user_id: userId,
+            course_id: courseId
+          }]);
+          if (!certError) {
+            certificateIssued = true;
+          }
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      score,
+      passed,
+      certificateIssued
+    });
+  } catch (err) {
+    console.error('submitAssessment Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to submit assessment' });
+  }
+};
+
+exports.getCertificates = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const { data: certificates, error } = await supabase
+      .from('certificates')
+      .select('*, courses(title, cover_image, author_name)')
+      .eq('user_id', userId);
+      
+    if (error) throw error;
+    
+    return res.json({ success: true, certificates });
+  } catch (err) {
+    console.error('getCertificates Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch certificates' });
   }
 };
