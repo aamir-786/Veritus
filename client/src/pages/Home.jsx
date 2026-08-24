@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Compass, 
-  BookOpen, 
-  FileText, 
-  ShieldAlert, 
-  Sparkles, 
-  ArrowRight, 
-  Zap, 
-  CheckCircle2, 
-  Lock, 
-  Layers, 
+import {
+  Compass,
+  BookOpen,
+  FileText,
+  ShieldAlert,
+  Sparkles,
+  ArrowRight,
+  Zap,
+  CheckCircle2,
+  Lock,
+  Layers,
   Award,
   ChevronDown,
   Mail,
@@ -142,15 +142,15 @@ export default function Home() {
 
   return (
     <div className="space-y-16 pb-20 text-slate-900 bg-[#F8FAFC]">
-      
+
       {/* 1. Hero Section - Executive Background Imagery & Pattern Layer */}
-      <section className="relative pt-12 pb-12 overflow-hidden border-b border-slate-200 bg-section-hero">
-        
+      <section className="relative pt-1 pb-20 overflow-hidden border-b border-slate-200 bg-section-hero">
+
         {/* Subtle Executive Dot Pattern Overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-30 pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
-          
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-5 relative z-10">
+
           <ScrollReveal animation="slide-down" delay={0}>
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/90 backdrop-blur border border-blue-200 text-blue-900 text-xs font-extrabold uppercase tracking-wider shadow-2xs">
               <Sparkles className="w-4 h-4 text-blue-700" /> Effective RM Platform Family • 100 Risk Questions Dataset
@@ -242,7 +242,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <ScrollReveal animation="slide-up" delay={100}>
           <div className="glass-card rounded-3xl overflow-hidden border border-slate-200 shadow-md grid grid-cols-1 lg:grid-cols-2 bg-section-governance">
-            
+
             <div className="p-8 lg:p-12 space-y-4 flex flex-col justify-center bg-white/70 backdrop-blur-md">
               <ScrollReveal animation="slide-right" delay={150}>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-900 border border-blue-200 text-xs font-bold w-fit">
@@ -292,9 +292,9 @@ export default function Home() {
             </div>
 
             <div className="relative min-h-[280px] lg:min-h-[400px] overflow-hidden group">
-              <img 
-                src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=1200&q=80" 
-                alt="Executive Risk Presentation" 
+              <img
+                src="https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=1200&q=80"
+                alt="Executive Risk Presentation"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent lg:bg-gradient-to-r lg:from-white/80 lg:via-transparent lg:to-transparent" />
@@ -307,7 +307,7 @@ export default function Home() {
       {/* 3. 100 Questions Teaser Grid Section */}
       <section className="relative py-10 border-y border-slate-200/80 bg-section-questions">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          
+
           <ScrollReveal animation="slide-up" delay={0}>
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-4">
               <div>
@@ -323,9 +323,9 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {questions.map((q, index) => (
-              <ScrollReveal 
-                key={q.id} 
-                animation={index % 2 === 0 ? 'slide-left' : 'slide-right'} 
+              <ScrollReveal
+                key={q.id}
+                animation={index % 2 === 0 ? 'slide-left' : 'slide-right'}
                 delay={(index % 3) * 100}
               >
                 <QuestionCard
@@ -343,7 +343,7 @@ export default function Home() {
       {/* 4. Masterclasses Feature Banner with Imagery */}
       <section className="bg-section-masterclass border-b border-slate-200 py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
           <ScrollReveal animation="slide-down" delay={0}>
             <div className="text-center max-w-2xl mx-auto space-y-1">
               <span className="text-[11px] font-bold text-indigo-800 uppercase tracking-wider font-mono">Video Masterclasses</span>
@@ -355,15 +355,15 @@ export default function Home() {
           <style>{`
             .hide-scrollbar::-webkit-scrollbar { display: none; }
           `}</style>
-          
-          <div 
+
+          <div
             ref={carouselRef}
             className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory scroll-smooth hide-scrollbar"
             style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
           >
             {courses.map((course, idx) => (
               <ScrollReveal key={course.id} animation="zoom-in" delay={150 * (idx % 4)} className="shrink-0 w-[280px] sm:w-[320px] snap-center">
-                <div 
+                <div
                   onClick={() => navigate(`/courses/${course.slug}`)}
                   className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-200 flex flex-col justify-between shadow-xs transition-all group h-full cursor-pointer"
                 >
@@ -374,39 +374,39 @@ export default function Home() {
                         {course.tier}
                       </div>
                     </div>
-                    <div className="p-4 space-y-2 flex-grow">
-                      <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-tight">{course.title}</h3>
-                      
-                      <div className="flex items-center gap-1.5 mt-1">
+                    <div className="p-5 sm:p-6 space-y-3 flex-grow">
+                      <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-snug">{course.title}</h3>
+
+                      <div className="flex items-center gap-2 pt-1 pb-1">
                         <div className={`flex ${course.rating_count > 0 ? 'text-emerald-500' : 'text-slate-300'}`}>
-                          {[1,2,3,4,5].map(i => (
-                            <Star 
-                              key={i} 
-                              className={`w-3 h-3 ${course.rating_count > 0 && course.rating_avg >= i ? 'fill-emerald-500 text-emerald-500' : (course.rating_count > 0 && course.rating_avg >= i - 0.5 ? 'fill-emerald-500 text-emerald-500 opacity-50' : 'fill-slate-200 text-slate-200')}`} 
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${course.rating_count > 0 && course.rating_avg >= i ? 'fill-emerald-500 text-emerald-500' : (course.rating_count > 0 && course.rating_avg >= i - 0.5 ? 'fill-emerald-500 text-emerald-500 opacity-50' : 'fill-slate-200 text-slate-200')}`}
                             />
                           ))}
                         </div>
-                        <span className="text-[10px] font-bold text-slate-600">
+                        <span className="text-[11px] font-bold text-slate-600">
                           {course.rating_count > 0 ? `${course.rating_avg} (${course.rating_count} reviews)` : 'No reviews'}
                         </span>
                       </div>
 
-                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-2 mt-2">{course.headline}</p>
-                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-3 mt-2 border-t border-slate-100 font-medium">
+                      <p className="text-xs text-slate-600 leading-relaxed font-normal line-clamp-2 pt-1">{course.headline}</p>
+                      <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 pt-4 mt-3 border-t border-slate-100 font-medium">
                         <span className="flex items-center gap-1">
-                          <Layers className="w-3 h-3 text-amber-700" /> {course.module_count} Modules
+                          <Layers className="w-3.5 h-3.5 text-amber-700" /> {course.module_count} Modules
                         </span>
                         <span className="flex items-center gap-1">
-                          <PlayCircle className="w-3 h-3 text-blue-700" /> {course.lesson_count} Lessons
+                          <PlayCircle className="w-3.5 h-3.5 text-blue-700" /> {course.lesson_count} Lessons
                         </span>
                         <span className="flex items-center gap-1 text-emerald-700 font-semibold w-full mt-1">
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" /> Gated Access Verified
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Gated Access Verified
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-4 border-t border-slate-100/80 bg-slate-50/80 backdrop-blur flex items-center justify-between mt-auto">
+                  <div className="p-5 border-t border-slate-100/80 bg-slate-50/80 backdrop-blur flex items-center justify-between mt-auto">
                     <div>
                       <div className="text-lg font-extrabold text-emerald-800">${course.price}</div>
                     </div>
@@ -440,7 +440,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ScrollReveal animation="zoom-in" delay={100}>
           <div className="glass-card rounded-2xl p-8 border border-blue-200/90 bg-section-lead flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-sm">
-            
+
             <div className="space-y-2 max-w-xl relative z-10">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-emerald-100/90 text-emerald-800 text-[11px] font-bold border border-emerald-200">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" /> Free Lead Magnet Asset
@@ -466,7 +466,7 @@ export default function Home() {
       {/* 6. Pricing Tiers Section */}
       <section className="py-10 bg-section-pricing border-y border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
           <ScrollReveal animation="slide-down" delay={0}>
             <div className="text-center max-w-2xl mx-auto space-y-1">
               <span className="text-[11px] font-bold text-blue-800 uppercase tracking-wider font-mono">Flexible Licensing</span>
@@ -476,7 +476,7 @@ export default function Home() {
           </ScrollReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
+
             <ScrollReveal animation="slide-up" delay={100}>
               <div className="glass-card rounded-2xl p-6 border border-slate-200 space-y-4 shadow-xs hover:border-slate-300 transition-all h-full flex flex-col justify-between">
                 <div>
@@ -547,7 +547,7 @@ export default function Home() {
                 <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">Is Veritus worth it? Hear from our users</h2>
               </div>
             </ScrollReveal>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {reviews.map((review, idx) => (
                 <ScrollReveal key={review.id} animation="zoom-in" delay={idx * 100}>
@@ -580,7 +580,7 @@ export default function Home() {
       {/* 7. FAQ Section */}
       <section className="py-10 bg-section-faq">
         <div className="max-w-4xl mx-auto px-4 space-y-6">
-          
+
           <ScrollReveal animation="slide-down" delay={0}>
             <div className="text-center space-y-1">
               <span className="text-[11px] font-bold text-blue-800 uppercase tracking-wider font-mono">Got Questions?</span>
@@ -683,7 +683,7 @@ export default function Home() {
                   disabled={contactLoading}
                   className="sm:col-span-2 py-3 rounded-xl bg-blue-900 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-sm flex items-center justify-center gap-2 transition-all hover:shadow-md"
                 >
-                  <Send className={`w-4 h-4 ${contactLoading ? 'animate-pulse' : ''}`} /> 
+                  <Send className={`w-4 h-4 ${contactLoading ? 'animate-pulse' : ''}`} />
                   {contactLoading ? 'Sending...' : 'Send Inquiry'}
                 </button>
               </form>
