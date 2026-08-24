@@ -78,7 +78,7 @@ export default function Certificate() {
       <div className="max-w-4xl w-full flex justify-between items-center mb-6 print:hidden">
         <div>
           <h1 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-            <Award className="w-5 h-5 text-amber-400" /> Executive Certificate
+            <Award className="w-5 h-5 text-emerald-400" /> Executive Certificate
           </h1>
           <p className="text-xs text-slate-400">Click below to print or download your verified PDF certificate.</p>
         </div>
@@ -86,7 +86,7 @@ export default function Certificate() {
         {/* PDF Download Button */}
         <button
           onClick={handlePrint}
-          className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+          className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"
         >
           <Download className="w-4 h-4" /> Print / Save PDF
         </button>
