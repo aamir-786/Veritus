@@ -281,7 +281,7 @@ exports.getCertificates = async (req, res) => {
     const completedCourses = (courses || []).filter(c => {
       const allLessonIds = c.modules ? c.modules.flatMap(m => m.lessons.map(l => l.id)) : [];
       if (allLessonIds.length === 0) return false;
-      const completedCount = (userProgress || []).filter(p => p.course_id === c.id && p.completed).length;
+      const completedCount = (userProgress || []).filter(p => (p.course_id === c.id || p.course_id === c.slug) && p.completed).length;
       return completedCount >= allLessonIds.length;
     });
 
