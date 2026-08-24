@@ -658,16 +658,12 @@ export default function AdminStudio() {
   const handleDeleteReview = (id) => {
     confirmAction("Delete Review", "Are you sure you want to delete this review?", async () => {
       try {
-        const res = await fetch(`${API_BASE}/admin/reviews/${id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        const data = await res.json();
+        const data = await api.deleteAdminReview(id);
         if (data.success) {
           showToast('Review deleted successfully');
           fetchData();
         } else {
-          alert('Failed to delete review');
+          alert(data.error || 'Failed to delete review');
         }
       } catch (err) {
         console.error(err);

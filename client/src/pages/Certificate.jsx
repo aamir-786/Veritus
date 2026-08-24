@@ -187,7 +187,7 @@ export default function Certificate() {
                 </div>
                 <div className="text-left">
                   <p className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-wider leading-none">VERIFIED CREDENTIAL</p>
-                  <p className="text-[8px] sm:text-[9px] font-semibold text-amber-800 tracking-tight mt-0.5">Veritus Risk Management</p>
+                  <p className="text-[8px] sm:text-[9px] font-semibold text-amber-800 tracking-tight mt-0.5">Effective Risk Management</p>
                 </div>
               </div>
             </div>
