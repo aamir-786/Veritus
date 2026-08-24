@@ -222,6 +222,8 @@ const renderExecutiveEmailTemplate = ({ title, badge, contentHtml, ctaText, ctaU
   `;
 };
 
+const APP_URL = (process.env.APP_URL || process.env.CLIENT_URL || 'https://veritus-effectiverm.vercel.app').replace(/\/+$/, '');
+
 /**
  * Send Welcome Email to newly registered user
  */
@@ -242,7 +244,7 @@ const sendWelcomeEmail = async ({ email, name }) => {
     <ul style="color: #cbd5e1; padding-left: 20px; line-height: 1.8;">
       <li><strong>100 Risk Questions Dataset:</strong> Executive decision frameworks &amp; taxonomy tags.</li>
       <li><strong>AI Risk Copilot:</strong> Interactive organizational risk analysis engine.</li>
-      <li><strong>Executive Courses &amp; Digital Library:</strong> Governance templates and video modules.</li>
+      <li><strong>Executive Masterclasses &amp; Digital Library:</strong> Governance templates and video modules.</li>
     </ul>
   `;
 
@@ -251,7 +253,7 @@ const sendWelcomeEmail = async ({ email, name }) => {
     badge: 'Account Active',
     contentHtml,
     ctaText: 'Access Executive Dashboard',
-    ctaUrl: 'https://veritus-r8pb.onrender.com',
+    ctaUrl: `${APP_URL}/dashboard`,
     accentColor: '#38bdf8'
   });
 
@@ -267,7 +269,7 @@ const sendWelcomeEmail = async ({ email, name }) => {
  * Send Password Reset Email with Token
  */
 const sendPasswordResetEmail = async ({ email, resetToken }) => {
-  const resetLink = `https://veritus-r8pb.onrender.com/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+  const resetLink = `${APP_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
   
   const contentHtml = `
     <p style="margin-top: 0;">Hello,</p>
@@ -339,7 +341,7 @@ const sendOrderReceiptEmail = async ({ email, name, order }) => {
     badge: 'Payment Success',
     contentHtml,
     ctaText: 'Access Purchased Content',
-    ctaUrl: 'https://veritus-r8pb.onrender.com',
+    ctaUrl: `${APP_URL}/dashboard`,
     accentColor: '#10b981'
   });
 
@@ -355,7 +357,7 @@ const sendOrderReceiptEmail = async ({ email, name, order }) => {
  * Send Email Verification Email with Token
  */
 const sendVerificationEmail = async ({ email, name, verificationToken }) => {
-  const verifyLink = `http://localhost:5173/verify-email?token=${verificationToken}`;
+  const verifyLink = `${APP_URL}/verify-email?token=${verificationToken}`;
   const recipientName = name || 'Risk Practitioner';
   
   const contentHtml = `

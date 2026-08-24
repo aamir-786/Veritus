@@ -5,32 +5,44 @@ const emailService = require('../services/emailService');
 exports.checkAndSendWelcome = async (req, res) => {
   try {
     const userId = req.user.id;
+    const userEmail = req.user.email;
+    const userName = req.user.full_name || userEmail?.split('@')[0] || 'Practitioner';
     
-    // Fetch the auth user to check metadata
-    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
-    
-    if (userError || !user) {
-      return res.status(404).json({ success: false, error: 'User not found in Auth system' });
+    let hasReceivedWelcome = false;
+    let authUser = null;
+
+    try {
+      if (supabase.auth?.admin?.getUserById) {
+        const { data } = await supabase.auth.admin.getUserById(userId);
+        authUser = data?.user;
+        hasReceivedWelcome = authUser?.user_metadata?.welcome_email_sent === true;
+      }
+    } catch (e) {
+      console.warn('Could not query admin user_metadata, proceeding with fallback email check:', e.message);
     }
 
-    const hasReceivedWelcome = user.user_metadata?.welcome_email_sent === true;
-
-    if (!hasReceivedWelcome) {
+    if (!hasReceivedWelcome && userEmail) {
       // Send the Welcome Email
-      await emailService.sendWelcomeEmail({
-        email: user.email,
-        name: req.user.full_name || user.email.split('@')[0]
+      const emailRes = await emailService.sendWelcomeEmail({
+        email: userEmail,
+        name: userName
       });
 
-      // Mark as sent in user_metadata
-      await supabase.auth.admin.updateUserById(userId, {
-        user_metadata: {
-          ...user.user_metadata,
-          welcome_email_sent: true
+      // Mark as sent in user_metadata if admin API is available
+      if (authUser && supabase.auth?.admin?.updateUserById) {
+        try {
+          await supabase.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              ...authUser.user_metadata,
+              welcome_email_sent: true
+            }
+          });
+        } catch (e) {
+          console.warn('Could not update welcome_email_sent metadata:', e.message);
         }
-      });
+      }
 
-      return res.json({ success: true, message: 'Welcome email sent.' });
+      return res.json({ success: true, message: 'Welcome email sent.', emailResult: emailRes });
     }
 
     return res.json({ success: true, message: 'Welcome email already sent previously.' });
