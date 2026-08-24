@@ -1,5 +1,6 @@
 // dashboardController.js - User Dashboard & Learning Progress Tracker
 const supabase = require('../config/supabase');
+const emailService = require('../services/emailService');
 
 exports.getDashboardSummary = async (req, res) => {
   const userId = req.user.id;
@@ -109,6 +110,54 @@ exports.getDashboardSummary = async (req, res) => {
   }
 };
 
+// Helper to check and dispatch course completion email
+const checkAndSendCompletionEmail = async (userId, courseId, reqUser) => {
+  try {
+    const { data: course } = await supabase
+      .from('courses')
+      .select('*, modules(lessons(id))')
+      .eq('id', courseId)
+      .single();
+
+    if (!course) return;
+
+    const allLessonIds = course.modules ? course.modules.flatMap(m => m.lessons.map(l => l.id)) : [];
+    if (allLessonIds.length === 0) return;
+
+    const { data: userProgress } = await supabase
+      .from('progress')
+      .select('lesson_id')
+      .eq('user_id', userId)
+      .eq('completed', true)
+      .or(`course_id.eq.${courseId},course_id.eq.${course.slug}`);
+
+    const completedLessonIds = (userProgress || []).map(p => p.lesson_id);
+    const isCompleted = allLessonIds.every(id => completedLessonIds.includes(id));
+
+    if (isCompleted) {
+      let hash = 0;
+      const str = `${userId}-${course.id}`;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      const certNo = Math.abs(hash % 9000) + 1000;
+      const appUrl = (process.env.APP_URL || 'https://veritus-effectiverm.vercel.app').replace(/\/+$/, '');
+      const certUrl = `${appUrl}/certificate/${course.slug || course.id}`;
+
+      await emailService.sendCourseCompletionEmail({
+        email: reqUser.email,
+        name: reqUser.full_name || reqUser.email.split('@')[0],
+        courseTitle: course.title,
+        certUrl,
+        certNumber: certNo
+      });
+    }
+  } catch (err) {
+    console.error('Completion email check error:', err.message);
+  }
+};
+
 exports.updateLessonProgress = async (req, res) => {
   const userId = req.user.id;
   const { course_id, lesson_id, completed, last_position_seconds } = req.body;
@@ -144,6 +193,11 @@ exports.updateLessonProgress = async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    // Check if course is now 100% completed and send congratulatory certificate email
+    if (upsertData.completed && course_id) {
+      checkAndSendCompletionEmail(userId, course_id, req.user);
+    }
 
     return res.json({
       success: true,
@@ -230,25 +284,11 @@ exports.submitAssessment = async (req, res) => {
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id,lesson_id' });
 
-      if (lesson.is_final_assessment) {
-        // Check if all lessons in the course are completed
-        const { data: course } = await supabase.from('courses').select('modules(lessons(id))').eq('id', courseId).single();
-        const allLessonIds = course.modules.flatMap(m => m.lessons.map(l => l.id));
-        
-        const { data: userProgress } = await supabase.from('progress').select('lesson_id').eq('user_id', userId).eq('course_id', courseId).eq('completed', true);
-        const completedLessonIds = userProgress.map(p => p.lesson_id);
-        
-        const allCompleted = allLessonIds.every(id => completedLessonIds.includes(id));
+      // Check if course is completed and send congratulatory certificate email
+      checkAndSendCompletionEmail(userId, courseId, req.user);
 
-        if (allCompleted) {
-          const { error: certError } = await supabase.from('certificates').insert([{
-            user_id: userId,
-            course_id: courseId
-          }]);
-          if (!certError) {
-            certificateIssued = true;
-          }
-        }
+      if (lesson.is_final_assessment) {
+        certificateIssued = true;
       }
     }
 

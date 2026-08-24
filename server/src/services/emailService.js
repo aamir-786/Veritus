@@ -353,12 +353,49 @@ const sendVerificationEmail = async ({ email, name, verificationToken }) => {
   });
 };
 
+/**
+ * Send Course Completion Email with Certificate Link
+ */
+const sendCourseCompletionEmail = async ({ email, name, courseTitle, certUrl, certNumber }) => {
+  const recipientName = name || 'Executive Practitioner';
+  
+  const contentHtml = `
+    <p style="margin-top: 0;">Congratulations <strong>${recipientName}</strong>! 🎉</p>
+    <p>We are delighted to confirm that you have successfully completed the executive masterclass program:</p>
+    
+    <div style="background-color: #1e293b; border: 1px solid #334155; padding: 20px; border-radius: 10px; margin: 24px 0;">
+      <div style="font-size: 11px; color: #38bdf8; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">Verified Executive Credential</div>
+      <div style="font-size: 18px; color: #ffffff; font-weight: 800; line-height: 1.3;">${courseTitle}</div>
+      <div style="font-size: 13px; color: #10b981; font-weight: 700; margin-top: 8px;">Certificate ID: #${certNumber || '1042'}</div>
+    </div>
+
+    <p>Your official Executive Certificate of Completion has been issued and registered in our public credential database. Anyone, including employers and board directors, can verify your credential using your public verification link.</p>
+  `;
+
+  const html = renderExecutiveEmailTemplate({
+    title: `Congratulations on Completing ${courseTitle}!`,
+    badge: 'Masterclass Completed',
+    contentHtml,
+    ctaText: 'View Verified Certificate',
+    ctaUrl: certUrl,
+    accentColor: '#10b981'
+  });
+
+  return sendEmail({
+    to: email,
+    subject: `🎓 Congratulations on Completing ${courseTitle}! View Your Verified Certificate`,
+    text: `Congratulations ${recipientName}!\n\nYou have completed ${courseTitle}. View your certificate here: ${certUrl}`,
+    html
+  });
+};
+
 module.exports = {
   sendEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendOrderReceiptEmail,
   sendVerificationEmail,
+  sendCourseCompletionEmail,
   renderExecutiveEmailTemplate
 };
 
