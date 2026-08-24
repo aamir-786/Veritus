@@ -135,4 +135,30 @@ router.put('/admin/promotions/:id/status', authenticateToken, requireAdmin, admi
 router.put('/admin/promotions/:id/banner', authenticateToken, requireAdmin, adminController.toggleBannerVisibility);
 router.delete('/admin/promotions/:id', authenticateToken, requireAdmin, adminController.deletePromotion);
 
+// --- Email Health Diagnostic Route ---
+router.get('/health/email', async (req, res) => {
+  try {
+    const targetEmail = req.query.to || process.env.SMTP_USER || 'aamir.fss22@gmail.com';
+    const result = await emailService.sendEmail({
+      to: targetEmail,
+      subject: 'Vercel Production Email Diagnostic Test',
+      text: 'Testing email sending capability from live production environment.',
+      html: '<div style="font-family:sans-serif; padding:20px; background:#0f172a; color:#ffffff; rounded:10px;"><h2>Vercel Live Email Test</h2><p>This is a diagnostic email sent from the live server.</p></div>'
+    });
+    return res.json({
+      success: true,
+      env: {
+        SMTP_HOST: process.env.SMTP_HOST || 'not-set',
+        SMTP_PORT: process.env.SMTP_PORT || 'not-set',
+        SMTP_USER: process.env.SMTP_USER ? 'configured' : 'not-set',
+        FROM_EMAIL: process.env.FROM_EMAIL || 'not-set',
+        RESEND_API_KEY: process.env.RESEND_API_KEY ? 'configured' : 'not-set'
+      },
+      result
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
