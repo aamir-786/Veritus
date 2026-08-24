@@ -10,22 +10,38 @@ export default function Certificate() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState(null);
+  const [studentName, setStudentName] = useState('');
   const [completedDate] = useState(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
 
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const res = await api.getDashboardSummary();
-        if (res.success) {
-          const enrolled = res.enrolled_courses.find(c => c.id === courseId);
-          if (enrolled && enrolled.is_completed) {
+        if (res.success && res.enrolled_courses) {
+          const enrolled = res.enrolled_courses.find(c => c.id === courseId || c.slug === courseId);
+          if (enrolled) {
             setCourse(enrolled);
-          } else {
-            setCourse(null);
+            if (res.user && res.user.full_name) {
+              setStudentName(res.user.full_name);
+            }
+            setLoading(false);
+            return;
           }
         }
       } catch (err) {
+        console.log('Fetching public course details...');
+      }
+
+      try {
+        const publicRes = await api.getCourseDetails(courseId);
+        if (publicRes.success && publicRes.course) {
+          setCourse(publicRes.course);
+        } else {
+          setCourse(null);
+        }
+      } catch (err) {
         console.error(err);
+        setCourse(null);
       } finally {
         setLoading(false);
       }
@@ -39,6 +55,21 @@ export default function Certificate() {
   const handlePrint = () => {
     window.print();
   };
+
+  const get4DigitCertNo = (idStr) => {
+    if (!idStr) return '1042';
+    let hash = 0;
+    const combined = `${idStr}-${studentName || user?.full_name || 'Practitioner'}`;
+    for (let i = 0; i < combined.length; i++) {
+      hash = (hash << 5) - hash + combined.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash % 9000) + 1000;
+  };
+
+  const certNo = get4DigitCertNo(course.id);
+  const displayName = studentName || user?.full_name || 'Executive Practitioner';
+  const verifyUrl = `${window.location.origin}/certificate/${course.slug || course.id}`;
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center py-6 px-4 print:py-0 print:px-0 print:bg-white print:block">
@@ -88,14 +119,14 @@ export default function Certificate() {
           {/* Left Decorative Gold/Navy Accent Bar */}
           <div className="w-3 h-full bg-gradient-to-b from-blue-900 via-amber-500 to-blue-950 absolute left-0 top-0" />
           
-          {/* Header with Exact Brand Logo & Subtitle */}
+          {/* Header with Exact Brand Logo & 4-digit Certificate Number */}
           <div className="flex justify-between items-start relative z-10">
             <div>
               <EffectiveVeritusLogo variant="dark" subtitle={true} className="scale-90 origin-top-left" />
             </div>
             <div className="text-right">
               <p className="text-[10px] sm:text-xs text-slate-500 font-mono font-bold uppercase">DATE: {completedDate}</p>
-              <p className="text-[10px] sm:text-xs text-slate-500 font-mono font-bold uppercase">ID: VRT-{course.id.substring(0, 8).toUpperCase()}</p>
+              <p className="text-[10px] sm:text-xs text-slate-900 font-mono font-black uppercase">CERTIFICATE NO: #{certNo}</p>
             </div>
           </div>
 
@@ -111,7 +142,7 @@ export default function Certificate() {
               
               <div className="py-1 sm:py-2">
                 <h3 className="font-display text-2xl sm:text-4xl font-extrabold text-blue-950 border-b-2 border-amber-400 inline-block px-8 pb-1">
-                  {user?.full_name || 'Executive Practitioner'}
+                  {displayName}
                 </h3>
               </div>
               
@@ -146,6 +177,7 @@ export default function Certificate() {
               <div className="text-left">
                 <p className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-wider leading-none">VERIFIED CREDENTIAL</p>
                 <p className="text-[8px] sm:text-[9px] font-semibold text-amber-800 tracking-tight mt-0.5">Effective Risk Management</p>
+                <p className="text-[7px] font-mono text-slate-400 font-medium tracking-tight mt-0.5">VERIFY: {verifyUrl}</p>
               </div>
             </div>
           </div>

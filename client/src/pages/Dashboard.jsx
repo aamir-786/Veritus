@@ -369,29 +369,55 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {certificates.map(cert => (
-                <div key={cert.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-amber-200 flex flex-col justify-between shadow-xs h-full bg-gradient-to-br from-white to-amber-50/50">
-                  <div className="p-5 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-sm">
-                      <Award className="w-6 h-6" />
+              {certificates.map(cert => {
+                const certTitle = cert.course_title || cert.courses?.title || 'Executive Masterclass';
+                const certNum = cert.cert_number || cert.id;
+                const verifyUrl = `${window.location.origin}/certificate/${cert.course_slug || cert.course_id}`;
+
+                return (
+                  <div key={cert.id} className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-amber-200 flex flex-col justify-between shadow-xs h-full bg-gradient-to-br from-white via-white to-amber-50/40 p-5 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-xs">
+                        <Award className="w-5 h-5" />
+                      </div>
+                      <span className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 font-mono font-bold text-[10px] border border-amber-200">
+                        NO: #{certNum}
+                      </span>
                     </div>
-                    <h3 className="font-display font-bold text-lg text-slate-900 leading-snug">Certificate of Completion</h3>
-                    <p className="text-xs text-slate-600 font-medium">{cert.courses?.title}</p>
-                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-2">
-                      Issued: {new Date(cert.issued_at).toLocaleDateString()}
+
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] text-amber-700 font-mono font-bold uppercase tracking-wider">Verified Executive Credential</div>
+                      <h3 className="font-display font-extrabold text-base text-slate-900 leading-tight">
+                        {certTitle}
+                      </h3>
+                      <div className="text-[11px] text-slate-500 font-medium">
+                        Issued: {new Date(cert.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex items-center gap-2 mt-auto">
+                      <Link
+                        to={`/certificate/${cert.course_slug || cert.course_id}`}
+                        target="_blank"
+                        className="flex-1 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                      >
+                        <Award className="w-4 h-4" /> View Certificate
+                      </Link>
+
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(verifyUrl);
+                          alert(`Verification link copied to clipboard!\n${verifyUrl}`);
+                        }}
+                        className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors shadow-xs flex items-center gap-1 cursor-pointer"
+                        title="Copy public verification link"
+                      >
+                        Copy URL
+                      </button>
                     </div>
                   </div>
-                  <div className="p-4 border-t border-amber-100 bg-white/60 flex items-center justify-center mt-auto">
-                    <Link
-                      to={`/certificate/${cert.course_id}`}
-                      target="_blank"
-                      className="w-full px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] flex items-center justify-center gap-2 transition-all shadow-sm"
-                    >
-                      <Award className="w-3.5 h-3.5" /> View Certificate
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

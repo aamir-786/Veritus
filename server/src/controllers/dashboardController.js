@@ -268,14 +268,49 @@ exports.submitAssessment = async (req, res) => {
 exports.getCertificates = async (req, res) => {
   const userId = req.user.id;
   try {
-    const { data: certificates, error } = await supabase
-      .from('certificates')
-      .select('*, courses(title, cover_image, author_name)')
+    const { data: userProgress } = await supabase
+      .from('progress')
+      .select('*')
       .eq('user_id', userId);
-      
-    if (error) throw error;
-    
-    return res.json({ success: true, certificates });
+
+    const { data: courses } = await supabase
+      .from('courses')
+      .select('*, modules(*, lessons(id))')
+      .eq('published', true);
+
+    const completedCourses = (courses || []).filter(c => {
+      const allLessonIds = c.modules ? c.modules.flatMap(m => m.lessons.map(l => l.id)) : [];
+      if (allLessonIds.length === 0) return false;
+      const completedCount = (userProgress || []).filter(p => p.course_id === c.id && p.completed).length;
+      return completedCount >= allLessonIds.length;
+    });
+
+    const certList = completedCourses.map(c => {
+      let hash = 0;
+      const str = `${userId}-${c.id}`;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      const certNo = Math.abs(hash % 9000) + 1000;
+
+      return {
+        id: c.id,
+        course_id: c.id,
+        course_slug: c.slug,
+        course_title: c.title,
+        cert_number: certNo,
+        formatted_cert_no: `#${certNo}`,
+        issued_at: c.created_at || new Date().toISOString(),
+        courses: {
+          title: c.title,
+          cover_image: c.cover_image,
+          author_name: c.author_name
+        }
+      };
+    });
+
+    return res.json({ success: true, certificates: certList });
   } catch (err) {
     console.error('getCertificates Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch certificates' });
