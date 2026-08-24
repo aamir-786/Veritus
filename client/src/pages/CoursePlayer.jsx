@@ -398,6 +398,8 @@ export default function CoursePlayer() {
             )}
             <div className="glass-card rounded-2xl p-8 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
           </div>
+        )}
+
         {/* Practitioner Notes Section */}
         <div className="glass-card rounded-2xl p-6 border border-slate-200 bg-white space-y-4 shadow-xs mt-8">
           <div className="flex items-center justify-between">
