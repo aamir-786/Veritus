@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Award, Download, ShieldCheck } from 'lucide-react';
+import { Award, Download, ShieldCheck, Share2 } from 'lucide-react';
 import EffectiveVeritusLogo from '../components/EffectiveVeritusLogo';
 
 export default function Certificate() {
@@ -66,6 +66,13 @@ export default function Certificate() {
     window.print();
   };
 
+  const handleLinkedInShare = () => {
+    const certUrl = encodeURIComponent(verifyUrl);
+    const title = encodeURIComponent(`Verified Executive Certificate: ${course.title}`);
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${certUrl}&title=${title}`;
+    window.open(linkedInUrl, '_blank', 'width=600,height=600');
+  };
+
   const get4DigitCertNo = (idStr) => {
     if (!idStr) return '1042';
     let hash = 0;
@@ -93,13 +100,22 @@ export default function Certificate() {
           <p className="text-xs text-slate-400">Click below to print or download your verified PDF certificate.</p>
         </div>
 
-        {/* PDF Download Button */}
-        <button
-          onClick={handlePrint}
-          className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <Download className="w-4 h-4" /> Print / Save PDF
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleLinkedInShare}
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+            title="Share verified credential on LinkedIn"
+          >
+            <Share2 className="w-4 h-4" /> Share on LinkedIn
+          </button>
+          <button
+            onClick={handlePrint}
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Download className="w-4 h-4" /> Print / Save PDF
+          </button>
+        </div>
       </div>
 
       {/* Certificate Main Canvas Container */}

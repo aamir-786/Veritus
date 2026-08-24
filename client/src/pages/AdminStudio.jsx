@@ -1297,11 +1297,41 @@ export default function AdminStudio() {
         {/* --- ORDERS TAB --- */}
         {activeTab === 'orders' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-center">
               <div>
                 <h1 className="font-display text-xl font-bold text-slate-900">Orders & Revenue</h1>
                 <p className="text-slate-500 text-xs mt-1">Review all purchases and transactions.</p>
               </div>
+
+              <button
+                onClick={() => {
+                  if (!orders || orders.length === 0) {
+                    alert('No orders available to export.');
+                    return;
+                  }
+                  const headers = ['Order ID', 'Customer Name', 'Customer Email', 'Product Title', 'Amount', 'Status', 'Date'];
+                  const rows = orders.map(o => [
+                    `"${o.id}"`,
+                    `"${o.profiles?.full_name || o.card_holder_name || 'N/A'}"`,
+                    `"${o.profiles?.email || 'N/A'}"`,
+                    `"${o.product_title || 'N/A'}"`,
+                    `"${o.amount}"`,
+                    `"${o.status}"`,
+                    `"${new Date(o.created_at).toLocaleString()}"`
+                  ]);
+                  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement('a');
+                  link.setAttribute('href', encodedUri);
+                  link.setAttribute('download', `Veritus_Orders_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-4 h-4" /> Export Orders CSV
+              </button>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

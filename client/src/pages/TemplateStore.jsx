@@ -98,7 +98,7 @@ export default function TemplateStore() {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {['All', 'Frameworks & Spreadsheets', 'Board Reporting', 'Regulatory Templates'].map(cat => (
+          {['All', 'Frameworks & Spreadsheets', 'Board Reporting', 'Regulatory Templates', 'Banking & Fintech', 'Healthcare & SaaS'].map(cat => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}

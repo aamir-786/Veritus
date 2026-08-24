@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { PlayCircle, CheckCircle2, Lock, ArrowLeft, ChevronRight, ShieldAlert, Download } from 'lucide-react';
+import { PlayCircle, CheckCircle2, Lock, ArrowLeft, ChevronRight, ShieldAlert, Download, FileText } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import VideoPlayer from '../components/VideoPlayer';
@@ -15,12 +15,37 @@ export default function CoursePlayer() {
   const [loading, setLoading] = useState(true);
   const [gatedError, setGatedError] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
+  const [lessonNotes, setLessonNotes] = useState('');
   
   // Assessment State
   const [assessmentAnswers, setAssessmentAnswers] = useState({});
   const [assessmentAgreed, setAssessmentAgreed] = useState(false);
   const [assessmentSubmitting, setAssessmentSubmitting] = useState(false);
   const [assessmentResult, setAssessmentResult] = useState(null);
+
+  useEffect(() => {
+    if (activeLesson?.id) {
+      const saved = localStorage.getItem(`veritus_notes_${activeLesson.id}`);
+      setLessonNotes(saved || '');
+    }
+  }, [activeLesson?.id]);
+
+  const handleSaveNotes = () => {
+    if (activeLesson?.id) {
+      localStorage.setItem(`veritus_notes_${activeLesson.id}`, lessonNotes);
+      alert('Your practitioner notes have been saved locally!');
+    }
+  };
+
+  const handleDownloadNotes = () => {
+    const textContent = `VERITUS EXECUTIVE PRACTITIONER NOTES\nCourse: ${course?.title || 'Executive Masterclass'}\nLesson: ${activeLesson?.title || 'Lesson'}\nDate: ${new Date().toLocaleDateString()}\n--------------------------------------------------\n\n${lessonNotes}`;
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Veritus_Notes_${(activeLesson?.title || 'Lesson').replace(/[^a-z0-9]/gi, '_')}.txt`;
+    link.click();
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -373,7 +398,35 @@ export default function CoursePlayer() {
             )}
             <div className="glass-card rounded-2xl p-8 border border-slate-200 text-sm text-slate-700 leading-relaxed font-medium prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
           </div>
-        )}
+        {/* Practitioner Notes Section */}
+        <div className="glass-card rounded-2xl p-6 border border-slate-200 bg-white space-y-4 shadow-xs mt-8">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-900" /> Executive Practitioner Notes
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveNotes}
+                className="px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs transition-colors shadow-xs"
+              >
+                Save Notes
+              </button>
+              <button
+                onClick={handleDownloadNotes}
+                className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors shadow-xs flex items-center gap-1 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" /> Export TXT
+              </button>
+            </div>
+          </div>
+          <textarea
+            rows={4}
+            value={lessonNotes}
+            onChange={(e) => setLessonNotes(e.target.value)}
+            placeholder="Type your personal insights, key takeaways, or board reporting notes for this lesson here..."
+            className="w-full p-4 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 transition-all font-mono leading-relaxed bg-slate-50/50"
+          />
+        </div>
 
       </div>
 
