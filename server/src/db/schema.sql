@@ -248,6 +248,7 @@ CREATE TABLE public.assessment_submissions (
   score INTEGER,
   passed BOOLEAN,
   agreed BOOLEAN DEFAULT false,
+  attempts INTEGER DEFAULT 0,
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   UNIQUE(user_id, lesson_id)
 );

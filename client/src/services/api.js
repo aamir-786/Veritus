@@ -176,6 +176,11 @@ export const api = {
   },
 
   // Reviews API
+  getLandingPageReviews: async () => {
+    const res = await fetch(`${API_BASE}/reviews/landing`, { headers: await getHeaders() });
+    return res.json();
+  },
+
   createReview: async (payload) => {
     const res = await fetch(`${API_BASE}/reviews`, {
       method: 'POST',

@@ -36,6 +36,14 @@ exports.getDashboardSummary = async (req, res) => {
       .select('*')
       .eq('user_id', userId);
 
+    // Get user reviews
+    const { data: userReviews } = await supabase
+      .from('reviews')
+      .select('product_id')
+      .eq('user_id', userId);
+
+    const reviewedProductIds = new Set((userReviews || []).map(r => r.product_id));
+
     const enrolledCourses = (courses || []).map(c => {
       const allLessonIds = c.modules ? c.modules.flatMap(m => m.lessons.map(l => l.id)) : [];
       const completedCount = userProgress.filter(p => p.course_id === c.id && p.completed).length;
@@ -66,6 +74,7 @@ exports.getDashboardSummary = async (req, res) => {
         completed_lessons: completedCount,
         progress_percent: progressPercent,
         is_completed: progressPercent === 100 && allLessonIds.length > 0,
+        user_has_reviewed: reviewedProductIds.has(c.id) || (c.slug && reviewedProductIds.has(c.slug)),
         resume_lesson: resumeLesson
       };
     });
@@ -180,6 +189,24 @@ exports.submitAssessment = async (req, res) => {
     const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 100;
     const passed = score >= 80; // Pass threshold, you can adjust as needed
 
+    // Check existing attempts
+    const { data: existingSub } = await supabase
+      .from('assessment_submissions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .maybeSingle();
+
+    const currentAttempts = existingSub ? (existingSub.attempts || 0) : 0;
+    if (currentAttempts >= 3 && !existingSub?.passed) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'You have reached the maximum limit of 3 attempts for this assessment.' 
+      });
+    }
+
+    const newAttempts = currentAttempts + 1;
+
     // Save submission
     await supabase.from('assessment_submissions').upsert({
       user_id: userId,
@@ -187,6 +214,7 @@ exports.submitAssessment = async (req, res) => {
       score,
       passed,
       agreed,
+      attempts: newAttempts,
       submitted_at: new Date().toISOString()
     }, { onConflict: 'user_id,lesson_id' });
 
@@ -228,6 +256,7 @@ exports.submitAssessment = async (req, res) => {
       success: true,
       score,
       passed,
+      attempts: newAttempts,
       certificateIssued
     });
   } catch (err) {

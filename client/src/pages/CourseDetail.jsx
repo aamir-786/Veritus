@@ -46,16 +46,23 @@ export default function CourseDetail() {
   if (loading) return <div className="py-16 text-center text-slate-500 text-xs">Loading course syllabus...</div>;
   if (!course) return <div className="py-16 text-center text-rose-600 text-xs font-bold">Course not found.</div>;
 
+  const userHasReviewed = course?.user_has_reviewed || (user && course?.reviews?.some(r => r.user_id === user.id));
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 text-slate-900 bg-[#F8FAFC]">
       
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate(-1)} 
-        className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" /> Back
-      </button>
+      {/* Back Button & Header */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <span className="text-xs text-slate-500 font-mono font-medium uppercase tracking-wider">
+          Masterclass ID: {course.id}
+        </span>
+      </div>
 
       {/* Course Hero Banner */}
       <div className="glass-card rounded-3xl p-8 border border-slate-200 space-y-6 relative overflow-hidden bg-gradient-to-r from-blue-50/50 via-white to-white shadow-xs">
@@ -98,43 +105,50 @@ export default function CourseDetail() {
             </div>
 
             {course.is_enrolled ? (
-              <Link
-                to={`/learn/${course.slug}/lesson/${course.modules[0]?.lessons[0]?.id}`}
-                className="w-full py-3 rounded-xl bg-emerald-700 text-white font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 text-xs shadow-xs"
+              <button
+                onClick={() => {
+                  const firstLesson = course.modules?.[0]?.lessons?.[0];
+                  if (firstLesson) {
+                    navigate(`/learn/${course.slug}/lesson/${firstLesson.id}`);
+                  }
+                }}
+                className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-xs"
               >
-                <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
-                Enrolled — Enter Learning Player
-              </Link>
+                <PlayCircle className="w-4 h-4" /> Continue Learning
+              </button>
             ) : (
               <button
                 onClick={() => addToCart({ ...course, type: 'Course' })}
-                className="w-full py-3 rounded-xl bg-blue-900 text-white font-extrabold hover:bg-blue-800 transition-all flex items-center justify-center gap-2 text-xs shadow-xs"
+                className="w-full py-3 rounded-xl bg-blue-900 text-white font-bold text-sm hover:bg-blue-800 transition-colors flex items-center justify-center gap-2 shadow-xs"
               >
-                <ShoppingCart className="w-4 h-4" />
-                Add to Cart — ${course.price.toFixed(2)}
+                <ShoppingCart className="w-4 h-4" /> Add to Cart
               </button>
             )}
-
-            <div className="text-[11px] text-slate-500 flex items-center justify-center gap-1 font-medium">
-              <Lock className="w-3.5 h-3.5 text-emerald-600" /> Fail-Closed Access Protection
-            </div>
           </div>
 
         </div>
       </div>
 
-      {/* Free Preview Video Player if available */}
+      {/* Free Preview Video Section */}
       {activePreviewLesson && (
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded bg-blue-100 text-blue-900 text-xs font-bold uppercase">Free Video Preview</span>
-            <h3 className="font-display font-bold text-slate-900 text-base">{activePreviewLesson.title}</h3>
+        <div className="glass-card rounded-3xl p-6 border border-slate-200 space-y-4 shadow-xs bg-white">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+              <PlayCircle className="w-5 h-5 text-blue-900" /> Free Preview: {activePreviewLesson.title}
+            </h2>
+            <span className="text-xs font-mono font-bold text-slate-500">{activePreviewLesson.duration_minutes} Mins</span>
           </div>
-          <VideoPlayer
-            videoUrl={activePreviewLesson.video_url}
-            captionsVtt={activePreviewLesson.captions_vtt}
-            title={activePreviewLesson.title}
-          />
+
+          {activePreviewLesson.video_url ? (
+            <VideoPlayer
+              videoUrl={activePreviewLesson.video_url}
+              captionsVtt={activePreviewLesson.captions_vtt}
+            />
+          ) : (
+            <div className="p-8 bg-slate-50 rounded-2xl text-center text-xs text-slate-500 italic border border-slate-200">
+              No video preview available for this lesson.
+            </div>
+          )}
         </div>
       )}
 
@@ -142,10 +156,10 @@ export default function CourseDetail() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl font-bold text-slate-900">Course Curriculum & Syllabus</h2>
-          {user && (
+          {course.is_enrolled && !userHasReviewed && (
             <button
               onClick={() => setIsReviewOpen(true)}
-              className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+              className="text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Star className="w-3.5 h-3.5" /> Leave a Review
             </button>
@@ -198,11 +212,68 @@ export default function CourseDetail() {
             </div>
           ))}
         </div>
+
+        {/* Student Reviews Section */}
+        <div className="pt-6 border-t border-slate-200 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl font-bold text-slate-900">
+              Student Ratings & Reviews ({course.rating_count || 0})
+            </h2>
+            {course.is_enrolled && !userHasReviewed && (
+              <button
+                onClick={() => setIsReviewOpen(true)}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Star className="w-3.5 h-3.5 fill-current" /> Write a Review
+              </button>
+            )}
+          </div>
+
+          {(!course.reviews || course.reviews.length === 0) ? (
+            <div className="glass-card rounded-2xl p-6 border border-slate-200 text-center text-slate-500 text-xs font-medium">
+              No student reviews submitted for this masterclass yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {course.reviews.map(r => {
+                const authorName = r.profiles?.full_name || (Array.isArray(r.profiles) ? r.profiles[0]?.full_name : null) || 'Verified Student';
+                return (
+                  <div key={r.id} className="glass-card rounded-2xl p-5 border border-slate-200 space-y-3 shadow-xs bg-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">
+                          {authorName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">{authorName}</div>
+                          <div className="flex items-center text-emerald-500">
+                            {[1, 2, 3, 4, 5].map(i => (
+                              <Star key={i} className={`w-3 h-3 ${i <= r.rating ? 'fill-emerald-500' : 'text-slate-200'}`} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {r.comment && (
+                      <p className="text-xs text-slate-600 leading-relaxed italic">
+                        "{r.comment}"
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       <ReviewModal
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
+        onSuccess={fetchDetails}
         productType="course"
         productId={course.id}
         productName={course.title}

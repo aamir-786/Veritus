@@ -43,8 +43,8 @@ export default function CoursePlayer() {
           setActiveLesson(lRes.lesson);
           setAssessmentAnswers({});
           setAssessmentAgreed(false);
-          setAssessmentResult(null);
-          setIsCompleted(false);
+          setAssessmentResult(lRes.lesson.user_submission || null);
+          setIsCompleted(!!lRes.lesson.user_submission?.passed);
         } else {
           setGatedError(lRes.error || 'Access Gated: You must purchase this course to view this lesson.');
         }
@@ -95,6 +95,13 @@ export default function CoursePlayer() {
 
   const handleMarkComplete = async () => {
     if (!course || !activeLesson) return;
+
+    const isAssessment = activeLesson.type === 'assessment' || activeLesson.is_final_assessment;
+    if (isAssessment && (!assessmentResult || !assessmentResult.passed)) {
+      alert("Please first complete and pass the test before marking this lesson as completed!");
+      return;
+    }
+
     try {
       await api.updateLessonProgress({
         course_id: course.id,
@@ -245,14 +252,21 @@ export default function CoursePlayer() {
               
               {assessmentResult ? (
                 <div className={`p-6 rounded-xl border ${assessmentResult.passed ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'} mb-6`}>
-                  <div className="flex items-center gap-3 mb-2">
-                    {assessmentResult.passed ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> : <ShieldAlert className="w-6 h-6 text-rose-500" />}
-                    <h3 className="font-bold text-lg">{assessmentResult.passed ? 'Assessment Passed!' : 'Assessment Failed'}</h3>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3">
+                      {assessmentResult.passed ? <CheckCircle2 className="w-6 h-6 text-emerald-500" /> : <ShieldAlert className="w-6 h-6 text-rose-500" />}
+                      <h3 className="font-bold text-lg">{assessmentResult.passed ? 'Assessment Passed!' : 'Assessment Failed'}</h3>
+                    </div>
+                    <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-white/80 border border-slate-200 text-slate-700">
+                      Attempts: {assessmentResult.attempts || 1} / 3
+                    </span>
                   </div>
                   <p className="font-medium text-sm">Your score: <strong className="text-xl">{assessmentResult.score}%</strong></p>
                   <p className="text-sm mt-2 opacity-80">
                     {assessmentResult.passed 
                       ? "Great job! You have successfully completed this assessment."
+                      : (assessmentResult.attempts || 1) >= 3
+                      ? "You did not meet the required passing score of 80% and have used all 3 attempts. Please contact support or your instructor to reset your attempts."
                       : "You did not meet the required passing score of 80%. Please review the material and try again."}
                   </p>
                   {assessmentResult.certificateIssued && (
@@ -264,9 +278,9 @@ export default function CoursePlayer() {
                       <Link to="/dashboard" className="px-4 py-2 bg-emerald-600 text-white rounded font-bold text-xs shadow-sm">View Certificate</Link>
                     </div>
                   )}
-                  {!assessmentResult.passed && (
-                    <button onClick={() => setAssessmentResult(null)} className="mt-4 px-4 py-2 bg-rose-600 text-white rounded font-bold text-xs shadow-sm">
-                      Retry Assessment
+                  {!assessmentResult.passed && ((assessmentResult.attempts || 1) < 3) && (
+                    <button onClick={() => setAssessmentResult(null)} className="mt-4 px-4 py-2 bg-rose-600 text-white rounded font-bold text-xs shadow-sm hover:bg-rose-700 transition-colors">
+                      Retry Assessment (Attempt {(assessmentResult.attempts || 1) + 1} of 3)
                     </button>
                   )}
                 </div>

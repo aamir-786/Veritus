@@ -68,8 +68,8 @@ export default function Home() {
         if (tRes.success) setTemplates(tRes.templates);
 
         try {
-          const rRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reviews/landing`).then(res => res.json());
-          if (rRes.success) setReviews(rRes.reviews);
+          const rRes = await api.getLandingPageReviews();
+          if (rRes.success) setReviews(rRes.reviews || []);
         } catch (err) {
           console.error("Failed to fetch reviews", err);
         }

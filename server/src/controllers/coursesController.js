@@ -144,9 +144,10 @@ exports.getCourseDetails = async (req, res) => {
     // Fetch Course Reviews
     const { data: reviews } = await supabase
       .from('reviews')
-      .select('rating')
+      .select('id, rating, comment, created_at, user_id, profiles(full_name)')
       .eq('product_type', 'course')
-      .eq('product_id', course.id);
+      .or(`product_id.eq.${course.id},product_id.eq.${course.slug}`)
+      .order('created_at', { ascending: false });
 
     let rating_avg = "0.0";
     let rating_count = 0;
@@ -156,6 +157,8 @@ exports.getCourseDetails = async (req, res) => {
       const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
       rating_avg = (sum / rating_count).toFixed(1);
     }
+
+    const userHasReviewed = userId && reviews ? reviews.some(r => r.user_id === userId) : false;
 
     return res.json({
       success: true,
@@ -171,9 +174,11 @@ exports.getCourseDetails = async (req, res) => {
         author_name: course.author_name,
         cover_image: course.cover_image,
         is_enrolled: isEnrolled,
+        user_has_reviewed: !!userHasReviewed,
         modules: sanitizedModules,
         rating_avg,
-        rating_count
+        rating_count,
+        reviews: reviews || []
       }
     });
   } catch (err) {
@@ -228,9 +233,19 @@ exports.getLessonPlayback = async (req, res) => {
     if (targetLesson.type === 'assessment') {
       const { data: questions } = await supabase
         .from('assessment_questions')
-        .select('id, question_text, options')
+        .select('id, question_text, options, question_type')
         .eq('lesson_id', targetLesson.id);
       targetLesson.questions = questions || [];
+
+      if (userId) {
+        const { data: sub } = await supabase
+          .from('assessment_submissions')
+          .select('score, passed, agreed, attempts, submitted_at')
+          .eq('user_id', userId)
+          .eq('lesson_id', targetLesson.id)
+          .maybeSingle();
+        targetLesson.user_submission = sub || null;
+      }
     }
 
     return res.json({

@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Award, Download } from 'lucide-react';
+import { Award, Download, ShieldCheck } from 'lucide-react';
 
 export default function Certificate() {
   const { courseId } = useParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState(null);
-  const [completedDate, setCompletedDate] = useState(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
+  const [completedDate] = useState(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -20,7 +20,6 @@ export default function Certificate() {
           if (enrolled && enrolled.is_completed) {
             setCourse(enrolled);
           } else {
-            // Not completed or not found
             setCourse(null);
           }
         }
@@ -33,7 +32,7 @@ export default function Certificate() {
     fetchDetails();
   }, [courseId]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-500 text-sm">Loading certificate...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 text-sm">Loading certificate...</div>;
   if (!course) return <Navigate to="/dashboard" />;
 
   const handlePrint = () => {
@@ -41,73 +40,110 @@ export default function Certificate() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col items-center py-12 px-4 print:py-0 print:px-0 print:bg-white">
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center py-6 px-4 print:py-0 print:px-0 print:bg-white print:block">
       
       {/* Controls (Hidden on Print) */}
-      <div className="max-w-5xl w-full flex justify-between items-center mb-8 print:hidden">
-        <h1 className="font-display text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Award className="w-6 h-6 text-emerald-600" /> Your Certificate
+      <div className="max-w-4xl w-full flex justify-between items-center mb-4 print:hidden">
+        <h1 className="font-display text-xl font-bold text-white flex items-center gap-2">
+          <Award className="w-5 h-5 text-amber-400" /> Executive Certificate
         </h1>
         <button
           onClick={handlePrint}
-          className="px-6 py-2.5 rounded-xl bg-blue-900 text-white font-bold text-sm hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2"
+          className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer"
         >
-          <Download className="w-4 h-4" /> Download PDF
+          <Download className="w-4 h-4" /> Download / Print PDF
         </button>
       </div>
 
-      {/* Certificate Canvas - Minimalist Corporate Design */}
-      <div 
-        className="bg-white relative shadow-2xl overflow-hidden print:shadow-none print:w-[1000px] print:h-[700px]"
-        style={{ width: '1000px', height: '700px', minWidth: '1000px', minHeight: '700px' }}
-      >
-        {/* Style scoped only to certificate for crisp printing */}
-        <style dangerouslySetInnerHTML={{__html: `
-          @media print {
-            @page { size: landscape; margin: 0; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
-          }
-        `}} />
+      {/* Certificate Container - Responsive aspect ratio for screen viewing, landscape print for PDF */}
+      <div className="w-full max-w-4xl print:max-w-none print:w-full print:h-screen flex items-center justify-center">
+        <div 
+          className="bg-white relative shadow-2xl rounded-2xl print:rounded-none overflow-hidden border-4 border-amber-500/30 print:border-none flex flex-col justify-between p-8 sm:p-12 md:p-14 print:p-16 aspect-[1.414/1] w-full"
+        >
+          {/* Print Style Override */}
+          <style dangerouslySetInnerHTML={{__html: `
+            @media print {
+              @page { size: landscape; margin: 0; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white !important; }
+              .print-hide { display: none !important; }
+            }
+          `}} />
 
-        {/* Blue Edge Bar */}
-        <div className="w-6 h-full bg-blue-900 absolute left-0 top-0 print:bg-[#1e3a8a]"></div>
-        
-        <div className="w-full h-full p-20 pl-28 flex flex-col justify-between absolute inset-0">
+          {/* Business Corporate Background Image Watermark */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-[0.04] pointer-events-none mix-blend-multiply"
+            style={{ backgroundImage: `url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80')` }}
+          />
+
+          {/* Decorative Corner Ornaments */}
+          <div className="absolute top-0 left-0 w-20 h-20 sm:w-24 sm:h-24 border-t-8 border-l-8 border-blue-900/80 pointer-events-none" />
+          <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 border-t-8 border-r-8 border-blue-900/80 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 sm:w-24 sm:h-24 border-b-8 border-l-8 border-blue-900/80 pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-20 h-20 sm:w-24 sm:h-24 border-b-8 border-r-8 border-blue-900/80 pointer-events-none" />
+
+          {/* Left Decorative Gold/Blue Accent Bar */}
+          <div className="w-3 h-full bg-gradient-to-b from-blue-900 via-amber-500 to-blue-950 absolute left-0 top-0" />
           
-          <div className="flex justify-between items-start">
+          {/* Header */}
+          <div className="flex justify-between items-start relative z-10">
             <div>
-              <h1 className="font-sans text-3xl font-black text-slate-900 tracking-tighter print:text-black">VERITUS</h1>
-              <p className="font-sans text-[10px] text-slate-400 tracking-widest uppercase font-bold mt-1">By EffectiveRM</p>
+              <h1 className="font-display text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">VERITUS</h1>
+              <p className="text-[9px] sm:text-[10px] text-amber-700 tracking-widest uppercase font-bold">EffectiveRM Executive Series</p>
             </div>
             <div className="text-right">
-              <p className="font-sans text-sm text-slate-400 font-bold uppercase">DATE: {completedDate}</p>
-              <p className="font-sans text-sm text-slate-400 font-bold uppercase">ID: VRT-{course.id.substring(0, 6).toUpperCase()}</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-mono font-bold uppercase">DATE: {completedDate}</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-mono font-bold uppercase">ID: VRT-{course.id.substring(0, 8).toUpperCase()}</p>
             </div>
           </div>
 
-          <div>
-            <h2 className="font-sans text-6xl text-slate-900 font-black mb-2 tracking-tighter print:text-black">CERTIFICATE</h2>
-            <h3 className="font-sans text-2xl text-blue-900 font-bold mb-12 uppercase tracking-widest print:text-[#1e3a8a]">Of Completion</h3>
-            
-            <p className="font-sans text-slate-500 mb-2 uppercase tracking-widest text-sm font-bold">Awarded to</p>
-            <h4 className="font-sans text-5xl text-slate-900 font-black mb-10 border-b-4 border-slate-100 pb-4 inline-block pr-20 print:text-black print:border-gray-200">
-              {user?.full_name || 'Executive Practitioner'}
-            </h4>
-            
-            <p className="font-sans text-slate-500 mb-2 uppercase tracking-widest text-sm font-bold">For successfully completing</p>
-            <h5 className="font-sans text-2xl text-slate-800 font-bold print:text-gray-800">{course.title}</h5>
+          {/* Main Body */}
+          <div className="my-auto py-2 relative z-10">
+            <div className="text-center space-y-2">
+              <h2 className="font-display text-3xl sm:text-5xl font-black text-slate-900 tracking-tight uppercase">
+                Certificate <span className="text-blue-900">of Completion</span>
+              </h2>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-widest">
+                This is to officially certify that
+              </p>
+              
+              <div className="py-1 sm:py-2">
+                <h3 className="font-display text-2xl sm:text-4xl font-extrabold text-blue-950 border-b-2 border-amber-400 inline-block px-8 pb-1">
+                  {user?.full_name || 'Executive Practitioner'}
+                </h3>
+              </div>
+              
+              <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-widest">
+                has successfully completed the executive masterclass program
+              </p>
+              
+              <h4 className="font-display text-sm sm:text-lg font-bold text-slate-900 max-w-2xl mx-auto leading-snug">
+                {course.title}
+              </h4>
+            </div>
           </div>
-          
-          <div className="flex justify-between items-end">
+
+          {/* Footer & Signature / Official Seal */}
+          <div className="flex justify-between items-end relative z-10 pt-2 border-t border-slate-100">
             <div className="text-left">
-              <div className="mb-2">
-                <span className="font-sans text-2xl font-bold text-slate-800 italic print:text-gray-800" style={{ fontFamily: 'Georgia, serif' }}>
+              <div className="mb-1">
+                <span className="text-base sm:text-2xl font-bold text-slate-800 italic" style={{ fontFamily: 'Georgia, serif' }}>
                   Kashif Qadir
                 </span>
               </div>
-              <div className="w-8 h-1 bg-blue-900 mb-3 print:bg-[#1e3a8a]"></div>
-              <p className="font-sans text-xs text-slate-900 uppercase tracking-wider font-black print:text-black">Kashif Qadir</p>
-              <p className="font-sans text-[10px] text-slate-500 uppercase tracking-widest font-bold">Founder & Director</p>
+              <div className="w-14 h-0.5 bg-blue-900 mb-1"></div>
+              <p className="text-[10px] sm:text-xs text-slate-900 font-extrabold uppercase tracking-wider">Kashif Qadir</p>
+              <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase">Founder & Executive Director</p>
+            </div>
+
+            {/* Official Badge / Seal */}
+            <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100/80 p-2 sm:p-3 rounded-xl border border-amber-300/60 shadow-xs">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="text-left">
+                <p className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-wider leading-none">VERIFIED CREDENTIAL</p>
+                <p className="text-[8px] sm:text-[9px] font-semibold text-amber-800 tracking-tight mt-0.5">Veritus Risk Management</p>
+              </div>
             </div>
           </div>
 

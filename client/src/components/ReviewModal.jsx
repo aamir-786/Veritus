@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Star, X } from 'lucide-react';
+import { api } from '../services/api';
 
-export default function ReviewModal({ isOpen, onClose, productType, productId, productName }) {
+export default function ReviewModal({ isOpen, onClose, onSuccess, productType, productId, productName }) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
@@ -49,30 +50,22 @@ export default function ReviewModal({ isOpen, onClose, productType, productId, p
       : comment.trim();
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reviews`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          product_type: productType,
-          product_id: productId,
-          rating,
-          comment: finalComment
-        })
+      const data = await api.createReview({
+        product_type: productType,
+        product_id: productId,
+        rating,
+        comment: finalComment
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.error || 'Failed to submit review');
       }
 
       setSuccess(true);
+      if (onSuccess) onSuccess();
       setTimeout(() => {
         onClose();
-      }, 2000);
+      }, 1500);
     } catch (err) {
       setError(err.message);
     } finally {
