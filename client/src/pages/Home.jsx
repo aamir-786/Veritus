@@ -144,12 +144,12 @@ export default function Home() {
     <div className="space-y-16 pb-20 text-slate-900 bg-[#F8FAFC]">
 
       {/* 1. Hero Section - Executive Background Imagery & Pattern Layer */}
-      <section className="relative pt-1 pb-20 overflow-hidden border-b border-slate-200 bg-section-hero">
+      <section className="relative pt-16 pb-16 overflow-hidden border-b border-slate-200 bg-section-hero">
 
         {/* Subtle Executive Dot Pattern Overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-30 pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-5 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
 
           <ScrollReveal animation="slide-down" delay={0}>
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/90 backdrop-blur border border-blue-200 text-blue-900 text-xs font-extrabold uppercase tracking-wider shadow-2xs">
@@ -193,7 +193,7 @@ export default function Home() {
           </ScrollReveal>
 
           {/* Metrics Bar with Background Card Accents & Slide Animations */}
-          <div className="pt-2 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
+          <div className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
             <ScrollReveal animation="slide-up" delay={150}>
               <div className="p-4 rounded-2xl glass-card glass-card-hover border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-all">
                 <div className="text-2xl font-extrabold text-slate-900 font-display">100</div>
@@ -374,39 +374,39 @@ export default function Home() {
                         {course.tier}
                       </div>
                     </div>
-                    <div className="p-5 sm:p-6 space-y-3 flex-grow">
-                      <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-snug">{course.title}</h3>
+                    <div className="p-4 space-y-2 flex-grow">
+                      <h3 className="font-display text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2 leading-tight">{course.title}</h3>
 
-                      <div className="flex items-center gap-2 pt-1 pb-1">
+                      <div className="flex items-center gap-1.5 mt-1">
                         <div className={`flex ${course.rating_count > 0 ? 'text-emerald-500' : 'text-slate-300'}`}>
                           {[1, 2, 3, 4, 5].map(i => (
                             <Star
                               key={i}
-                              className={`w-3.5 h-3.5 ${course.rating_count > 0 && course.rating_avg >= i ? 'fill-emerald-500 text-emerald-500' : (course.rating_count > 0 && course.rating_avg >= i - 0.5 ? 'fill-emerald-500 text-emerald-500 opacity-50' : 'fill-slate-200 text-slate-200')}`}
+                              className={`w-3 h-3 ${course.rating_count > 0 && course.rating_avg >= i ? 'fill-emerald-500 text-emerald-500' : (course.rating_count > 0 && course.rating_avg >= i - 0.5 ? 'fill-emerald-500 text-emerald-500 opacity-50' : 'fill-slate-200 text-slate-200')}`}
                             />
                           ))}
                         </div>
-                        <span className="text-[11px] font-bold text-slate-600">
+                        <span className="text-[10px] font-bold text-slate-600">
                           {course.rating_count > 0 ? `${course.rating_avg} (${course.rating_count} reviews)` : 'No reviews'}
                         </span>
                       </div>
 
-                      <p className="text-xs text-slate-600 leading-relaxed font-normal line-clamp-2 pt-1">{course.headline}</p>
-                      <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 pt-4 mt-3 border-t border-slate-100 font-medium">
+                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal line-clamp-2 mt-2">{course.headline}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-3 mt-2 border-t border-slate-100 font-medium">
                         <span className="flex items-center gap-1">
-                          <Layers className="w-3.5 h-3.5 text-amber-700" /> {course.module_count} Modules
+                          <Layers className="w-3 h-3 text-amber-700" /> {course.module_count} Modules
                         </span>
                         <span className="flex items-center gap-1">
-                          <PlayCircle className="w-3.5 h-3.5 text-blue-700" /> {course.lesson_count} Lessons
+                          <PlayCircle className="w-3 h-3 text-blue-700" /> {course.lesson_count} Lessons
                         </span>
                         <span className="flex items-center gap-1 text-emerald-700 font-semibold w-full mt-1">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Gated Access Verified
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" /> Gated Access Verified
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-5 border-t border-slate-100/80 bg-slate-50/80 backdrop-blur flex items-center justify-between mt-auto">
+                  <div className="p-4 border-t border-slate-100/80 bg-slate-50/80 backdrop-blur flex items-center justify-between mt-auto">
                     <div>
                       <div className="text-lg font-extrabold text-emerald-800">${course.price}</div>
                     </div>
