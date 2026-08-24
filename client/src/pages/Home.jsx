@@ -144,12 +144,12 @@ export default function Home() {
     <div className="space-y-16 pb-20 text-slate-900 bg-[#F8FAFC]">
       
       {/* 1. Hero Section - Executive Background Imagery & Pattern Layer */}
-      <section className="relative pt-16 pb-20 overflow-hidden border-b border-slate-200 bg-section-hero">
+      <section className="relative pt-12 pb-12 overflow-hidden border-b border-slate-200 bg-section-hero">
         
         {/* Subtle Executive Dot Pattern Overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] [background-size:24px_24px] opacity-30 pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-10">
           
           <ScrollReveal animation="slide-down" delay={0}>
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/90 backdrop-blur border border-blue-200 text-blue-900 text-xs font-extrabold uppercase tracking-wider shadow-2xs">
@@ -193,7 +193,7 @@ export default function Home() {
           </ScrollReveal>
 
           {/* Metrics Bar with Background Card Accents & Slide Animations */}
-          <div className="pt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
+          <div className="pt-2 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
             <ScrollReveal animation="slide-up" delay={150}>
               <div className="p-4 rounded-2xl glass-card glass-card-hover border border-slate-200/90 shadow-xs relative overflow-hidden group hover:border-blue-300 transition-all">
                 <div className="text-2xl font-extrabold text-slate-900 font-display">100</div>
