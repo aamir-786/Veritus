@@ -34,20 +34,32 @@ export default function PromoBanner() {
     }
   };
 
+  const extractPromoCode = (promo) => {
+    if (promo?.code) return promo.code;
+    if (promo?.promo_code) return promo.promo_code;
+    if (promo?.message) {
+      const match = promo.message.match(/(?:Code|code|CODE):\s*([A-Za-z0-9_-]+)/);
+      if (match && match[1]) return match[1];
+    }
+    return 'EXECUTIVE20';
+  };
+
+  const fallbackPromo = {
+    id: 'default-executive-2026',
+    code: 'EXECUTIVE20',
+    message: '🎉 EXECUTIVE OFFER: Get 20% OFF All Masterclasses & Frameworks — Use Code: EXECUTIVE20 at checkout!'
+  };
+
+  const activePromo = promotion || fallbackPromo;
+  const promoCodeToCopy = extractPromoCode(activePromo);
+
   const handleCopyCode = () => {
-    navigator.clipboard.writeText('EXECUTIVE20');
+    navigator.clipboard.writeText(promoCodeToCopy);
     setCopied(true);
     setTimeout(() => {
       setCopied(false);
     }, 2500);
   };
-
-  const fallbackPromo = {
-    id: 'default-executive-2026',
-    message: '🎉 EXECUTIVE OFFER: Get 20% OFF All Masterclasses & Frameworks — Use Code: EXECUTIVE20 at checkout!'
-  };
-
-  const activePromo = promotion || fallbackPromo;
 
   if (!isVisible) return null;
 
@@ -84,7 +96,7 @@ export default function PromoBanner() {
           <div className="bg-slate-900/95 text-white backdrop-blur-md px-4 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center gap-2.5 text-xs font-semibold">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span>
-              Promo code <span className="font-mono text-amber-400 font-bold">EXECUTIVE20</span> copied to clipboard!
+              Promo code <span className="font-mono text-amber-400 font-bold">{promoCodeToCopy}</span> copied to clipboard!
             </span>
           </div>
         </div>
