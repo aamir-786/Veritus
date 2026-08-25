@@ -184,22 +184,47 @@ export const api = {
   },
 
   getCertificates: async () => {
-    const res = await fetch(`${API_BASE}/dashboard/certificates`, { headers: await getHeaders() });
-    return res.json();
+    try {
+      let res = await fetch(`${API_BASE}/dashboard/certificates`, { headers: await getHeaders() });
+      if (res.status === 404 && !API_BASE.endsWith('/v1')) {
+        res = await fetch(`${API_BASE}/v1/dashboard/certificates`, { headers: await getHeaders() });
+      }
+      return await res.json();
+    } catch (e) {
+      return { success: false, certificates: [] };
+    }
   },
 
   issueCertificate: async (data) => {
-    const res = await fetch(`${API_BASE}/dashboard/certificates/issue`, {
-      method: 'POST',
-      headers: await getHeaders(),
-      body: JSON.stringify(data)
-    });
-    return res.json();
+    try {
+      let res = await fetch(`${API_BASE}/dashboard/certificates/issue`, {
+        method: 'POST',
+        headers: await getHeaders(),
+        body: JSON.stringify(data)
+      });
+      if (res.status === 404 && !API_BASE.endsWith('/v1')) {
+        res = await fetch(`${API_BASE}/v1/dashboard/certificates/issue`, {
+          method: 'POST',
+          headers: await getHeaders(),
+          body: JSON.stringify(data)
+        });
+      }
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   },
 
   getSingleCertificate: async (courseId) => {
-    const res = await fetch(`${API_BASE}/dashboard/certificates/${courseId}`, { headers: await getHeaders() });
-    return res.json();
+    try {
+      let res = await fetch(`${API_BASE}/dashboard/certificates/${courseId}`, { headers: await getHeaders() });
+      if (res.status === 404 && !API_BASE.endsWith('/v1')) {
+        res = await fetch(`${API_BASE}/v1/dashboard/certificates/${courseId}`, { headers: await getHeaders() });
+      }
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   },
 
   // Reviews API

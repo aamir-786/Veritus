@@ -20,9 +20,11 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json());
 
-// API Endpoints
-app.use('/api/v1', apiRouter);
+// API Endpoints (Support both /api and /api/v1 prefixes)
 app.use('/api/v1/admin/upload', uploadRoute);
+app.use('/api/admin/upload', uploadRoute);
+app.use('/api/v1', apiRouter);
+app.use('/api', apiRouter);
 
 // Health Check
 app.get('/api/health', (req, res) => {
