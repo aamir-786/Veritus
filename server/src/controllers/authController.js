@@ -51,3 +51,56 @@ exports.checkAndSendWelcome = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to process welcome email' });
   }
 };
+
+exports.updateProfile = async (req, res) => {
+  const userId = req.user.id;
+  const { full_name } = req.body;
+
+  if (!full_name || !full_name.trim()) {
+    return res.status(400).json({ success: false, error: 'Full name is required' });
+  }
+
+  const trimmedName = full_name.trim();
+
+  try {
+    // 1. Update or Upsert in public.profiles table
+    const { data: profile, error: dbError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email: req.user.email,
+        full_name: trimmedName,
+        role: req.user.role || 'student',
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Profiles table update error:', dbError);
+    }
+
+    // 2. Update user_metadata in Supabase Auth if admin API available
+    if (supabase.auth?.admin?.updateUserById) {
+      try {
+        await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: { full_name: trimmedName }
+        });
+      } catch (e) {
+        console.warn('Could not update user_metadata in auth:', e.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        ...req.user,
+        full_name: trimmedName
+      }
+    });
+  } catch (err) {
+    console.error('Update Profile Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update profile' });
+  }
+};

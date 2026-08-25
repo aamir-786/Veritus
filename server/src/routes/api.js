@@ -21,6 +21,7 @@ const supabase = require('../config/supabase');
 router.get('/auth/profile', authenticateToken, (req, res) => {
   return res.json({ success: true, user: req.user });
 });
+router.put('/auth/profile', authenticateToken, authController.updateProfile);
 router.post('/auth/welcome', authenticateToken, authController.checkAndSendWelcome);
 
 // --- Contact Form Email Endpoint ---

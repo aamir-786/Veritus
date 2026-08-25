@@ -35,6 +35,19 @@ export const api = {
     }
   },
 
+  updateProfile: async (profileData) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/profile`, {
+        method: 'PUT',
+        headers: await getHeaders(),
+        body: JSON.stringify(profileData)
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
   sendContactInquiry: async (formData) => {
     const res = await fetch(`${API_BASE}/contact`, {
       method: 'POST',

@@ -166,23 +166,29 @@ export const AuthProvider = ({ children }) => {
     try {
       if (!user) return { success: false, error: 'User not authenticated' };
       
-      // Update Supabase auth user metadata
+      const trimmedName = full_name.trim();
+
+      // 1. Update Supabase auth user metadata on client side
       const { error: authError } = await supabase.auth.updateUser({
-        data: { full_name }
+        data: { full_name: trimmedName }
       });
       if (authError) return { success: false, error: authError.message };
 
-      // Update public.profiles table
-      const { error: dbError } = await supabase
-        .from('profiles')
-        .update({ full_name, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
+      // 2. Update public.profiles via backend API
+      const { api } = await import('../services/api');
+      const apiRes = await api.updateProfile({ full_name: trimmedName });
 
-      if (dbError) {
-        console.warn('Note: Could not update profiles table:', dbError.message);
+      if (apiRes && !apiRes.success && apiRes.error) {
+        return { success: false, error: apiRes.error };
       }
 
-      setUser(prev => prev ? { ...prev, full_name } : prev);
+      // 3. Update React user state immediately
+      setUser(prev => prev ? { 
+        ...prev, 
+        full_name: trimmedName, 
+        user_metadata: { ...prev.user_metadata, full_name: trimmedName } 
+      } : prev);
+
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };

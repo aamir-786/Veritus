@@ -80,6 +80,7 @@ export default function Dashboard() {
     const res = await updateUserProfile({ full_name: profileFullName });
     setProfileLoading(false);
     if (res.success) {
+      setData(prev => prev ? { ...prev, user: { ...prev.user, full_name: profileFullName.trim() } } : prev);
       setProfileMsg({ type: 'success', text: 'Profile updated successfully!' });
     } else {
       setProfileMsg({ type: 'error', text: res.error || 'Failed to update profile' });
