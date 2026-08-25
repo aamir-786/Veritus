@@ -155,3 +155,25 @@ Veritus2/
 13. `61ad569`: *feat: add /api/v1/health/email endpoint to test live email sending on Vercel*
 14. `2a9287a`: *fix: remove Resend and configure pure Gmail SMTP transport with fallback defaults*
 15. `c981ca9`: *feat: automatic congratulatory email dispatch with public certificate URL upon masterclass completion*
+16. `20dccba`: *fix(auth): improve login routing, add dashboard profile edit tab, and add 1-click LinkedIn certification addition*
+17. `616470e`: *fix(auth): add server endpoint PUT /api/auth/profile to persist user full_name to public.profiles table*
+18. `5234698`: *fix(db): remove non-existent updated_at column from profiles upsert payload*
+19. `6028376`: *feat(security): require recipient name confirmation before certificate issuance and lock recipient name permanently*
+20. `445303c`: *fix(api): mount apiRouter on both /api and /api/v1 to prevent 404 API Endpoint Not Found errors*
+21. `d2c5f17`: *fix(promo): dynamically extract active promo code to copy to clipboard in PromoBanner*
+22. `74bca14`: *feat(admin): add edit user modal to update practitioner name, email, password, and role from admin studio*
+23. `8179dff`: *fix(admin): use upsert for user profiles update in adminController*
+24. `596aa85`: *fix(admin): restore exports.adminResetPassword in adminController to fix server startup crash*
+25. `d6f46f0`: *feat(reviews): hide review button once user submits review and categorize reviews with dynamic product badges*
+26. `66bd0d6`: *chore(cleanup): remove unnecessary temporary scripts, export assets, and update .gitignore for IDE and temp entries*
+
+---
+
+## 8. August 25, 2026 Feature Additions Summary
+
+- **Legal Name Verification & Permanent Locking**: `NameConfirmationModal.jsx` asks users to confirm legal name before certificate generation; `issueCertificate` API locks name permanently on database record so future profile name changes do not alter issued certificates.
+- **1-Click LinkedIn Certification Sharing**: Added official LinkedIn certification links (`certId`, `issueYear`, `issueMonth`, `certUrl`).
+- **Admin Studio User Account Editor**: Added **Edit User** modal in Admin Studio -> **User Management** tab to edit practitioner **Name**, **Email**, **Password**, and **Role** (*Student* vs *Admin*).
+- **Express Dual Route Mounting**: Mounted `apiRouter` on both `/api` and `/api/v1` in `server.js` with fallback handling in `api.js` to eliminate 404 API errors.
+- **Single-Review Enforcement & Categorized Display**: Enforced single-review rule (hiding review button once submitted); enriched landing page reviews with product category badges (**Masterclass**, **Taxonomy Question**, **Digital Template**) and feedback tag pills.
+- **Repository Maintenance & `.gitignore` Specification**: Removed unused temporary scripts (`generate_email.js`, `refactor.py`) and export images; updated `.gitignore` rules for `.vscode/`, `.idea/`, `scratch/`, `*.tmp`, and `*.bak`.

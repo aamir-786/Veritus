@@ -1,120 +1,196 @@
-# Veritus: Effective Risk Management Platform
+# Veritus Executive Risk Platform
 
-Veritus is a comprehensive, modern Risk Management (GRC) educational platform and toolkit. Designed for executives and risk professionals, it offers actionable insights, masterclasses, and pre-built templates to streamline governance, risk, and compliance.
+> **Deciding in the Dark — The Premier Enterprise Risk Management (GRC) Educational Platform & Executive Toolkit.**
 
-## 🌟 Key Features
-
-- **Interactive Risk Matrix:** A beautifully designed heatmap allowing users to filter and explore 100 meticulously categorized risk questions based on Regulator Pressure, Payback Window, Cost Band, and Duration.
-- **Premium Guidance & Playbooks:** Gated executive guidance, actionable step-by-step strategies, and regulatory playbooks accessible via secure authentication.
-- **E-Commerce & Cart System:** Integrated Stripe checkout for purchasing premium Risk Masterclasses and Template Hub assets directly on the platform.
-- **Robust Authentication:** Powered by Supabase, featuring secure Email/Password login, Google OAuth integration, and Role-Based Access Control (RBAC).
-- **Admin Studio:** A powerful internal dashboard for administrators to manage user roles, edit risk questions, oversee template inventory, and track sales.
-- **Automated Email Workflows:** Triggered executive-style email notifications for welcome onboarding, password resets, and purchase receipts.
-
-## 🛠️ Technology Stack
-
-**Frontend:**
-- React (Vite)
-- Tailwind CSS (Utility-first styling, Glassmorphism design system)
-- React Router (Routing)
-- Lucide React (Iconography)
-- Stripe Elements (Payments)
-- Supabase JS Client (Auth)
-
-**Backend:**
-- Node.js & Express.js
-- Supabase (PostgreSQL Database, Row Level Security, Authentication)
-- Stripe Node SDK (Payment Processing)
-- Nodemailer (Transactional Emails)
+Veritus is a modern, high-performance Risk Management (GRC) platform engineered for C-suite executives, Chief Risk Officers (CROs), board members, and risk practitioners. It combines interactive risk taxonomy playbooks, executive masterclasses, digital compliance templates, verified certificate credentialing, and an intuitive Admin Studio.
 
 ---
 
-## 🚀 Getting Started (Local Development)
+## 🌟 Key System Capabilities
 
-### Prerequisites
-- Node.js (v18+ recommended)
-- A [Supabase](https://supabase.com/) account and project
-- A [Stripe](https://stripe.com/) account (for testing payments)
-- A Google Cloud Console project (optional, for Google OAuth)
+### 1. Interactive 100 Risk Questions Taxonomy Matrix
+- **Dynamic Heatmap & Filters**: Filter 100 risk governance questions by **Regulator Pressure** (*High, Moderate, Low*), **Payback Window**, **Cost Band**, and **Duration**.
+- **Actionable Playbooks**: Gated executive guidance, regulatory compliance steps, and decision framework playbooks.
 
-### 1. Clone & Install Dependencies
-The project is structured as a monorepo with separate `client` and `server` directories.
+### 2. Executive Risk Masterclasses & Course Player
+- **Interactive Modules**: Multi-lesson masterclasses with rich text, video streams, audio playbooks, and interactive assessment quizzes.
+- **Progress Tracking**: Real-time progress percentage computation and resumption to the last active lesson.
 
+### 3. Executive Certificate Credentialing & LinkedIn Integration
+- **Legal Name Verification & Permanent Locking**: Pre-issuance `NameConfirmationModal` prompts students to verify their official legal name. Once generated, recipient names are permanently locked (`POST /api/dashboard/certificates/issue`) so subsequent profile name changes do not alter issued certificates.
+- **1-Click "Add to LinkedIn"**: Official LinkedIn certification integration pre-filling `certId` (e.g. `#1452`), `name`, `organizationName`, `issueYear`, `issueMonth`, and `certUrl`.
+
+### 4. Admin Studio (Comprehensive Admin Management Suite)
+- **Real-Time Analytics**: Track platform revenue, user registrations, course completions, and inquiries.
+- **User Management & Account Editor**: Edit practitioner **Full Name**, **Email Address**, **Password**, and **Account Role** (*Student* vs *Administrator*) directly with real-time database upserting.
+- **Masterclass & Module Builder**: Build courses, add modules, upload video/audio URLs, and create assessment questions.
+- **Taxonomy Manager**: Full CRUD control over the 100 Risk Questions matrix.
+- **Global Promotions & Coupon Manager**: Create site-wide discount codes, expiration dates, custom banner messages, and enable dynamic 1-click clipboard copying.
+- **Reviews & Testimonial Engine**: Single-review policy automatically suppresses review buttons after submission; reviews are displayed with categorized product badges (**Masterclass**, **Taxonomy Question**, **Digital Template**) and feedback tag pills.
+
+---
+
+## 🛠️ System Architecture & Technology Stack
+
+```
+   ┌─────────────────────────────────────────────────────────┐
+   │                    Client (Vite + React)                │
+   │  TailwindCSS • Lucide Icons • Stripe Elements • Context │
+   └────────────────────────────┬────────────────────────────┘
+                                │ HTTPS / REST API
+   ┌────────────────────────────▼────────────────────────────┐
+   │                Backend (Express.js Node.js)             │
+   │  JWT / Bearer Auth • Route Aliases (/api & /api/v1)      │
+   └────────────────────────────┬────────────────────────────┘
+                                │ Supabase JS Client & Admin SDK
+   ┌────────────────────────────▼────────────────────────────┐
+   │               Supabase (PostgreSQL Database)            │
+   │  Profiles • Courses • Progress • Certificates • Reviews │
+   └─────────────────────────────────────────────────────────┘
+```
+
+- **Frontend**: React (Vite), TailwindCSS, React Router, Lucide Icons, Helmet Async, Vitest.
+- **Backend**: Node.js, Express.js, Supabase Admin SDK, PostgREST API, CORS.
+- **Database & Auth**: Supabase PostgreSQL with Row Level Security (RLS) policies and JWT authentication.
+
+---
+
+## 🔒 `.gitignore` Specification & Security Maintenance
+
+The repository uses a strict `.gitignore` policy to prevent sensitive environment keys, IDE configurations, temporary scratch files, and build artifacts from entering version control.
+
+### Included `.gitignore` Rules:
+
+```gitignore
+# Dependencies
+node_modules/
+.pnpm-store
+
+# Production Builds
+client/dist
+dist/
+build/
+
+# Environment Configuration (Security sensitive)
+.env
+server/.env
+client/.env
+*.env.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System & IDE Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets & Config
+server/config/google-service-account.json
+server/config/*.json
+
+# Scratch & Temp
+scratch/
+*.tmp
+*.bak
+```
+
+### Instructions for Managing Ignored Files:
+1. **Never Commit Secrets**: Do NOT remove `.env` or `server/config/*.json` from `.gitignore`. Secret keys (`SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`) must remain local or in deployment platform environment variables.
+2. **Local `.env` Creation**: Always create local `.env` files based on `.env.example` templates.
+3. **Temporary Scratch Work**: Place temporary debug scripts, scratch data, or trial export files inside the `scratch/` folder or root `*.tmp` files—they are automatically ignored by git.
+4. **IDE Configurations**: `.vscode/` and `.idea/` folders are ignored so personal workspace settings do not clutter repository commits.
+
+---
+
+## 🚀 Getting Started (Local Setup)
+
+### 1. Prerequisites
+- **Node.js**: v18.0.0 or higher (v20+ recommended)
+- **Git**: Installed locally
+- **Supabase Account**: A Supabase project with database schema applied
+
+### 2. Installation
 ```bash
-# Install root dependencies (concurrently)
+# Clone the repository
+git clone https://github.com/aamir-786/Veritus.git
+cd Veritus
+
+# Install root dependencies
 npm install
 
 # Install client dependencies
-cd client
-npm install
+npm install --prefix client
 
 # Install server dependencies
-cd ../server
-npm install
+npm install --prefix server
 ```
 
-### 2. Database Setup
-1. Go to your Supabase Dashboard -> SQL Editor.
-2. Copy the contents of `server/src/db/schema.sql` and run it to create the necessary tables, Row Level Security (RLS) policies, and triggers.
+### 3. Environment Variable Configuration
 
-### 3. Environment Configuration
-
-Create a `.env` file in the **client** directory (`client/.env`):
+Create `client/.env`:
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api/v1
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key
+VITE_SUPABASE_URL=https://your-supabase-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
-Create a `.env` file in the **server** directory (`server/.env`):
+Create `server/.env`:
 ```env
 PORT=5000
 NODE_ENV=development
-SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_URL=https://your-supabase-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
-EMAIL_USER=your_email_address
-EMAIL_PASS=your_app_password
-GOOGLE_SERVICE_ACCOUNT_KEY_PATH=server/config/google-service-account.json
+STRIPE_SECRET_KEY=sk_test_your_key
 ```
-*(Note: If using the Google API features, place your `google-service-account.json` inside `server/config/`)*
 
-### 4. Run the Application
-
-You can start both the frontend and backend simultaneously from the root directory:
-
+### 4. Running the Development Server
 ```bash
-# In the root directory
+# Start both client and server concurrently
 npm run dev
 ```
+- **Frontend URL**: `http://localhost:5173`
+- **Backend API URL**: `http://localhost:5000` (supports `/api/v1` and `/api` routes)
 
-- Frontend will run on: `http://localhost:5173`
-- Backend API will run on: `http://localhost:5000`
+### 5. Running Tests & Production Builds
+```bash
+# Run Vitest unit tests
+npm test --prefix client
+
+# Run Vite production build
+npm run build --prefix client
+```
 
 ---
 
-## 📖 How to Use
+## 📖 Admin Studio Access
 
-### For Users
-1. **Explore the Matrix:** Navigate to the "100 Risk Questions" tab to browse questions. Click on any question to read the Executive Preview.
-2. **Create an Account:** Click "Sign In" or "Get Access" to create an account via Email or Google OAuth. This unlocks the full 20,000+ words of guidance text and implementation steps.
-3. **Purchase Templates:** Go to the "Template Hub", add desired compliance documents to your cart, and check out securely via Stripe.
+To grant an account Administrator privileges:
+1. Register a standard user account on the frontend.
+2. Run the admin seed script or update `public.profiles` role in Supabase:
+   ```bash
+   node seed_admin.js admin@veritus.com
+   ```
+3. Log in with the admin account to access **Admin Studio** (`/admin`).
 
-### For Administrators
-1. Register an account normally on the frontend.
-2. Go to your Supabase Dashboard -> Table Editor -> `profiles`.
-3. Change your user's `role` from `user` to `admin`.
-4. Log out and log back in on the frontend.
-5. You will now see the **Admin Studio** link in your user dropdown, giving you full CRUD access to the platform's database.
+---
 
 ## 🚢 Production Deployment
 
-- **Frontend:** Optimized for deployment on [Vercel](https://vercel.com). Ensure you add all `VITE_` variables to the Vercel Environment Variables settings. Make sure to add your Vercel URL to Supabase's Auth Redirect URLs.
-- **Backend:** Optimized for deployment on [Render](https://render.com) or Heroku. Use Render's "Secret Files" feature to mount the `google-service-account.json` file securely to `/etc/secrets/`.
+- **Frontend (Vercel)**:
+  - Connect repository root to Vercel.
+  - Set `VITE_API_BASE_URL` to `https://your-render-app.onrender.com/api/v1`.
+  - Configure `vercel.json` rewrites for SPA routing.
+
+- **Backend (Render)**:
+  - Deploy as a Node Web Service using start command `node server/src/server.js`.
+  - Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to Render environment variables.
 
 ---
 
-*Designed & Developed by the Veritus Team.*
+*Documentation updated for Veritus Executive Risk Platform.*
