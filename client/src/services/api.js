@@ -510,6 +510,26 @@ export const api = {
     return res.json();
   },
 
+  updateAdminUser: async (id, userData) => {
+    try {
+      let res = await fetch(`${API_BASE}/admin/users/${id}`, {
+        method: 'PUT',
+        headers: await getHeaders(),
+        body: JSON.stringify(userData)
+      });
+      if (res.status === 404 && !API_BASE.endsWith('/v1')) {
+        res = await fetch(`${API_BASE}/v1/admin/users/${id}`, {
+          method: 'PUT',
+          headers: await getHeaders(),
+          body: JSON.stringify(userData)
+        });
+      }
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
   getAdminReviews: async () => {
     const res = await fetch(`${API_BASE}/admin/reviews`, {
       headers: await getHeaders()

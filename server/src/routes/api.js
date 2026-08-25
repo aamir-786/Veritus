@@ -108,6 +108,7 @@ router.put('/admin/questions/:id', authenticateToken, requireAdmin, adminControl
 router.post('/admin/questions', authenticateToken, requireAdmin, adminController.createQuestion);
 router.delete('/admin/questions/:id', authenticateToken, requireAdmin, adminController.deleteQuestion);
 router.delete('/admin/users/:id', authenticateToken, requireAdmin, adminController.deleteUser);
+router.put('/admin/users/:id', authenticateToken, requireAdmin, adminController.updateUser);
 router.get('/admin/users/:id/details', authenticateToken, requireAdmin, adminController.getUserDetails);
 router.post('/admin/users/reset-password', authenticateToken, requireAdmin, adminController.adminResetPassword);
 

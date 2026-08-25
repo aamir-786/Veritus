@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Sparkles, Plus, BookOpen, Layers, Users, DollarSign,
   BarChart3, Settings, ShieldCheck, Search, ChevronRight, Video, Edit2, PlayCircle, ShieldAlert,
-  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X, CheckCircle2, Send, Star, Megaphone
+  LogOut, Trash2, KeyRound, TrendingUp, FileText, Download, ArrowLeft, Mail, Menu, X, CheckCircle2, Send, Star, Megaphone, UserCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -91,6 +91,62 @@ export default function AdminStudio() {
   const [inquiryReplyText, setInquiryReplyText] = useState('');
   const [isReplying, setIsReplying] = useState(false);
   const [replyFeedback, setReplyFeedback] = useState(null);
+
+  // Edit User Modal State
+  const [editUserModalOpen, setEditUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserPassword, setEditUserPassword] = useState('');
+  const [editUserRole, setEditUserRole] = useState('student');
+  const [editUserLoading, setEditUserLoading] = useState(false);
+  const [editUserError, setEditUserError] = useState('');
+  const [editUserSuccessMsg, setEditUserSuccessMsg] = useState('');
+
+  const handleSaveEditedUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    setEditUserLoading(true);
+    setEditUserError('');
+    setEditUserSuccessMsg('');
+
+    try {
+      const res = await api.updateAdminUser(editingUser.id, {
+        full_name: editUserName,
+        email: editUserEmail,
+        password: editUserPassword || undefined,
+        role: editUserRole
+      });
+
+      if (res.success) {
+        setMetrics(prev => prev ? {
+          ...prev,
+          users_list: (prev.users_list || []).map(u => 
+            u.id === editingUser.id ? { 
+              ...u, 
+              full_name: editUserName.trim(), 
+              email: editUserEmail.trim(), 
+              role: editUserRole 
+            } : u
+          )
+        } : prev);
+
+        setEditUserSuccessMsg('User account updated successfully!');
+        showToast('User account updated successfully!', 'success');
+        setTimeout(() => {
+          setEditUserModalOpen(false);
+          setEditingUser(null);
+        }, 1000);
+      } else {
+        setEditUserError(res.error || 'Failed to update user account.');
+      }
+    } catch (err) {
+      setEditUserError(err.message || 'An error occurred while updating user.');
+    } finally {
+      setEditUserLoading(false);
+    }
+  };
 
   // Navigation State
   const [activeTab, setActiveTab] = useState(() => {
@@ -1271,6 +1327,22 @@ export default function AdminStudio() {
                         </td>
                         <td className="px-5 py-3">
                           <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingUser(u);
+                                setEditUserName(u.full_name || '');
+                                setEditUserEmail(u.email || '');
+                                setEditUserPassword('');
+                                setEditUserRole(u.role || 'student');
+                                setEditUserError('');
+                                setEditUserSuccessMsg('');
+                                setEditUserModalOpen(true);
+                              }}
+                              className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded font-bold text-[10px] flex items-center gap-1 transition-colors border border-indigo-200/60 shadow-xs"
+                            >
+                              <Edit2 className="w-3 h-3" /> Edit
+                            </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleResetPassword(u.email); }}
                               className="px-2.5 py-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded text-slate-600 hover:text-indigo-600 font-bold text-[10px] flex items-center gap-1 shadow-sm"
@@ -2853,6 +2925,116 @@ export default function AdminStudio() {
         onSave={handleUpdateModule}
         onDelete={handleDeleteModule}
       />
+
+      {/* --- EDIT USER MODAL --- */}
+      {editUserModalOpen && editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setEditUserModalOpen(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-white">Edit User Account</h3>
+                  <p className="text-[11px] text-slate-300 font-mono">ID: {editingUser.id?.slice(0, 18)}...</p>
+                </div>
+              </div>
+              <button onClick={() => setEditUserModalOpen(false)} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSaveEditedUser} className="p-6 space-y-4 text-xs">
+              
+              {editUserError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span>{editUserError}</span>
+                </div>
+              )}
+
+              {editUserSuccessMsg && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{editUserSuccessMsg}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-slate-800 font-bold">Practitioner Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editUserName}
+                  onChange={e => setEditUserName(e.target.value)}
+                  placeholder="e.g. Aamir Hussain"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-slate-800 font-bold">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={editUserEmail}
+                  onChange={e => setEditUserEmail(e.target.value)}
+                  placeholder="e.g. user@domain.com"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-slate-800 font-bold">Set New Password <span className="text-[10px] font-normal text-slate-400">(Optional)</span></label>
+                <input
+                  type="password"
+                  value={editUserPassword}
+                  onChange={e => setEditUserPassword(e.target.value)}
+                  placeholder="Leave blank to keep current password"
+                  minLength={6}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-slate-800 font-bold">Account Role</label>
+                <select
+                  value={editUserRole}
+                  onChange={e => setEditUserRole(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all text-xs"
+                >
+                  <option value="student">Student / Practitioner</option>
+                  <option value="admin">Administrator (Admin)</option>
+                </select>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditUserModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editUserLoading}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  {editUserLoading ? 'Saving...' : 'Save User Changes'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

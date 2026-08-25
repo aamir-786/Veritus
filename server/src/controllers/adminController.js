@@ -376,26 +376,72 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-exports.adminResetPassword = async (req, res) => {
-  const { email } = req.body;
+exports.updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { full_name, email, password, role } = req.body;
+
   try {
-    const { data, error } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: email,
+    const trimmedName = full_name !== undefined && full_name !== null ? full_name.trim() : undefined;
+    const trimmedEmail = email ? email.trim() : undefined;
+    const trimmedPassword = password ? password.trim() : undefined;
+
+    // 1. Update Supabase Auth user (email, password, user_metadata)
+    if (supabase.auth?.admin?.updateUserById) {
+      const authPayload = {};
+      if (trimmedEmail) {
+        authPayload.email = trimmedEmail;
+        authPayload.email_confirm = true;
+      }
+      if (trimmedPassword) {
+        authPayload.password = trimmedPassword;
+      }
+      if (trimmedName !== undefined) {
+        authPayload.user_metadata = { full_name: trimmedName };
+      }
+
+      if (Object.keys(authPayload).length > 0) {
+        const { error: authError } = await supabase.auth.admin.updateUserById(id, authPayload);
+        if (authError) {
+          console.warn('Could not update user in Supabase auth.admin:', authError.message);
+        }
+      }
+    }
+
+    // 2. Update public.profiles database table
+    const profilePayload = {};
+    if (trimmedName !== undefined) profilePayload.full_name = trimmedName;
+    if (trimmedEmail) profilePayload.email = trimmedEmail;
+    if (role) profilePayload.role = role;
+
+    let updatedProfile = null;
+    if (Object.keys(profilePayload).length > 0) {
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .update(profilePayload)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        return res.status(400).json({ success: false, error: profileError.message });
+      }
+      updatedProfile = data;
+    }
+
+    return res.json({
+      success: true,
+      message: 'User account updated successfully',
+      user: {
+        id,
+        full_name: trimmedName !== undefined ? trimmedName : (updatedProfile?.full_name || ''),
+        email: trimmedEmail || updatedProfile?.email,
+        role: role || updatedProfile?.role || 'student'
+      }
     });
-    if (error) throw error;
-    
-    // Send email using email service with the generated link, or just rely on Supabase's built-in email sending.
-    // If we rely on Supabase built-in, we just do:
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:3000/reset-password',
-    });
-    
-    if (resetError) throw resetError;
-    return res.json({ success: true, message: 'Password reset link sent' });
   } catch (err) {
-    console.error('adminResetPassword Error:', err);
-    return res.status(500).json({ success: false, error: err.message || 'Failed to send reset link' });
+    console.error('updateUser Error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to update user' });
   }
 };
 
