@@ -70,8 +70,7 @@ exports.updateProfile = async (req, res) => {
         id: userId,
         email: req.user.email,
         full_name: trimmedName,
-        role: req.user.role || 'student',
-        updated_at: new Date().toISOString()
+        role: req.user.role || 'student'
       })
       .select()
       .single();
