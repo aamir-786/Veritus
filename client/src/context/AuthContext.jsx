@@ -11,9 +11,10 @@ export const AuthProvider = ({ children }) => {
     if (!authUser) {
       setUser(null);
       setLoading(false);
-      return;
+      return null;
     }
 
+    let finalUser = authUser;
     try {
       // Fetch the full profile from public.profiles
       const { data: profile } = await supabase
@@ -23,10 +24,11 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
         
       if (profile) {
-        setUser({ ...authUser, ...profile });
+        finalUser = { ...authUser, ...profile };
       } else {
-        setUser(authUser); // Fallback
+        finalUser = authUser;
       }
+      setUser(finalUser);
 
       // Check and send welcome email (only sends if it hasn't been sent yet)
       import('../services/api').then(({ api }) => {
@@ -37,6 +39,7 @@ export const AuthProvider = ({ children }) => {
       setUser(authUser);
     }
     setLoading(false);
+    return finalUser;
   };
 
   useEffect(() => {
@@ -106,8 +109,8 @@ export const AuthProvider = ({ children }) => {
     if (error) {
       return { success: false, error: error.message };
     }
-    // Profile will be fetched by onAuthStateChange listener
-    return { success: true, user: data.user };
+    const fullUser = await fetchProfileAndSetUser(data.user);
+    return { success: true, user: fullUser || data.user };
   };
 
   // Registration
@@ -151,11 +154,39 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
-  // Update Password (after reset)
+  // Update Password (after reset or from profile)
   const updateUserPassword = async (newPassword) => {
     const { data, error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return { success: false, error: error.message };
     return { success: true };
+  };
+
+  // Update User Profile (full name, etc.)
+  const updateUserProfile = async ({ full_name }) => {
+    try {
+      if (!user) return { success: false, error: 'User not authenticated' };
+      
+      // Update Supabase auth user metadata
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { full_name }
+      });
+      if (authError) return { success: false, error: authError.message };
+
+      // Update public.profiles table
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .update({ full_name, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (dbError) {
+        console.warn('Note: Could not update profiles table:', dbError.message);
+      }
+
+      setUser(prev => prev ? { ...prev, full_name } : prev);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   };
 
   // Logout
@@ -166,7 +197,7 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, supabaseGoogleLogin, logout, isAdmin, sendPasswordReset, updateUserPassword }}>
+    <AuthContext.Provider value={{ user, loading, login, register, supabaseGoogleLogin, logout, isAdmin, sendPasswordReset, updateUserPassword, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

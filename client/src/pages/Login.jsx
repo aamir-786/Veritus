@@ -64,7 +64,10 @@ export default function Login() {
           }
         }
 
-        if (res.user.role === 'admin') {
+        const from = searchParams.get('from');
+        if (from) {
+          navigate(from);
+        } else if (res.user?.role === 'admin') {
           navigate('/admin');
         } else {
           navigate('/dashboard');

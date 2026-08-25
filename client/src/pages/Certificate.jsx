@@ -5,6 +5,12 @@ import { useAuth } from '../context/AuthContext';
 import { Award, Download, ShieldCheck, Share2 } from 'lucide-react';
 import EffectiveVeritusLogo from '../components/EffectiveVeritusLogo';
 
+const LinkedInIcon = ({ className = "w-4 h-4" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+  </svg>
+);
+
 export default function Certificate() {
   const { courseId } = useParams();
   const { user } = useAuth();
@@ -66,17 +72,11 @@ export default function Certificate() {
     window.print();
   };
 
-  const handleLinkedInShare = () => {
-    const certUrl = encodeURIComponent(verifyUrl);
-    const title = encodeURIComponent(`Verified Executive Certificate: ${course.title}`);
-    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${certUrl}&title=${title}`;
-    window.open(linkedInUrl, '_blank', 'width=600,height=600');
-  };
-
   const get4DigitCertNo = (idStr) => {
-    if (!idStr) return '1042';
+    if (course?.cert_number) return course.cert_number;
+    if (!idStr) return 1042;
     let hash = 0;
-    const combined = `${idStr}-${studentName || user?.full_name || 'Practitioner'}`;
+    const combined = `${user?.id || 'u'}-${idStr}`;
     for (let i = 0; i < combined.length; i++) {
       hash = (hash << 5) - hash + combined.charCodeAt(i);
       hash |= 0;
@@ -84,9 +84,19 @@ export default function Certificate() {
     return Math.abs(hash % 9000) + 1000;
   };
 
-  const certNo = get4DigitCertNo(course.id);
+  const certNo = course?.cert_number || get4DigitCertNo(course.id);
   const displayName = studentName || user?.full_name || 'Executive Practitioner';
   const verifyUrl = `${window.location.origin}/certificate/${course.slug || course.id}`;
+
+  const linkedInCertUrl = `https://www.linkedin.com/profile/add?${new URLSearchParams({
+    startTask: 'CERTIFICATION_NAME',
+    name: course.title,
+    organizationName: 'Veritus Executive Risk Platform',
+    issueYear: String(new Date().getFullYear()),
+    issueMonth: String(new Date().getMonth() + 1),
+    certUrl: verifyUrl,
+    certId: String(certNo)
+  }).toString()}`;
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center py-6 px-4 print:py-0 print:px-0 print:bg-white print:block">
@@ -97,18 +107,20 @@ export default function Certificate() {
           <h1 className="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
             <Award className="w-5 h-5 text-emerald-400" /> Executive Certificate
           </h1>
-          <p className="text-xs text-slate-400">Click below to print or download your verified PDF certificate.</p>
+          <p className="text-xs text-slate-400">Click below to print or add your verified credential directly to LinkedIn.</p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleLinkedInShare}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"
-            title="Share verified credential on LinkedIn"
+          <a
+            href={linkedInCertUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 rounded-xl bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+            title="Add verified credential directly to your LinkedIn profile"
           >
-            <Share2 className="w-4 h-4" /> Share on LinkedIn
-          </button>
+            <LinkedInIcon className="w-4 h-4 text-white" /> Add to LinkedIn
+          </a>
           <button
             onClick={handlePrint}
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shadow-md flex items-center gap-2 cursor-pointer shrink-0"

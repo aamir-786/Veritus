@@ -1,14 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PlayCircle, FileText, Download, Award, ShieldCheck } from 'lucide-react';
+import { PlayCircle, FileText, Download, Award, ShieldCheck, User, Lock, Key, CheckCircle2, AlertCircle, Save, Shield, Settings, Mail, UserCheck } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
 import ReviewModal from '../components/ReviewModal';
 
+const LinkedInIcon = ({ className = "w-3.5 h-3.5" }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+  </svg>
+);
+
+const getCertNo = (courseId, userId) => {
+  if (!courseId) return 1042;
+  let hash = 0;
+  const str = `${userId || 'u'}-${courseId}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash % 9000) + 1000;
+};
+
+const getLinkedInCertUrl = (title, certId, certUrl, issuedAt) => {
+  const dateObj = issuedAt ? new Date(issuedAt) : new Date();
+  const year = isNaN(dateObj.getFullYear()) ? new Date().getFullYear() : dateObj.getFullYear();
+  const month = isNaN(dateObj.getMonth()) ? new Date().getMonth() + 1 : dateObj.getMonth() + 1;
+
+  const params = new URLSearchParams({
+    startTask: 'CERTIFICATION_NAME',
+    name: title || 'Executive Risk Masterclass',
+    organizationName: 'Veritus Executive Risk Platform',
+    issueYear: String(year),
+    issueMonth: String(month),
+    certUrl: certUrl || (typeof window !== 'undefined' ? window.location.href : ''),
+    certId: certId ? String(certId) : ''
+  });
+
+  return `https://www.linkedin.com/profile/add?${params.toString()}`;
+};
+
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, updateUserProfile, updateUserPassword } = useAuth();
   const { cartItems, removeFromCart } = useCart();
   const [data, setData] = useState(null);
   const [certificates, setCertificates] = useState([]);
@@ -20,6 +55,60 @@ export default function Dashboard() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewCourseId, setReviewCourseId] = useState(null);
   const [copiedCertId, setCopiedCertId] = useState(null);
+
+  // Profile Edit State
+  const [profileFullName, setProfileFullName] = useState(user?.full_name || '');
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileMsg, setProfileMsg] = useState(null);
+
+  // Password Change State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState(null);
+
+  useEffect(() => {
+    if (user?.full_name) {
+      setProfileFullName(user.full_name);
+    }
+  }, [user]);
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setProfileLoading(true);
+    setProfileMsg(null);
+    const res = await updateUserProfile({ full_name: profileFullName });
+    setProfileLoading(false);
+    if (res.success) {
+      setProfileMsg({ type: 'success', text: 'Profile updated successfully!' });
+    } else {
+      setProfileMsg({ type: 'error', text: res.error || 'Failed to update profile' });
+    }
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setPasswordMsg({ type: 'error', text: 'Password must be at least 6 characters long' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMsg({ type: 'error', text: 'Passwords do not match' });
+      return;
+    }
+
+    setPasswordLoading(true);
+    setPasswordMsg(null);
+    const res = await updateUserPassword(newPassword);
+    setPasswordLoading(false);
+    if (res.success) {
+      setPasswordMsg({ type: 'success', text: 'Password changed successfully!' });
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      setPasswordMsg({ type: 'error', text: res.error || 'Failed to update password' });
+    }
+  };
 
   const handleDownload = async (tpl) => {
     try {
@@ -87,13 +176,7 @@ export default function Dashboard() {
 
   if (loading) return <div className="py-16 text-center text-slate-500 text-xs">Loading your member dashboard...</div>;
   const completedFromSummary = (data?.enrolled_courses || []).filter(c => c.is_completed).map(c => {
-    let hash = 0;
-    const str = `${user?.id || 'u'}-${c.id}`;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-    const certNo = Math.abs(hash % 9000) + 1000;
+    const certNo = getCertNo(c.id, user?.id);
     return {
       id: c.id,
       course_id: c.id,
@@ -139,27 +222,35 @@ export default function Dashboard() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-6 border-b border-slate-200">
+      <div className="flex items-center gap-6 border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab('mylearning')}
-          className={`pb-4 text-sm font-bold transition-colors relative ${activeTab === 'mylearning' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
+          className={`pb-4 text-sm font-bold transition-colors relative shrink-0 ${activeTab === 'mylearning' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           My Learning
           {activeTab === 'mylearning' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
         <button
           onClick={() => setActiveTab('assets')}
-          className={`pb-4 text-sm font-bold transition-colors relative ${activeTab === 'assets' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
+          className={`pb-4 text-sm font-bold transition-colors relative shrink-0 ${activeTab === 'assets' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           Digital Assets
           {activeTab === 'assets' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
         <button
           onClick={() => setActiveTab('certificates')}
-          className={`pb-4 text-sm font-bold transition-colors relative ${activeTab === 'certificates' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
+          className={`pb-4 text-sm font-bold transition-colors relative shrink-0 ${activeTab === 'certificates' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           My Certificates
           {activeTab === 'certificates' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
+        </button>
+        <button
+          onClick={() => setActiveTab('profile')}
+          className={`pb-4 text-sm font-bold transition-colors relative shrink-0 flex items-center gap-1.5 ${activeTab === 'profile' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
+        >
+          <Settings className="w-4 h-4" />
+          Profile & Settings
+          {activeTab === 'profile' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
       </div>
 
@@ -224,7 +315,7 @@ export default function Dashboard() {
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{course.completed_lessons} / {course.total_lessons} Lessons</span>
                   
                   {course.is_completed ? (
-                    <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
                       {!course.user_has_reviewed && (
                         <button
                           onClick={(e) => {
@@ -232,16 +323,31 @@ export default function Dashboard() {
                             setReviewCourseId(course.id);
                             setReviewModalOpen(true);
                           }}
-                          className="flex-1 sm:flex-none justify-center px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-[10px] hover:bg-slate-50 transition-colors shadow-xs"
+                          className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-[10px] hover:bg-slate-50 transition-colors shadow-xs"
                         >
-                          Leave a Review
+                          Review
                         </button>
                       )}
+                      <a
+                        href={getLinkedInCertUrl(
+                          course.title, 
+                          getCertNo(course.id, user?.id), 
+                          `${window.location.origin}/certificate/${course.slug || course.id}`, 
+                          course.completed_at
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 rounded-lg bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-[10px] transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                        title="Add this certification directly to your LinkedIn profile"
+                      >
+                        <LinkedInIcon className="w-3 h-3 text-white" /> Add to LinkedIn
+                      </a>
                       <Link
                         to={`/certificate/${course.id}`}
                         target="_blank"
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 sm:flex-none justify-center px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors flex items-center gap-1 shadow-xs"
+                        className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors flex items-center gap-1 shadow-xs"
                       >
                         <Award className="w-3.5 h-3.5" /> Certificate
                       </Link>
@@ -390,7 +496,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayCertificates.map(cert => {
                 const certTitle = cert.course_title || cert.courses?.title || 'Executive Masterclass';
-                const certNum = cert.cert_number || cert.id;
+                const certNum = cert.cert_number || getCertNo(cert.course_id || cert.id, user?.id);
                 const verifyUrl = `${window.location.origin}/certificate/${cert.course_slug || cert.course_id}`;
 
                 return (
@@ -416,14 +522,24 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100 flex items-center gap-2.5 mt-auto">
+                    <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2 mt-auto">
                       <Link
                         to={`/certificate/${cert.course_slug || cert.course_id}`}
                         target="_blank"
-                        className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-xs"
+                        className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                       >
-                        <Award className="w-4 h-4" /> View Certificate
+                        <Award className="w-3.5 h-3.5" /> View
                       </Link>
+
+                      <a
+                        href={getLinkedInCertUrl(certTitle, certNum, verifyUrl, cert.issued_at)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2 rounded-xl bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                        title="Add this certification directly to your LinkedIn profile"
+                      >
+                        <LinkedInIcon className="w-3.5 h-3.5 text-white" /> Add to LinkedIn
+                      </a>
 
                       <button
                         onClick={() => {
@@ -431,11 +547,11 @@ export default function Dashboard() {
                           setCopiedCertId(cert.id);
                           setTimeout(() => setCopiedCertId(null), 2500);
                         }}
-                        className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                        className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors shadow-xs flex items-center gap-1 cursor-pointer shrink-0"
                         title="Copy public verification link"
                       >
                         {copiedCertId === cert.id ? (
-                          <span className="text-emerald-700 font-bold flex items-center gap-1">✓ Copied</span>
+                          <span className="text-emerald-700 font-bold">✓ Copied</span>
                         ) : (
                           'Copy URL'
                         )}
@@ -446,6 +562,146 @@ export default function Dashboard() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Profile & Settings Tab */}
+      {activeTab === 'profile' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+            <div>
+              <h2 className="font-display text-xl font-bold text-slate-900 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-900" /> Account & Security Settings
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">Manage your practitioner profile information, account credentials, and password.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Profile Information Card */}
+            <div className="glass-card rounded-2xl p-6 border border-slate-200 bg-white shadow-xs space-y-5">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-900/10 text-blue-900 flex items-center justify-center font-bold">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-slate-900">Personal Information</h3>
+                  <p className="text-[11px] text-slate-500">Update your name as displayed on certificates and platform.</p>
+                </div>
+              </div>
+
+              {profileMsg && (
+                <div className={`p-3.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                  profileMsg.type === 'success' 
+                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
+                    : 'bg-rose-50 border border-rose-200 text-rose-800'
+                }`}>
+                  {profileMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+                  <span>{profileMsg.text}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleProfileUpdate} className="space-y-4 text-xs font-medium">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1.5 flex items-center gap-1.5">
+                    <UserCheck className="w-3.5 h-3.5 text-slate-500" /> Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileFullName}
+                    onChange={e => setProfileFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 text-xs font-semibold"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">This name will be displayed across your profile, dashboard, and earned certificates.</p>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1.5 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-slate-500" /> Email Address
+                  </label>
+                  <input
+                    type="email"
+                    disabled
+                    value={user?.email || ''}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-mono cursor-not-allowed"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Your registered email address is verified and locked for security.</p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={profileLoading}
+                  className="w-full py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-extrabold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {profileLoading ? 'Saving...' : <><Save className="w-4 h-4" /> Save Profile Changes</>}
+                </button>
+              </form>
+            </div>
+
+            {/* Change Password Card */}
+            <div className="glass-card rounded-2xl p-6 border border-slate-200 bg-white shadow-xs space-y-5">
+              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                <div className="w-10 h-10 rounded-xl bg-indigo-900/10 text-indigo-900 flex items-center justify-center font-bold">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-slate-900">Security & Password</h3>
+                  <p className="text-[11px] text-slate-500">Update your account access password.</p>
+                </div>
+              </div>
+
+              {passwordMsg && (
+                <div className={`p-3.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                  passwordMsg.type === 'success' 
+                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
+                    : 'bg-rose-50 border border-rose-200 text-rose-800'
+                }`}>
+                  {passwordMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+                  <span>{passwordMsg.text}</span>
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordUpdate} className="space-y-4 text-xs font-medium">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1.5 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-slate-500" /> New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min. 6 characters)"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-indigo-900 focus:ring-2 focus:ring-indigo-900/10 text-xs font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1.5 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-slate-500" /> Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-indigo-900 focus:ring-2 focus:ring-indigo-900/10 text-xs font-semibold"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {passwordLoading ? 'Updating Password...' : <><Shield className="w-4 h-4 text-emerald-400" /> Update Password</>}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       )}
 
