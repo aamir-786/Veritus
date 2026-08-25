@@ -141,7 +141,7 @@ export default function TemplateStore() {
                 </div>
 
                 <div className="flex gap-2 w-full xl:w-auto">
-                  {user && tpl.can_download && (
+                  {user && tpl.can_download && !tpl.user_has_reviewed && (
                     <button
                       onClick={() => {
                         setReviewProduct(tpl);
@@ -190,6 +190,11 @@ export default function TemplateStore() {
         onClose={() => {
           setIsReviewOpen(false);
           setTimeout(() => setReviewProduct(null), 300); // clear after animation
+        }}
+        onSuccess={() => {
+          if (reviewProduct) {
+            setTemplates(prev => prev.map(t => t.id === reviewProduct.id ? { ...t, user_has_reviewed: true } : t));
+          }
         }}
         productType="template"
         productId={reviewProduct?.id}

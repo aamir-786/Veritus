@@ -740,7 +740,7 @@ export default function Dashboard() {
             setData({
               ...data,
               enrolled_courses: data.enrolled_courses.map(c => 
-                c.id === reviewCourseId ? { ...c, user_has_reviewed: true } : c
+                (c.id === reviewCourseId || c.slug === reviewCourseId) ? { ...c, user_has_reviewed: true } : c
               )
             });
           }

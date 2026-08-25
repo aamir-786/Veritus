@@ -549,29 +549,77 @@ export default function Home() {
             </ScrollReveal>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {reviews.map((review, idx) => (
-                <ScrollReveal key={review.id} animation="zoom-in" delay={idx * 100}>
-                  <div className="glass-card rounded-2xl p-6 border border-slate-200 space-y-4 shadow-sm h-full flex flex-col transition-all hover:border-emerald-300">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold shrink-0 text-lg">
-                        {review.profiles?.full_name ? review.profiles.full_name.charAt(0).toUpperCase() : 'U'}
+              {reviews.map((review, idx) => {
+                const isMasterclass = review.product_type === 'course' || review.product_type === 'masterclass';
+                const isQuestion = review.product_type === 'question';
+                const isTemplate = review.product_type === 'template';
+
+                const tagMatches = review.comment ? review.comment.match(/\[(.*?)\]/g) : null;
+                const tags = tagMatches ? tagMatches.map(t => t.replace(/[\[\]]/g, '')) : [];
+                const cleanComment = review.comment ? review.comment.replace(/\[(.*?)\]/g, '').trim() : '';
+
+                return (
+                  <ScrollReveal key={review.id} animation="zoom-in" delay={idx * 100}>
+                    <div className="glass-card rounded-3xl p-6 border border-slate-200 space-y-4 shadow-sm h-full flex flex-col transition-all hover:border-blue-400 bg-white">
+                      
+                      {/* Product Category Badge */}
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 border shadow-2xs ${
+                          isMasterclass
+                            ? 'bg-blue-50 text-blue-900 border-blue-200'
+                            : isQuestion
+                            ? 'bg-amber-50 text-amber-900 border-amber-200'
+                            : 'bg-purple-50 text-purple-900 border-purple-200'
+                        }`}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          {isMasterclass ? 'Executive Masterclass' : isQuestion ? 'Taxonomy Question' : 'Digital Template'}
+                        </div>
+                        {review.created_at && (
+                          <span className="text-[10px] text-slate-400 font-mono font-medium">
+                            {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <div className="font-bold text-slate-900 text-sm">{review.profiles?.full_name || 'Anonymous User'}</div>
-                        <div className="flex items-center text-emerald-500">
-                          {[...Array(review.rating)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-emerald-500" />)}
+
+                      {/* Product Title */}
+                      <div className="text-xs font-extrabold text-slate-900 leading-snug line-clamp-1">
+                        {review.product_title || (isMasterclass ? 'Executive Risk Masterclass' : isQuestion ? 'Taxonomy Matrix Question' : 'Executive Framework Template')}
+                      </div>
+
+                      {/* Reviewer Info & Star Rating */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-900 to-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                          {review.profiles?.full_name ? review.profiles.full_name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 text-xs">{review.profiles?.full_name || 'Verified Executive'}</div>
+                          <div className="flex items-center text-amber-400 gap-0.5 mt-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 fill-slate-200'}`} />
+                            ))}
+                          </div>
                         </div>
                       </div>
+
+                      {/* Feedback Tag Pills */}
+                      {tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {tags.map((tag, tIdx) => (
+                            <span key={tIdx} className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200/80">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Comment Body */}
+                      <p className="text-xs text-slate-600 leading-relaxed italic flex-grow">
+                        "{cleanComment || review.comment}"
+                      </p>
                     </div>
-                    <p className="text-sm text-slate-600 leading-relaxed italic flex-grow">
-                      "{review.comment}"
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      Reviewed a {review.product_type}
-                    </div>
-                  </div>
-                </ScrollReveal>
-              ))}
+                  </ScrollReveal>
+                );
+              })}
             </div>
           </div>
         </section>

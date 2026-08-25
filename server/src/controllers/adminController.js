@@ -854,7 +854,30 @@ exports.getAllReviews = async (req, res) => {
 
     if (error) throw error;
 
-    return res.json({ success: true, reviews });
+    const enrichedReviews = await Promise.all((reviews || []).map(async (r) => {
+      let productTitle = null;
+      try {
+        if (r.product_type === 'course' || r.product_type === 'masterclass') {
+          const { data: course } = await supabase.from('courses').select('title').or(`id.eq.${r.product_id},slug.eq.${r.product_id}`).maybeSingle();
+          if (course) productTitle = course.title;
+        } else if (r.product_type === 'question') {
+          const { data: q } = await supabase.from('questions').select('title, question_number').eq('id', r.product_id).maybeSingle();
+          if (q) productTitle = `Q${q.question_number}: ${q.title}`;
+        } else if (r.product_type === 'template') {
+          const { data: t } = await supabase.from('templates').select('title').eq('id', r.product_id).maybeSingle();
+          if (t) productTitle = t.title;
+        }
+      } catch (e) {
+        // Fallback
+      }
+
+      return {
+        ...r,
+        product_title: productTitle || (r.product_type === 'course' ? 'Executive Masterclass' : r.product_type === 'question' ? 'Taxonomy Question' : 'Digital Template')
+      };
+    }));
+
+    return res.json({ success: true, reviews: enrichedReviews });
   } catch (err) {
     console.error('getAllReviews Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch all reviews' });

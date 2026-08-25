@@ -32,12 +32,23 @@ exports.getTemplates = async (req, res) => {
       userEntitlements = (entitlements || []).map(e => e.product_id);
     }
 
-    // Mark if user is entitled to download
+    let userReviewedTemplateIds = new Set();
+    if (userId) {
+      const { data: userReviews } = await supabase
+        .from('reviews')
+        .select('product_id')
+        .eq('user_id', userId)
+        .eq('product_type', 'template');
+      userReviewedTemplateIds = new Set((userReviews || []).map(r => r.product_id));
+    }
+
+    // Mark if user is entitled to download & user_has_reviewed
     const formatted = items.map(t => {
       const hasPurchased = t.is_free || isAdmin || userEntitlements.includes(t.id);
       return {
         ...t,
-        can_download: !!hasPurchased
+        can_download: !!hasPurchased,
+        user_has_reviewed: userReviewedTemplateIds.has(t.id)
       };
     });
 
