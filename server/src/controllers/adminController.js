@@ -408,17 +408,16 @@ exports.updateUser = async (req, res) => {
     }
 
     // 2. Update public.profiles database table
-    const profilePayload = {};
+    const profilePayload = { id };
     if (trimmedName !== undefined) profilePayload.full_name = trimmedName;
     if (trimmedEmail) profilePayload.email = trimmedEmail;
     if (role) profilePayload.role = role;
 
     let updatedProfile = null;
-    if (Object.keys(profilePayload).length > 0) {
+    if (Object.keys(profilePayload).length > 1) {
       const { data, error: profileError } = await supabase
         .from('profiles')
-        .update(profilePayload)
-        .eq('id', id)
+        .upsert(profilePayload)
         .select()
         .maybeSingle();
 
