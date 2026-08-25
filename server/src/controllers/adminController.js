@@ -444,6 +444,28 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+exports.adminResetPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    if (supabase.auth?.admin?.generateLink) {
+      const { data, error } = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email: email,
+      });
+      if (!error && data?.properties?.action_link) {
+        return res.json({ success: true, message: 'Password reset link generated', link: data.properties.action_link });
+      }
+    }
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+    if (resetError) throw resetError;
+    return res.json({ success: true, message: 'Password reset link sent to user email' });
+  } catch (err) {
+    console.error('adminResetPassword Error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to send reset link' });
+  }
+};
+
 // Template Management
 exports.createTemplate = async (req, res) => {
   const { title, description, category, file_path, is_free, price } = req.body;
