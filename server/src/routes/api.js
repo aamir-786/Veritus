@@ -82,6 +82,8 @@ router.get('/dashboard/summary', authenticateToken, dashboardController.getDashb
 router.post('/dashboard/progress', authenticateToken, dashboardController.updateLessonProgress);
 router.post('/dashboard/assessments/:lessonId/submit', authenticateToken, dashboardController.submitAssessment);
 router.get('/dashboard/certificates', authenticateToken, dashboardController.getCertificates);
+router.post('/dashboard/certificates/issue', authenticateToken, dashboardController.issueCertificate);
+router.get('/dashboard/certificates/:courseId', optionalToken, dashboardController.getSingleCertificate);
 
 // --- Reviews Routes ---
 router.get('/reviews/landing', reviewsController.getLandingPageReviews);

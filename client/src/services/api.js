@@ -188,6 +188,20 @@ export const api = {
     return res.json();
   },
 
+  issueCertificate: async (data) => {
+    const res = await fetch(`${API_BASE}/dashboard/certificates/issue`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
+  getSingleCertificate: async (courseId) => {
+    const res = await fetch(`${API_BASE}/dashboard/certificates/${courseId}`, { headers: await getHeaders() });
+    return res.json();
+  },
+
   // Reviews API
   getLandingPageReviews: async () => {
     const res = await fetch(`${API_BASE}/reviews/landing`, { headers: await getHeaders() });

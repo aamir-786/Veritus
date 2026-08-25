@@ -305,9 +305,150 @@ exports.submitAssessment = async (req, res) => {
   }
 };
 
+// Helper to get stored issued certificate from user_metadata or DB
+const getIssuedCertificatesMap = async (userId) => {
+  let certMap = {};
+
+  if (supabase.auth?.admin?.getUserById) {
+    try {
+      const { data } = await supabase.auth.admin.getUserById(userId);
+      if (data?.user?.user_metadata?.issued_certificates) {
+        certMap = { ...data.user.user_metadata.issued_certificates };
+      }
+    } catch (e) {
+      console.warn('Could not read user_metadata issued_certificates:', e.message);
+    }
+  }
+
+  try {
+    const { data: dbCerts } = await supabase
+      .from('certificates')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (dbCerts && dbCerts.length > 0) {
+      dbCerts.forEach(c => {
+        const key = c.course_id || c.course_slug;
+        if (key) {
+          certMap[key] = {
+            id: c.id,
+            course_id: c.course_id,
+            course_slug: c.course_slug,
+            course_title: c.course_title,
+            student_name: c.student_name,
+            cert_number: c.cert_number,
+            issued_at: c.issued_at
+          };
+        }
+      });
+    }
+  } catch (e) {
+    // DB table certificates may not exist
+  }
+
+  return certMap;
+};
+
+exports.issueCertificate = async (req, res) => {
+  const userId = req.user.id;
+  const { course_id, student_name } = req.body;
+
+  if (!course_id || !student_name || !student_name.trim()) {
+    return res.status(400).json({ success: false, error: 'Course ID and Student Name are required' });
+  }
+
+  const trimmedName = student_name.trim();
+
+  try {
+    const { data: course } = await supabase
+      .from('courses')
+      .select('*')
+      .or(`id.eq.${course_id},slug.eq.${course_id}`)
+      .maybeSingle();
+
+    const courseIdKey = course ? course.id : course_id;
+    const courseSlugKey = course ? course.slug : course_id;
+    const courseTitle = course ? course.title : 'Executive Masterclass';
+
+    let hash = 0;
+    const str = `${userId}-${courseIdKey}`;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    const certNo = Math.abs(hash % 9000) + 1000;
+
+    const certMap = await getIssuedCertificatesMap(userId);
+    const existingCert = certMap[courseIdKey] || certMap[courseSlugKey];
+
+    if (existingCert) {
+      return res.json({
+        success: true,
+        message: 'Certificate credential already issued.',
+        certificate: existingCert
+      });
+    }
+
+    const issuedAt = new Date().toISOString();
+    const certRecord = {
+      course_id: courseIdKey,
+      course_slug: courseSlugKey,
+      course_title: courseTitle,
+      student_name: trimmedName,
+      cert_number: certNo,
+      issued_at: issuedAt
+    };
+
+    if (supabase.auth?.admin?.getUserById && supabase.auth?.admin?.updateUserById) {
+      try {
+        const { data } = await supabase.auth.admin.getUserById(userId);
+        const currentMeta = data?.user?.user_metadata || {};
+        const updatedCertMap = {
+          ...(currentMeta.issued_certificates || {}),
+          [courseIdKey]: certRecord,
+          [courseSlugKey]: certRecord
+        };
+        await supabase.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            ...currentMeta,
+            issued_certificates: updatedCertMap
+          }
+        });
+      } catch (e) {
+        console.warn('Could not write issued_certificates to user_metadata:', e.message);
+      }
+    }
+
+    try {
+      await supabase.from('certificates').upsert({
+        user_id: userId,
+        course_id: courseIdKey,
+        course_slug: courseSlugKey,
+        course_title: courseTitle,
+        student_name: trimmedName,
+        cert_number: certNo,
+        issued_at: issuedAt
+      });
+    } catch (e) {
+      // Ignore DB table error if missing
+    }
+
+    return res.json({
+      success: true,
+      message: 'Certificate credential issued and permanently locked.',
+      certificate: certRecord
+    });
+  } catch (err) {
+    console.error('issueCertificate Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to issue certificate' });
+  }
+};
+
 exports.getCertificates = async (req, res) => {
   const userId = req.user.id;
   try {
+    const certMap = await getIssuedCertificatesMap(userId);
+
     const { data: userProgress } = await supabase
       .from('progress')
       .select('*')
@@ -326,6 +467,8 @@ exports.getCertificates = async (req, res) => {
     });
 
     const certList = completedCourses.map(c => {
+      const issued = certMap[c.id] || certMap[c.slug];
+
       let hash = 0;
       const str = `${userId}-${c.id}`;
       for (let i = 0; i < str.length; i++) {
@@ -339,9 +482,11 @@ exports.getCertificates = async (req, res) => {
         course_id: c.id,
         course_slug: c.slug,
         course_title: c.title,
-        cert_number: certNo,
-        formatted_cert_no: `#${certNo}`,
-        issued_at: c.created_at || new Date().toISOString(),
+        is_issued: !!issued,
+        student_name: issued ? issued.student_name : (req.user.full_name || req.user.email.split('@')[0]),
+        cert_number: issued ? issued.cert_number : certNo,
+        formatted_cert_no: `#${issued ? issued.cert_number : certNo}`,
+        issued_at: issued ? issued.issued_at : (c.created_at || new Date().toISOString()),
         courses: {
           title: c.title,
           cover_image: c.cover_image,
@@ -354,5 +499,26 @@ exports.getCertificates = async (req, res) => {
   } catch (err) {
     console.error('getCertificates Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch certificates' });
+  }
+};
+
+exports.getSingleCertificate = async (req, res) => {
+  const { courseId } = req.params;
+  const userId = req.user ? req.user.id : null;
+
+  try {
+    let certRecord = null;
+
+    if (userId) {
+      const certMap = await getIssuedCertificatesMap(userId);
+      certRecord = certMap[courseId];
+    }
+
+    return res.json({
+      success: true,
+      certificate: certRecord
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Failed to fetch single certificate' });
   }
 };

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
 import ReviewModal from '../components/ReviewModal';
+import NameConfirmationModal from '../components/NameConfirmationModal';
 
 const LinkedInIcon = ({ className = "w-3.5 h-3.5" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -66,6 +67,26 @@ export default function Dashboard() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState(null);
+
+  // Name Confirmation Modal State
+  const [nameModalOpen, setNameModalOpen] = useState(false);
+  const [selectedCertCourse, setSelectedCertCourse] = useState(null);
+
+  const handleConfirmAndIssueCert = async (confirmedName) => {
+    if (!selectedCertCourse) return;
+    const res = await api.issueCertificate({
+      course_id: selectedCertCourse.id,
+      student_name: confirmedName
+    });
+    if (res.success && res.certificate) {
+      const certRes = await api.getCertificates();
+      if (certRes.success) setCertificates(certRes.certificates);
+      setNameModalOpen(false);
+      window.open(`/certificate/${selectedCertCourse.slug || selectedCertCourse.id}`, '_blank');
+    } else {
+      throw new Error(res.error || 'Failed to issue certificate');
+    }
+  };
 
   useEffect(() => {
     if (user?.full_name) {
@@ -518,7 +539,11 @@ export default function Dashboard() {
                       <h3 className="font-display font-black text-lg text-slate-900 leading-tight">
                         {certTitle}
                       </h3>
-                      <div className="text-xs text-slate-500 font-medium">
+                      <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-blue-900" />
+                        <span>Recipient: {cert.student_name || user?.full_name || 'Executive Practitioner'}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium">
                         Issued: {new Date(cert.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                       </div>
                     </div>
@@ -723,6 +748,15 @@ export default function Dashboard() {
         productType="course"
         productId={reviewCourseId}
         productName={data?.enrolled_courses?.find(c => c.id === reviewCourseId)?.title}
+      />
+
+      {/* Name Confirmation & Locking Modal */}
+      <NameConfirmationModal
+        isOpen={nameModalOpen}
+        onClose={() => setNameModalOpen(false)}
+        onConfirm={handleConfirmAndIssueCert}
+        initialName={user?.full_name || ''}
+        courseTitle={selectedCertCourse?.title || ''}
       />
 
     </div>

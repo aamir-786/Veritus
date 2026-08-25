@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Award, Download, ShieldCheck, Share2 } from 'lucide-react';
 import EffectiveVeritusLogo from '../components/EffectiveVeritusLogo';
+import NameConfirmationModal from '../components/NameConfirmationModal';
 
 const LinkedInIcon = ({ className = "w-4 h-4" }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -17,43 +18,73 @@ export default function Certificate() {
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState(null);
   const [studentName, setStudentName] = useState('');
+  const [isIssued, setIsIssued] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [completedDate] = useState(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
 
   useEffect(() => {
     const fetchDetails = async () => {
+      let foundCourse = null;
       try {
         const res = await api.getDashboardSummary();
         if (res.success && res.enrolled_courses) {
           const enrolled = res.enrolled_courses.find(c => c.id === courseId || c.slug === courseId);
           if (enrolled) {
+            foundCourse = enrolled;
             setCourse(enrolled);
             if (res.user && res.user.full_name) {
               setStudentName(res.user.full_name);
             }
-            setLoading(false);
-            return;
           }
         }
       } catch (err) {
         console.log('Fetching public course details...');
       }
 
-      try {
-        const publicRes = await api.getCourseDetails(courseId);
-        if (publicRes.success && publicRes.course) {
-          setCourse(publicRes.course);
-        } else {
-          setCourse(null);
+      if (!foundCourse) {
+        try {
+          const publicRes = await api.getCourseDetails(courseId);
+          if (publicRes.success && publicRes.course) {
+            foundCourse = publicRes.course;
+            setCourse(publicRes.course);
+          }
+        } catch (err) {
+          console.error(err);
         }
-      } catch (err) {
-        console.error(err);
-        setCourse(null);
-      } finally {
-        setLoading(false);
       }
+
+      // Check if single certificate record is already issued/locked
+      try {
+        const singleCertRes = await api.getSingleCertificate(courseId);
+        if (singleCertRes.success && singleCertRes.certificate) {
+          setStudentName(singleCertRes.certificate.student_name);
+          setIsIssued(true);
+        } else {
+          setShowConfirmModal(true);
+        }
+      } catch (e) {
+        setShowConfirmModal(true);
+      }
+
+      setLoading(false);
     };
     fetchDetails();
   }, [courseId]);
+
+  const handleIssueAndLockName = async (confirmedName) => {
+    const res = await api.issueCertificate({
+      course_id: course?.id || courseId,
+      student_name: confirmedName
+    });
+
+    if (res.success && res.certificate) {
+      setStudentName(res.certificate.student_name);
+      setIsIssued(true);
+      setShowConfirmModal(false);
+    } else {
+      throw new Error(res.error || 'Failed to issue certificate');
+    }
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 text-sm font-mono">Verifying certificate credential...</div>;
 
@@ -222,6 +253,15 @@ export default function Certificate() {
 
         </div>
       </div>
+
+      {/* Name Confirmation & Locking Modal */}
+      <NameConfirmationModal
+        isOpen={showConfirmModal && !isIssued}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleIssueAndLockName}
+        initialName={studentName || user?.full_name || ''}
+        courseTitle={course?.title || ''}
+      />
 
     </div>
   );
