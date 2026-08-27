@@ -74,6 +74,18 @@ exports.createCheckoutSession = async (req, res) => {
     const discountAmount = Math.round((originalAmount * discountPercent / 100) * 100) / 100;
     const finalAmount = Math.max(0, Math.round((originalAmount - discountAmount) * 100) / 100);
 
+    const couponToStore = validatedPromo ? validatedPromo.promo_code : (coupon_code ? String(coupon_code).trim().toUpperCase() : '');
+
+    // Prepare Stripe Discounts if validated promo exists
+    let sessionDiscounts = undefined;
+    if (validatedPromo) {
+      if (validatedPromo.stripe_promo_id) {
+        sessionDiscounts = [{ promotion_code: validatedPromo.stripe_promo_id }];
+      } else if (validatedPromo.stripe_coupon_id) {
+        sessionDiscounts = [{ coupon: validatedPromo.stripe_coupon_id }];
+      }
+    }
+
     // Create Real Stripe Session without creating pending orders in database
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -90,7 +102,7 @@ exports.createCheckoutSession = async (req, res) => {
         quantity: 1,
       }],
       mode: 'payment',
-      allow_promotion_codes: true,
+      ...(sessionDiscounts ? { discounts: sessionDiscounts } : { allow_promotion_codes: true }),
       customer_email: userEmail || undefined,
       client_reference_id: userId || undefined,
       metadata: {
@@ -99,7 +111,7 @@ exports.createCheckoutSession = async (req, res) => {
         original_amount: String(originalAmount),
         user_id: userId || '',
         user_email: userEmail || '',
-        coupon_code: validatedPromo ? validatedPromo.promo_code : ''
+        coupon_code: couponToStore
       },
       success_url: `${req.headers.origin || 'http://localhost:3000'}/payment-verification?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/cart?payment=cancelled`,
@@ -109,7 +121,7 @@ exports.createCheckoutSession = async (req, res) => {
       success: true,
       original_amount: originalAmount,
       discount_amount: discountAmount,
-      coupon_code: validatedPromo ? validatedPromo.promo_code : null,
+      coupon_code: couponToStore || null,
       amount: finalAmount,
       currency: 'USD',
       product_title: item.title,
@@ -196,6 +208,18 @@ exports.createMultiCheckoutSession = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No valid products found in cart' });
     }
 
+    const couponToStore = validatedPromo ? validatedPromo.promo_code : (coupon_code ? String(coupon_code).trim().toUpperCase() : '');
+
+    // Prepare Stripe Discounts if validated promo exists
+    let sessionDiscounts = undefined;
+    if (validatedPromo) {
+      if (validatedPromo.stripe_promo_id) {
+        sessionDiscounts = [{ promotion_code: validatedPromo.stripe_promo_id }];
+      } else if (validatedPromo.stripe_coupon_id) {
+        sessionDiscounts = [{ coupon: validatedPromo.stripe_coupon_id }];
+      }
+    }
+
     // Create Stripe Session without writing to DB upfront
     const itemsPayload = itemMetaList.join('|||').slice(0, 480);
 
@@ -203,14 +227,14 @@ exports.createMultiCheckoutSession = async (req, res) => {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
-      allow_promotion_codes: true,
+      ...(sessionDiscounts ? { discounts: sessionDiscounts } : { allow_promotion_codes: true }),
       customer_email: userEmail || undefined,
       client_reference_id: userId || undefined,
       metadata: {
         items_payload: itemsPayload,
         user_id: userId || '',
         user_email: userEmail || '',
-        coupon_code: validatedPromo ? validatedPromo.promo_code : ''
+        coupon_code: couponToStore
       },
       success_url: `${req.headers.origin || 'http://localhost:3000'}/payment-verification?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/cart?payment=cancelled`,
