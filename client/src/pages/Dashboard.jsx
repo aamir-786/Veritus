@@ -386,11 +386,18 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="p-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-auto">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">{course.completed_lessons} / {course.total_lessons} Lessons</span>
+                <div className="p-3 border-t border-slate-100 flex flex-col gap-2 mt-auto">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <span>{course.completed_lessons} / {course.total_lessons} Lessons</span>
+                    {course.is_completed && (
+                      <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> 100% Completed
+                      </span>
+                    )}
+                  </div>
                   
                   {course.is_completed ? (
-                    <div className="flex items-center gap-1.5 shrink-0 flex-nowrap overflow-x-auto max-w-full">
+                    <div className="flex items-center gap-1.5 w-full pt-0.5">
                       {!course.user_has_reviewed && (
                         <button
                           onClick={(e) => {
@@ -398,7 +405,7 @@ export default function Dashboard() {
                             setReviewCourseId(course.id);
                             setReviewModalOpen(true);
                           }}
-                          className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-[10px] hover:bg-slate-50 transition-colors shadow-xs shrink-0 whitespace-nowrap"
+                          className="flex-1 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-[10px] hover:bg-slate-50 transition-colors shadow-xs text-center justify-center whitespace-nowrap"
                         >
                           Review
                         </button>
@@ -413,18 +420,18 @@ export default function Dashboard() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-2.5 py-1.5 rounded-lg bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-[10px] transition-colors flex items-center gap-1 shadow-xs cursor-pointer shrink-0 whitespace-nowrap"
+                        className="flex-1 px-2 py-1.5 rounded-lg bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-[10px] transition-colors flex items-center justify-center gap-1 shadow-xs cursor-pointer text-center whitespace-nowrap"
                         title="Add this certification directly to your LinkedIn profile"
                       >
-                        <LinkedInIcon className="w-3 h-3 text-white" /> Add to LinkedIn
+                        <LinkedInIcon className="w-3 h-3 text-white shrink-0" /> <span className="truncate">Add to LinkedIn</span>
                       </a>
                       <Link
                         to={`/certificate/${course.id}`}
                         target="_blank"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors flex items-center gap-1 shadow-xs shrink-0 whitespace-nowrap"
+                        className="flex-1 px-2 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1 shadow-xs text-center whitespace-nowrap"
                       >
-                        <Award className="w-3.5 h-3.5" /> Certificate
+                        <Award className="w-3.5 h-3.5 shrink-0" /> Certificate
                       </Link>
                     </div>
                   ) : course.resume_lesson && (
