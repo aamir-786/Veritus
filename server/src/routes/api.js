@@ -76,6 +76,7 @@ router.post('/checkout/complete', commerceController.completeCheckout);
 router.get('/checkout/verify-session/:sessionId', commerceController.verifySession);
 router.post('/checkout/webhook', commerceController.handleStripeWebhook);
 router.get('/orders', authenticateToken, commerceController.getUserOrders);
+router.post('/orders/:id/request-refund', authenticateToken, commerceController.requestRefund);
 
 // --- Dashboard & Learning Progress Routes ---
 router.get('/dashboard/summary', authenticateToken, dashboardController.getDashboardSummary);
@@ -125,6 +126,7 @@ router.put('/admin/inquiries/:id/status', authenticateToken, requireAdmin, admin
 router.get('/admin/orders', authenticateToken, requireAdmin, adminController.getOrders);
 router.put('/admin/orders/:id/status', authenticateToken, requireAdmin, adminController.updateOrderStatus);
 router.post('/admin/orders/:id/refund', authenticateToken, requireAdmin, adminController.refundOrder);
+router.post('/admin/orders/:id/process-refund-request', authenticateToken, requireAdmin, adminController.processRefundRequest);
 
 router.get('/admin/reviews', authenticateToken, requireAdmin, adminController.getAllReviews);
 router.delete('/admin/reviews/:id', authenticateToken, requireAdmin, adminController.deleteReview);
@@ -132,6 +134,7 @@ router.put('/admin/reviews/:id/featured', authenticateToken, requireAdmin, admin
 
 // --- Promotions Routes ---
 router.get('/promotions/active', promotionsController.getActivePromotion);
+router.post('/promotions/validate', promotionsController.validateCoupon);
 router.get('/admin/promotions', authenticateToken, requireAdmin, adminController.getAllPromotions);
 router.post('/admin/promotions', authenticateToken, requireAdmin, adminController.createPromotion);
 router.put('/admin/promotions/:id', authenticateToken, requireAdmin, adminController.updatePromotion);

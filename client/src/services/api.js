@@ -159,6 +159,22 @@ export const api = {
     return res.json();
   },
 
+  getUserOrders: async () => {
+    const res = await fetch(`${API_BASE}/orders`, {
+      headers: await getHeaders()
+    });
+    return res.json();
+  },
+
+  requestOrderRefund: async (orderId, reason) => {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/request-refund`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify({ reason })
+    });
+    return res.json();
+  },
+
   // Dashboard API
   getDashboardSummary: async () => {
     const res = await fetch(`${API_BASE}/dashboard/summary`, { headers: await getHeaders() });
@@ -266,10 +282,20 @@ export const api = {
     return res.json();
   },
 
-  refundOrder: async (id) => {
+  refundOrder: async (id, admin_reply = '') => {
     const res = await fetch(`${API_BASE}/admin/orders/${id}/refund`, {
       method: 'POST',
-      headers: await getHeaders()
+      headers: await getHeaders(),
+      body: JSON.stringify({ admin_reply })
+    });
+    return res.json();
+  },
+
+  processRefundRequest: async (id, action, admin_reply = '') => {
+    const res = await fetch(`${API_BASE}/admin/orders/${id}/process-refund-request`, {
+      method: 'POST',
+      headers: await getHeaders(),
+      body: JSON.stringify({ action, admin_reply })
     });
     return res.json();
   },
@@ -557,6 +583,15 @@ export const api = {
   // --- Promotions ---
   getActivePromotion: async () => {
     const res = await fetch(`${API_BASE}/promotions/active`);
+    return res.json();
+  },
+
+  validateCoupon: async (coupon_code) => {
+    const res = await fetch(`${API_BASE}/promotions/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coupon_code })
+    });
     return res.json();
   },
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PlayCircle, FileText, Download, Award, ShieldCheck, User, Lock, Key, CheckCircle2, AlertCircle, Save, Shield, Settings, Mail, UserCheck } from 'lucide-react';
+import { PlayCircle, FileText, Download, Award, ShieldCheck, User, Lock, Key, CheckCircle2, AlertCircle, Save, Shield, Settings, Mail, UserCheck, ShoppingBag, Tag } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -53,6 +53,7 @@ export default function Dashboard() {
 
   const [downloadingId, setDownloadingId] = useState(null);
   const [activeTab, setActiveTab] = useState('mylearning');
+  const [userOrders, setUserOrders] = useState([]);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewCourseId, setReviewCourseId] = useState(null);
   const [copiedCertId, setCopiedCertId] = useState(null);
@@ -71,6 +72,45 @@ export default function Dashboard() {
   // Name Confirmation Modal State
   const [nameModalOpen, setNameModalOpen] = useState(false);
   const [selectedCertCourse, setSelectedCertCourse] = useState(null);
+
+  // Refund Request State
+  const [refundModalOrder, setRefundModalOrder] = useState(null);
+  const [refundReasonInput, setRefundReasonInput] = useState('');
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
+  const [refundModalError, setRefundModalError] = useState('');
+
+  // View Admin Reply / Details Modal State
+  const [viewDetailsOrder, setViewDetailsOrder] = useState(null);
+
+  const handleRequestRefundSubmit = async (e) => {
+    e.preventDefault();
+    if (!refundModalOrder || !refundReasonInput.trim()) return;
+
+    setRefundSubmitting(true);
+    setRefundModalError('');
+
+    try {
+      const res = await api.requestOrderRefund(refundModalOrder.id, refundReasonInput.trim());
+      if (res.success && res.order) {
+        setUserOrders(prev => prev.map(o => o.id === res.order.id ? res.order : o));
+        setRefundModalOrder(null);
+        setRefundReasonInput('');
+      } else {
+        setRefundModalError(res.error || 'Failed to submit refund request');
+      }
+    } catch (err) {
+      setRefundModalError('Failed to submit refund request');
+    } finally {
+      setRefundSubmitting(false);
+    }
+  };
+
+  const isEligibleForRefund = (order) => {
+    if (order.status !== 'paid') return false;
+    const orderTime = new Date(order.paid_at || order.created_at).getTime();
+    const diffHours = (Date.now() - orderTime) / (1000 * 60 * 60);
+    return diffHours <= 72;
+  };
 
   const handleConfirmAndIssueCert = async (confirmedName) => {
     if (!selectedCertCourse) return;
@@ -163,9 +203,10 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const [dashRes, certRes] = await Promise.all([
+        const [dashRes, certRes, ordersRes] = await Promise.all([
           api.getDashboardSummary(),
-          api.getCertificates()
+          api.getCertificates(),
+          api.getUserOrders()
         ]);
         
         if (dashRes.success) {
@@ -186,6 +227,10 @@ export default function Dashboard() {
         
         if (certRes.success) {
           setCertificates(certRes.certificates);
+        }
+
+        if (ordersRes && ordersRes.success) {
+          setUserOrders(ordersRes.orders || []);
         }
       } catch (err) {
         console.error(err);
@@ -267,6 +312,14 @@ export default function Dashboard() {
           {activeTab === 'certificates' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
         <button
+          onClick={() => setActiveTab('orders')}
+          className={`pb-4 text-sm font-bold transition-colors relative shrink-0 flex items-center gap-1.5 ${activeTab === 'orders' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          Order History
+          {activeTab === 'orders' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
+        </button>
+        <button
           onClick={() => setActiveTab('profile')}
           className={`pb-4 text-sm font-bold transition-colors relative shrink-0 flex items-center gap-1.5 ${activeTab === 'profile' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
@@ -333,11 +386,11 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="p-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-auto">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{course.completed_lessons} / {course.total_lessons} Lessons</span>
+                <div className="p-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mt-auto">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest shrink-0">{course.completed_lessons} / {course.total_lessons} Lessons</span>
                   
                   {course.is_completed ? (
-                    <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+                    <div className="flex items-center gap-1.5 shrink-0 flex-nowrap overflow-x-auto max-w-full">
                       {!course.user_has_reviewed && (
                         <button
                           onClick={(e) => {
@@ -345,7 +398,7 @@ export default function Dashboard() {
                             setReviewCourseId(course.id);
                             setReviewModalOpen(true);
                           }}
-                          className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-[10px] hover:bg-slate-50 transition-colors shadow-xs"
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-[10px] hover:bg-slate-50 transition-colors shadow-xs shrink-0 whitespace-nowrap"
                         >
                           Review
                         </button>
@@ -360,7 +413,7 @@ export default function Dashboard() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 rounded-lg bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-[10px] transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-[10px] transition-colors flex items-center gap-1 shadow-xs cursor-pointer shrink-0 whitespace-nowrap"
                         title="Add this certification directly to your LinkedIn profile"
                       >
                         <LinkedInIcon className="w-3 h-3 text-white" /> Add to LinkedIn
@@ -369,7 +422,7 @@ export default function Dashboard() {
                         to={`/certificate/${course.id}`}
                         target="_blank"
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 sm:flex-none justify-center px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors flex items-center gap-1 shadow-xs"
+                        className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700 transition-colors flex items-center gap-1 shadow-xs shrink-0 whitespace-nowrap"
                       >
                         <Award className="w-3.5 h-3.5" /> Certificate
                       </Link>
@@ -588,6 +641,234 @@ export default function Dashboard() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Order History Tab */}
+      {activeTab === 'orders' && (
+        <div className="space-y-4">
+          <h2 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-blue-900" /> Order History & Receipts
+          </h2>
+
+          {userOrders.length === 0 ? (
+            <div className="glass-card rounded-2xl p-8 text-center space-y-3">
+              <p className="text-slate-600 text-xs font-medium">You have no order history yet.</p>
+              <Link to="/courses" className="inline-block px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors">
+                Browse Courses & Resources
+              </Link>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Order ID</th>
+                      <th className="px-4 py-3">Item Purchased</th>
+                      <th className="px-4 py-3">Coupon Code</th>
+                      <th className="px-4 py-3 text-right">Original Price</th>
+                      <th className="px-4 py-3 text-right">Discount</th>
+                      <th className="px-4 py-3 text-right">Amount Paid</th>
+                      <th className="px-4 py-3 text-center">Status</th>
+                      <th className="px-4 py-3 text-right">Action / Refund</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {userOrders.map(order => {
+                      const canRefund = isEligibleForRefund(order);
+
+                      return (
+                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3.5 text-slate-500 font-medium">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3.5 font-mono text-slate-500">{order.id}</td>
+                          <td className="px-4 py-3.5 font-semibold text-slate-900">{order.product_title || order.product_id}</td>
+                          <td className="px-4 py-3.5">
+                            {order.coupon_code ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[10px] uppercase">
+                                <Tag className="w-3 h-3" /> {order.coupon_code}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 font-medium">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 text-right text-slate-500 font-medium">
+                            {order.original_amount ? `$${Number(order.original_amount).toFixed(2)}` : `$${Number(order.amount).toFixed(2)}`}
+                          </td>
+                          <td className="px-4 py-3.5 text-right font-bold text-rose-600">
+                            {order.discount_amount && Number(order.discount_amount) > 0 ? `-$${Number(order.discount_amount).toFixed(2)}` : '$0.00'}
+                          </td>
+                          <td className="px-4 py-3.5 text-right font-extrabold text-emerald-700 text-sm">
+                            ${Number(order.amount).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3.5 text-center">
+                            <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
+                              order.status === 'paid' && order.admin_reply ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                              order.status === 'paid' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                              order.status === 'refund_requested' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                              order.status === 'refunded' ? 'bg-slate-200 text-slate-700 border border-slate-300' :
+                              'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}>
+                              {order.status === 'refund_requested' ? 'Refund Requested' :
+                               order.status === 'paid' && order.admin_reply ? 'Refund Declined' :
+                               order.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 text-right">
+                            {canRefund ? (
+                              <button
+                                onClick={() => {
+                                  setRefundModalOrder(order);
+                                  setRefundReasonInput('');
+                                  setRefundModalError('');
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-[11px] transition-colors shadow-2xs cursor-pointer whitespace-nowrap"
+                              >
+                                Request Refund
+                              </button>
+                            ) : order.status === 'refund_requested' || order.admin_reply ? (
+                              <button
+                                onClick={() => setViewDetailsOrder(order)}
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] transition-colors cursor-pointer whitespace-nowrap"
+                              >
+                                View Details / Reply
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 text-[10px] font-medium">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* User Refund Request Modal */}
+      {refundModalOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-display font-bold text-base text-slate-900">Request Order Refund</h3>
+                <p className="text-[11px] text-slate-500 font-mono">Order #{refundModalOrder.id}</p>
+              </div>
+              <button onClick={() => setRefundModalOrder(null)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 space-y-1">
+              <p className="font-bold">🛡️ 3-Day Satisfaction Guarantee</p>
+              <p className="text-[11px] text-blue-800 leading-relaxed">
+                You are requesting a refund within your first 3 days of purchase. Please explain why you are requesting a refund so our administrative team can review and process your request.
+              </p>
+            </div>
+
+            <form onSubmit={handleRequestRefundSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Reason for Refund <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Please describe why you would like a refund for this course or resource..."
+                  value={refundReasonInput}
+                  onChange={(e) => setRefundReasonInput(e.target.value)}
+                  className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-600 font-medium placeholder:text-slate-400"
+                />
+              </div>
+
+              {refundModalError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {refundModalError}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRefundModalOrder(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!refundReasonInput.trim() || refundSubmitting}
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
+                >
+                  {refundSubmitting ? 'Submitting...' : 'Submit Refund Request'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Details / Admin Reply Modal */}
+      {viewDetailsOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-display font-bold text-base text-slate-900">Refund Request Details</h3>
+                <p className="text-[11px] text-slate-500 font-mono">Order #{viewDetailsOrder.id}</p>
+              </div>
+              <button onClick={() => setViewDetailsOrder(null)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Purchased Product</span>
+                <span className="font-bold text-slate-900 text-sm">{viewDetailsOrder.product_title || viewDetailsOrder.product_id}</span>
+              </div>
+
+              {viewDetailsOrder.refund_reason && (
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Your Submitted Reason</span>
+                  <p className="text-slate-800 italic leading-relaxed">{viewDetailsOrder.refund_reason}</p>
+                  {viewDetailsOrder.refund_requested_at && (
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Submitted on {new Date(viewDetailsOrder.refund_requested_at).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {viewDetailsOrder.admin_reply ? (
+                <div className="bg-purple-50 p-3.5 rounded-xl border border-purple-200 space-y-1">
+                  <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wider block">Administrator Reply / Note</span>
+                  <p className="text-purple-950 font-medium leading-relaxed">{viewDetailsOrder.admin_reply}</p>
+                </div>
+              ) : (
+                <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-amber-900 text-xs">
+                  <p className="font-bold">⌛ Pending Review</p>
+                  <p className="text-[11px] text-amber-800 mt-0.5">Your refund request is currently being reviewed by an administrator.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={() => setViewDetailsOrder(null)}
+                className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

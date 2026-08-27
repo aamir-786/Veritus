@@ -33,10 +33,14 @@ describe('dashboardController', () => {
       const mockTemplatesOr = jest.fn().mockResolvedValue({ data: [] });
       const mockTemplatesSelect = jest.fn().mockReturnValue({ or: mockTemplatesOr });
 
+      const mockReviewsEq = jest.fn().mockResolvedValue({ data: [] });
+      const mockReviewsSelect = jest.fn().mockReturnValue({ eq: mockReviewsEq });
+
       supabase.from.mockImplementation((table) => {
         if (table === 'entitlements') return { select: mockSelect };
         if (table === 'courses') return { select: mockCoursesSelect };
         if (table === 'progress') return { select: mockProgressSelect };
+        if (table === 'reviews') return { select: mockReviewsSelect };
         if (table === 'templates') return { select: mockTemplatesSelect };
         return { select: jest.fn() };
       });
@@ -66,9 +70,13 @@ describe('dashboardController', () => {
       const mockProgressSelect = jest.fn().mockReturnValue({ eq: mockProgressEq });
       const mockTemplatesSelect = jest.fn().mockResolvedValue({ data: [] });
 
+      const mockReviewsEq = jest.fn().mockResolvedValue({ data: [] });
+      const mockReviewsSelect = jest.fn().mockReturnValue({ eq: mockReviewsEq });
+
       supabase.from.mockImplementation((table) => {
         if (table === 'courses') return { select: mockCoursesSelect };
         if (table === 'progress') return { select: mockProgressSelect };
+        if (table === 'reviews') return { select: mockReviewsSelect };
         if (table === 'templates') return { select: mockTemplatesSelect };
         return { select: jest.fn() };
       });

@@ -755,6 +755,7 @@ exports.updateOrderStatus = async (req, res) => {
 
 exports.refundOrder = async (req, res) => {
   const { id } = req.params;
+  const { admin_reply } = req.body || {};
 
   try {
     // 1. Get the current order
@@ -768,8 +769,8 @@ exports.refundOrder = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    if (order.status !== 'paid') {
-      return res.status(400).json({ success: false, error: 'Order is not in paid status' });
+    if (order.status !== 'paid' && order.status !== 'refund_requested') {
+      return res.status(400).json({ success: false, error: 'Order cannot be refunded in its current status' });
     }
 
     // 2. Process Stripe Refund (if applicable)
@@ -791,7 +792,10 @@ exports.refundOrder = async (req, res) => {
     // 3. Update Order Status in Database
     const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
-      .update({ status: 'refunded' })
+      .update({ 
+        status: 'refunded',
+        ...(admin_reply ? { admin_reply: admin_reply.trim() } : {})
+      })
       .eq('id', id)
       .select()
       .single();
@@ -809,7 +813,98 @@ exports.refundOrder = async (req, res) => {
     return res.json({ success: true, message: 'Order refunded successfully', order: updatedOrder });
   } catch (err) {
     console.error('refundOrder Error:', err);
-    return res.status(500).json({ success: false, error: 'Internal server error during refund' });
+    return res.status(500).json({ success: false, error: 'Failed to process refund' });
+  }
+};
+
+// Process Pending Refund Request (Approve or Reject)
+exports.processRefundRequest = async (req, res) => {
+  const { id } = req.params;
+  const { action, admin_reply } = req.body; // action: 'approve' | 'reject'
+
+  if (!action || (action !== 'approve' && action !== 'reject')) {
+    return res.status(400).json({ success: false, error: "Action must be 'approve' or 'reject'" });
+  }
+
+  try {
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    if (order.status !== 'refund_requested' && order.status !== 'paid') {
+      return res.status(400).json({ success: false, error: `Order is not in refund requested status (Current: ${order.status})` });
+    }
+
+    if (action === 'approve') {
+      // Process gateway refund if intent exists
+      if (order.stripe_payment_intent) {
+        const refundAmount = Math.round((order.amount * 100) * 0.75);
+        try {
+          await stripe.refunds.create({
+            payment_intent: order.stripe_payment_intent,
+            amount: refundAmount,
+          });
+        } catch (stripeErr) {
+          console.error('Stripe Refund Error:', stripeErr);
+          return res.status(500).json({ success: false, error: 'Failed to process gateway refund' });
+        }
+      }
+
+      // Update Order Status to refunded
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from('orders')
+        .update({
+          status: 'refunded',
+          admin_reply: admin_reply ? admin_reply.trim() : 'Refund request approved.'
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      // Revoke entitlement
+      if (order.user_id) {
+        await supabase
+          .from('entitlements')
+          .delete()
+          .match({ user_id: order.user_id, product_id: order.product_id });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Refund request approved and order refunded.',
+        order: updatedOrder
+      });
+    } else {
+      // Action === 'reject'
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from('orders')
+        .update({
+          status: 'paid',
+          admin_reply: admin_reply ? admin_reply.trim() : 'Refund request rejected after review.'
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      return res.json({
+        success: true,
+        message: 'Refund request rejected.',
+        order: updatedOrder
+      });
+    }
+  } catch (err) {
+    console.error('processRefundRequest Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to process refund request' });
   }
 };
 

@@ -24,7 +24,7 @@ const getDomainPacks = () => {
 
 // Initiate Checkout Session (Course or Template)
 exports.createCheckoutSession = async (req, res) => {
-  const { item_id, item_type } = req.body;
+  const { item_id, item_type, coupon_code } = req.body;
   const userId = req.user ? req.user.id : null;
   const userEmail = req.user ? req.user.email : req.body.customer_email;
 
@@ -49,6 +49,31 @@ exports.createCheckoutSession = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Selected product not found' });
     }
 
+    // Validate Coupon Code if provided
+    let validatedPromo = null;
+    if (coupon_code) {
+      const { data: promo } = await supabase
+        .from('promotions')
+        .select('*')
+        .ilike('promo_code', coupon_code.trim())
+        .single();
+      
+      if (promo && promo.is_active) {
+        const now = new Date().toISOString();
+        const isStartValid = !promo.start_date || now >= promo.start_date;
+        const isEndValid = !promo.end_date || now <= promo.end_date;
+        const isLimitValid = !promo.max_redemptions || promo.times_redeemed < promo.max_redemptions;
+        if (isStartValid && isEndValid && isLimitValid) {
+          validatedPromo = promo;
+        }
+      }
+    }
+
+    const originalAmount = Number(item.price) || 0;
+    const discountPercent = validatedPromo ? Number(validatedPromo.discount_percentage || 0) : 0;
+    const discountAmount = Math.round((originalAmount * discountPercent / 100) * 100) / 100;
+    const finalAmount = Math.max(0, Math.round((originalAmount - discountAmount) * 100) / 100);
+
     // Create Order Record in Pending State
     const orderId = `ord-${Date.now()}`;
     const newOrder = {
@@ -57,7 +82,10 @@ exports.createCheckoutSession = async (req, res) => {
       user_email: userEmail,
       product_id: item.id,
       product_title: item.title,
-      amount: item.price,
+      original_amount: originalAmount,
+      discount_amount: discountAmount,
+      coupon_code: validatedPromo ? validatedPromo.promo_code : null,
+      amount: finalAmount, // Remaining amount after coupon applied
       currency: 'USD',
       status: 'pending'
     };
@@ -69,7 +97,10 @@ exports.createCheckoutSession = async (req, res) => {
     return res.json({
       success: true,
       order_id: orderId,
-      amount: item.price,
+      original_amount: originalAmount,
+      discount_amount: discountAmount,
+      coupon_code: validatedPromo ? validatedPromo.promo_code : null,
+      amount: finalAmount,
       currency: 'USD',
       product_title: item.title,
       checkout_url: `/checkout/pay/${orderId}`
@@ -82,7 +113,7 @@ exports.createCheckoutSession = async (req, res) => {
 
 // Multi-Item Real Stripe Checkout Session
 exports.createMultiCheckoutSession = async (req, res) => {
-  const { items } = req.body;
+  const { items, coupon_code } = req.body;
   const userId = req.user ? req.user.id : null;
   const userEmail = req.user ? req.user.email : req.body.customer_email;
 
@@ -91,6 +122,27 @@ exports.createMultiCheckoutSession = async (req, res) => {
   }
 
   try {
+    // Validate Coupon Code if provided
+    let validatedPromo = null;
+    if (coupon_code) {
+      const { data: promo } = await supabase
+        .from('promotions')
+        .select('*')
+        .ilike('promo_code', coupon_code.trim())
+        .single();
+      
+      if (promo && promo.is_active) {
+        const now = new Date().toISOString();
+        const isStartValid = !promo.start_date || now >= promo.start_date;
+        const isEndValid = !promo.end_date || now <= promo.end_date;
+        const isLimitValid = !promo.max_redemptions || promo.times_redeemed < promo.max_redemptions;
+        if (isStartValid && isEndValid && isLimitValid) {
+          validatedPromo = promo;
+        }
+      }
+    }
+
+    const discountPercent = validatedPromo ? Number(validatedPromo.discount_percentage || 0) : 0;
     const line_items = [];
     const orderIds = [];
     const createdOrders = [];
@@ -115,16 +167,23 @@ exports.createMultiCheckoutSession = async (req, res) => {
 
       if (!dbItem) continue;
 
+      const originalAmount = Number(dbItem.price) || 0;
+      const discountAmount = Math.round((originalAmount * discountPercent / 100) * 100) / 100;
+      const finalAmount = Math.max(0, Math.round((originalAmount - discountAmount) * 100) / 100);
+
       const orderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       orderIds.push(orderId);
 
       createdOrders.push({
         id: orderId,
         user_id: userId,
-        user_email: userEmail || 'guest@veritus.com', // Required by DB schema potentially
+        user_email: userEmail || 'guest@veritus.com',
         product_id: dbItem.id,
         product_title: dbItem.title,
-        amount: dbItem.price,
+        original_amount: originalAmount,
+        discount_amount: discountAmount,
+        coupon_code: validatedPromo ? validatedPromo.promo_code : null,
+        amount: finalAmount, // Remaining amount after coupon deduction distributed to item
         currency: 'USD',
         status: 'pending'
       });
@@ -137,7 +196,7 @@ exports.createMultiCheckoutSession = async (req, res) => {
             ...(dbItem.headline || dbItem.description ? { description: dbItem.headline || dbItem.description } : {}),
             ...(dbItem.cover_image ? { images: [dbItem.cover_image] } : {}),
           },
-          unit_amount: Math.round(dbItem.price * 100), // Stripe expects cents
+          unit_amount: Math.round(finalAmount * 100), // Stripe expects cents of remaining discounted amount
         },
         quantity: 1,
       });
@@ -160,7 +219,8 @@ exports.createMultiCheckoutSession = async (req, res) => {
       customer_email: userEmail || undefined,
       client_reference_id: userId || undefined,
       metadata: {
-        order_ids: orderIds.join(',') // We store a comma-separated list of order IDs
+        order_ids: orderIds.join(','), // We store a comma-separated list of order IDs
+        coupon_code: validatedPromo ? validatedPromo.promo_code : ''
       },
       success_url: `${req.headers.origin || 'http://localhost:3000'}/payment-verification?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/cart?payment=cancelled`,
@@ -173,6 +233,27 @@ exports.createMultiCheckoutSession = async (req, res) => {
   } catch (err) {
     console.error('createMultiCheckoutSession Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to create checkout session' });
+  }
+};
+
+// Helper: Increment redemption counter for used coupon
+const incrementCouponRedemption = async (couponCode) => {
+  if (!couponCode) return;
+  try {
+    const { data: promo } = await supabase
+      .from('promotions')
+      .select('id, times_redeemed')
+      .ilike('promo_code', couponCode.trim())
+      .single();
+
+    if (promo) {
+      await supabase
+        .from('promotions')
+        .update({ times_redeemed: (promo.times_redeemed || 0) + 1 })
+        .eq('id', promo.id);
+    }
+  } catch (err) {
+    console.warn('[Redemption] Failed to increment coupon redemption count:', err.message);
   }
 };
 
@@ -209,6 +290,10 @@ exports.verifySession = async (req, res) => {
                 user_id: order.user_id || session.client_reference_id,
                 product_id: order.product_id
               });
+            }
+
+            if (order.coupon_code) {
+              incrementCouponRedemption(order.coupon_code);
             }
 
             emailService.sendOrderReceiptEmail({
@@ -262,11 +347,6 @@ exports.completeCheckout = async (req, res) => {
     if (updateError) throw updateError;
     order.status = 'paid'; // Keep local copy updated
 
-    // Note: Auto-creating users in Supabase Auth from backend requires admin API
-    // If user_id is null (guest checkout), we skip creating an account automatically 
-    // because Supabase Auth handles that better on the frontend, but we still grant entitlement if they register later with same email.
-    // For now, if they have a user_id, we grant entitlement:
-    
     let targetUserId = order.user_id;
 
     if (!targetUserId) {
@@ -285,6 +365,10 @@ exports.completeCheckout = async (req, res) => {
         product_id: order.product_id
       });
       if (entError) console.warn('Entitlement upsert error:', entError.message);
+    }
+
+    if (order.coupon_code) {
+      incrementCouponRedemption(order.coupon_code);
     }
 
     // Dispatch Order Receipt & Entitlement Access Email
@@ -344,6 +428,10 @@ exports.handleStripeWebhook = async (req, res) => {
               });
             }
 
+            if (order.coupon_code) {
+              incrementCouponRedemption(order.coupon_code);
+            }
+
             emailService.sendOrderReceiptEmail({
               email: order.user_email || session.customer_email || session.customer_details?.email,
               name: session.customer_details?.name || 'Valued Buyer',
@@ -381,5 +469,74 @@ exports.getUserOrders = async (req, res) => {
   } catch (err) {
     console.error('getUserOrders Error:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+  }
+};
+
+// User Request Refund (3-Day Policy Enforcement)
+exports.requestRefund = async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const userId = req.user.id;
+  const userEmail = req.user.email;
+
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ success: false, error: 'Reason for refund is required' });
+  }
+
+  try {
+    const { data: order, error: fetchErr } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !order) {
+      return res.status(404).json({ success: false, error: 'Order transaction not found' });
+    }
+
+    // Verify ownership
+    const isOwner = order.user_id === userId || (order.user_email && order.user_email.toLowerCase() === (userEmail || '').toLowerCase());
+    if (!isOwner) {
+      return res.status(403).json({ success: false, error: 'Unauthorized to request refund for this order' });
+    }
+
+    if (order.status !== 'paid') {
+      return res.status(400).json({ success: false, error: `Cannot request refund for order in status '${order.status}'` });
+    }
+
+    // Enforce 3-day refund window (72 hours from paid_at or created_at)
+    const orderDate = new Date(order.paid_at || order.created_at).getTime();
+    const now = Date.now();
+    const diffHours = (now - orderDate) / (1000 * 60 * 60);
+
+    if (diffHours > 72) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Refund window has expired. Refunds can only be requested within 3 days (72 hours) of purchase.' 
+      });
+    }
+
+    // Update Order to refund_requested
+    const { data: updatedOrder, error: updateErr } = await supabase
+      .from('orders')
+      .update({
+        status: 'refund_requested',
+        refund_reason: reason.trim(),
+        refund_requested_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateErr) throw updateErr;
+
+    return res.json({
+      success: true,
+      message: 'Refund request submitted successfully. Administrator will review your request.',
+      order: updatedOrder
+    });
+  } catch (err) {
+    console.error('requestRefund Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to submit refund request' });
   }
 };

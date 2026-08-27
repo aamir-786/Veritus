@@ -289,6 +289,22 @@ const sendOrderReceiptEmail = async ({ email, name, order }) => {
         <td style="padding: 12px 16px; font-size: 14px; color: #94a3b8;">Purchased Product:</td>
         <td align="right" style="padding: 12px 16px; font-size: 14px; color: #38bdf8; font-weight: 600;">${order.product_title || 'Executive Risk Resource'}</td>
       </tr>
+      ${order.original_amount && Number(order.original_amount) > Number(order.amount) ? `
+      <tr style="border-top: 1px solid #334155;">
+        <td style="padding: 12px 16px; font-size: 14px; color: #94a3b8;">Original Price:</td>
+        <td align="right" style="padding: 12px 16px; font-size: 14px; color: #94a3b8; text-decoration: line-through;">$${order.original_amount} USD</td>
+      </tr>
+      ` : ''}
+      ${order.coupon_code ? `
+      <tr style="border-top: 1px solid #334155;">
+        <td style="padding: 12px 16px; font-size: 14px; color: #94a3b8;">Coupon Applied:</td>
+        <td align="right" style="padding: 12px 16px; font-size: 14px; color: #c084fc; font-weight: 700;">${order.coupon_code}</td>
+      </tr>
+      <tr style="border-top: 1px solid #334155;">
+        <td style="padding: 12px 16px; font-size: 14px; color: #94a3b8;">Discount Deducted:</td>
+        <td align="right" style="padding: 12px 16px; font-size: 14px; color: #f43f5e; font-weight: 700;">-$${order.discount_amount || 0} USD</td>
+      </tr>
+      ` : ''}
       <tr style="border-top: 1px solid #334155;">
         <td style="padding: 12px 16px; font-size: 14px; color: #94a3b8;">Total Amount Paid:</td>
         <td align="right" style="padding: 12px 16px; font-size: 16px; color: #10b981; font-weight: 800;">$${order.amount} USD</td>

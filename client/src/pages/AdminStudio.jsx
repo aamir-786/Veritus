@@ -319,18 +319,41 @@ export default function AdminStudio() {
     }
   };
 
+  const [adminReplyInput, setAdminReplyInput] = useState('');
+
+  const handleProcessRefundRequest = async (orderId, action) => {
+    setIsUpdatingOrder(orderId);
+    try {
+      const res = await api.processRefundRequest(orderId, action, adminReplyInput);
+      if (res.success && res.order) {
+        setOrders(orders.map(o => o.id === orderId ? res.order : o));
+        if (selectedOrder && selectedOrder.id === orderId) {
+          setSelectedOrder(res.order);
+        }
+        showToast(res.message || `Refund request ${action === 'approve' ? 'approved' : 'rejected'}`);
+      } else {
+        alert(res.error || 'Failed to process refund request');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error processing refund request.');
+    } finally {
+      setIsUpdatingOrder(null);
+    }
+  };
+
   const handleRefundOrder = (orderId) => {
     confirmAction(
       "Refund Order",
-      "Are you sure you want to process a Stripe refund (25% fee)? This action cannot be undone.",
+      "Are you sure you want to process a refund? This action will refund the payment and revoke access.",
       async () => {
         setIsUpdatingOrder(orderId);
         try {
-          const res = await api.refundOrder(orderId);
+          const res = await api.refundOrder(orderId, adminReplyInput);
           if (res.success) {
-            setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'refunded' } : o));
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'refunded', admin_reply: adminReplyInput || o.admin_reply } : o));
             if (selectedOrder && selectedOrder.id === orderId) {
-              setSelectedOrder({ ...selectedOrder, status: 'refunded' });
+              setSelectedOrder({ ...selectedOrder, status: 'refunded', admin_reply: adminReplyInput || selectedOrder.admin_reply });
             }
             showToast('Order refunded successfully');
           } else {
@@ -338,6 +361,13 @@ export default function AdminStudio() {
           }
         } catch (err) {
           console.error(err);
+          alert('Failed to process refund.');
+        } finally {
+          setIsUpdatingOrder(null);
+        }
+      }
+    );
+  };
           alert('An error occurred while refunding the order.');
         } finally {
           setIsUpdatingOrder(null);
@@ -1381,12 +1411,15 @@ export default function AdminStudio() {
                     alert('No orders available to export.');
                     return;
                   }
-                  const headers = ['Order ID', 'Customer Name', 'Customer Email', 'Product Title', 'Amount', 'Status', 'Date'];
+                  const headers = ['Order ID', 'Customer Name', 'Customer Email', 'Product Title', 'Coupon Code', 'Original Price', 'Discount Deducted', 'Amount Paid', 'Status', 'Date'];
                   const rows = orders.map(o => [
                     `"${o.id}"`,
                     `"${o.profiles?.full_name || o.card_holder_name || 'N/A'}"`,
-                    `"${o.profiles?.email || 'N/A'}"`,
+                    `"${o.user_email || o.profiles?.email || 'N/A'}"`,
                     `"${o.product_title || 'N/A'}"`,
+                    `"${o.coupon_code || 'None'}"`,
+                    `"${o.original_amount || o.amount}"`,
+                    `"${o.discount_amount || 0}"`,
                     `"${o.amount}"`,
                     `"${o.status}"`,
                     `"${new Date(o.created_at).toLocaleString()}"`
@@ -1415,6 +1448,7 @@ export default function AdminStudio() {
                       <th className="px-4 py-3 font-bold uppercase tracking-wider">Order ID</th>
                       <th className="px-4 py-3 font-bold uppercase tracking-wider">Customer</th>
                       <th className="px-4 py-3 font-bold uppercase tracking-wider">Item</th>
+                      <th className="px-4 py-3 font-bold uppercase tracking-wider">Coupon</th>
                       <th className="px-4 py-3 font-bold uppercase tracking-wider text-right">Amount</th>
                       <th className="px-4 py-3 font-bold uppercase tracking-wider text-center">Status</th>
                     </tr>
@@ -1422,7 +1456,7 @@ export default function AdminStudio() {
                   <tbody className="divide-y divide-slate-100">
                     {orders.length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="px-4 py-8 text-center text-slate-400">No orders found.</td>
+                        <td colSpan="7" className="px-4 py-8 text-center text-slate-400">No orders found.</td>
                       </tr>
                     ) : (
                       orders.map(order => (
@@ -1438,6 +1472,15 @@ export default function AdminStudio() {
                           <td className="px-4 py-3 font-medium text-slate-900">{order.user_email || 'Guest'}</td>
                           <td className="px-4 py-3 text-slate-600">
                             {order.product_title || order.product_id}
+                          </td>
+                          <td className="px-4 py-3">
+                            {order.coupon_code ? (
+                              <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[10px] uppercase">
+                                {order.coupon_code}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 font-bold text-slate-900 text-right">
                             {order.currency?.toUpperCase()} {order.amount?.toLocaleString()}
@@ -2621,8 +2664,30 @@ export default function AdminStudio() {
                   <span className="font-bold text-indigo-600 text-sm">{selectedOrder.product_title || selectedOrder.product_id}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Amount</span>
-                  <span className="font-extrabold text-slate-900 text-xl">{selectedOrder.currency?.toUpperCase()} {selectedOrder.amount?.toLocaleString()}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Coupon Applied</span>
+                  {selectedOrder.coupon_code ? (
+                    <span className="inline-flex px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 font-extrabold text-xs uppercase border border-purple-200">
+                      {selectedOrder.coupon_code}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 font-medium text-xs">None</span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Original Price</span>
+                  <span className="font-bold text-slate-600 text-sm">
+                    {selectedOrder.currency?.toUpperCase()} {selectedOrder.original_amount ? Number(selectedOrder.original_amount).toLocaleString() : Number(selectedOrder.amount).toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Discount Deducted</span>
+                  <span className="font-extrabold text-rose-600 text-sm">
+                    -{selectedOrder.currency?.toUpperCase()} {selectedOrder.discount_amount ? Number(selectedOrder.discount_amount).toLocaleString() : '0'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Remaining Paid Amount</span>
+                  <span className="font-extrabold text-emerald-700 text-xl">{selectedOrder.currency?.toUpperCase()} {selectedOrder.amount?.toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</span>
@@ -2636,19 +2701,91 @@ export default function AdminStudio() {
                 </div>
               </div>
 
+              {selectedOrder.refund_reason && (
+                <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 space-y-1">
+                  <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wider block">Customer Refund Reason</span>
+                  <p className="text-xs text-purple-950 font-medium leading-relaxed italic">"{selectedOrder.refund_reason}"</p>
+                  {selectedOrder.refund_requested_at && (
+                    <span className="text-[10px] text-purple-700 block pt-1 font-mono">
+                      Requested: {new Date(selectedOrder.refund_requested_at).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {selectedOrder.admin_reply && (
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Saved Admin Reply / Note</span>
+                  <p className="text-xs text-slate-800 font-medium leading-relaxed">{selectedOrder.admin_reply}</p>
+                </div>
+              )}
+
+              {/* Admin Note Input */}
+              {(selectedOrder.status === 'paid' || selectedOrder.status === 'refund_requested') && (
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Admin Reply / Exception Note (Sent/Visible to User)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Enter optional note or explanation for the user..."
+                    value={adminReplyInput}
+                    onChange={(e) => setAdminReplyInput(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:border-indigo-600"
+                  />
+                </div>
+              )}
+
+              {/* Pending Refund Request Decision Actions */}
+              {selectedOrder.status === 'refund_requested' && (
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                    <h4 className="text-xs font-bold text-purple-900 mb-1 flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 text-purple-700" /> Pending User Refund Request
+                    </h4>
+                    <p className="text-[11px] text-purple-800 leading-relaxed mb-3">
+                      Review the customer's request above. Approving will issue a refund via Stripe and revoke product access. Rejecting will keep the order active and send your reply note to the user.
+                    </p>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleProcessRefundRequest(selectedOrder.id, 'reject')}
+                        disabled={isUpdatingOrder === selectedOrder.id}
+                        className="flex-1 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                      >
+                        Reject Refund Request
+                      </button>
+
+                      <button
+                        onClick={() => handleProcessRefundRequest(selectedOrder.id, 'approve')}
+                        disabled={isUpdatingOrder === selectedOrder.id}
+                        className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        {isUpdatingOrder === selectedOrder.id ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          'Accept & Process Refund'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Perpetual Admin Manual Actions for Paid Orders */}
               {selectedOrder.status === 'paid' && (
-                <div className="pt-6 border-t border-slate-100 space-y-3">
+                <div className="pt-4 border-t border-slate-100 space-y-3">
                   <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-                    <h4 className="text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Management Actions</h4>
+                    <h4 className="text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Administrative Override Actions</h4>
                     <p className="text-[11px] text-amber-700/80 mb-4 leading-relaxed">
-                      Cancelling an order revokes access instantly. Processing a refund will automatically refund 75% of the transaction via Stripe (keeping a 25% cut) and revoke access.
+                      Admins can process a manual refund or cancellation for any order at any time (even after the 3-day user window).
                     </p>
 
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'cancelled')}
                         disabled={isUpdatingOrder === selectedOrder.id}
-                        className="flex-1 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                        className="flex-1 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         Cancel Order (No Refund)
                       </button>
@@ -2656,7 +2793,7 @@ export default function AdminStudio() {
                       <button
                         onClick={() => handleRefundOrder(selectedOrder.id)}
                         disabled={isUpdatingOrder === selectedOrder.id}
-                        className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {isUpdatingOrder === selectedOrder.id ? (
                           <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

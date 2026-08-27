@@ -201,12 +201,26 @@ CREATE TABLE IF NOT EXISTS public.orders (
   product_id TEXT,
   product_title TEXT,
   amount NUMERIC,
+  original_amount NUMERIC,
+  discount_amount NUMERIC DEFAULT 0,
+  coupon_code TEXT,
+  refund_reason TEXT,
+  refund_requested_at TIMESTAMP WITH TIME ZONE,
+  admin_reply TEXT,
   currency TEXT DEFAULT 'USD',
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'refunded', 'cancelled')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'refunded', 'cancelled', 'refund_requested')),
   stripe_payment_intent TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   paid_at TIMESTAMP WITH TIME ZONE
 );
+
+-- Migration for existing orders tables
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS original_amount NUMERIC;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS refund_reason TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS refund_requested_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS admin_reply TEXT;
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
@@ -215,6 +229,33 @@ CREATE POLICY "Users can view their own orders." ON public.orders FOR SELECT USI
 
 DROP POLICY IF EXISTS "Admins can manage all orders." ON public.orders;
 CREATE POLICY "Admins can manage all orders." ON public.orders FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+
+-- ============================================================================
+-- PROMOTIONS TABLE (Discount Coupons & Promo Banners)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.promotions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  promo_code TEXT UNIQUE NOT NULL,
+  discount_percentage NUMERIC DEFAULT 0,
+  banner_message TEXT,
+  is_active BOOLEAN DEFAULT true,
+  start_date TIMESTAMP WITH TIME ZONE,
+  end_date TIMESTAMP WITH TIME ZONE,
+  max_redemptions INTEGER,
+  times_redeemed INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.promotions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Promotions are viewable by everyone." ON public.promotions;
+CREATE POLICY "Promotions are viewable by everyone." ON public.promotions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage promotions." ON public.promotions;
+CREATE POLICY "Admins can manage promotions." ON public.promotions FOR ALL USING (
   EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
 );
 
