@@ -368,13 +368,6 @@ export default function AdminStudio() {
       }
     );
   };
-          alert('An error occurred while refunding the order.');
-        } finally {
-          setIsUpdatingOrder(null);
-        }
-      }
-    );
-  };
 
   useEffect(() => {
     fetchData();
