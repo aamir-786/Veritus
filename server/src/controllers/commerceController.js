@@ -330,7 +330,6 @@ const incrementCouponRedemption = async (couponCode) => {
 const fulfillStripeSession = async (session) => {
   if (!session || session.payment_status !== 'paid') return false;
 
-  const paymentId = session.payment_intent || session.id;
   const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
   let targetEmail = session.metadata?.user_email || session.customer_details?.email || session.customer_email || 'buyer@veritus.com';
   
@@ -353,64 +352,7 @@ const fulfillStripeSession = async (session) => {
     }
   }
 
-  // 1. Find matching existing orders in Supabase (by order_ids or email)
-  const metadataOrderIds = session.metadata?.order_ids || session.metadata?.order_id;
-  let existingOrdersToUpdate = [];
-
-  if (metadataOrderIds) {
-    const orderIdList = metadataOrderIds.split(',').map(id => id.trim());
-    const { data: matchedByIds } = await supabase.from('orders').select('*').in('id', orderIdList);
-    if (matchedByIds && matchedByIds.length > 0) {
-      existingOrdersToUpdate = matchedByIds;
-    }
-  }
-
-  if (existingOrdersToUpdate.length === 0 && targetEmail) {
-    const { data: pendingByEmail } = await supabase.from('orders').select('*').ilike('user_email', targetEmail.trim()).eq('status', 'pending');
-    if (pendingByEmail && pendingByEmail.length > 0) {
-      existingOrdersToUpdate = pendingByEmail;
-    }
-  }
-
-  // If matching existing orders exist, update every one with the exact Stripe discount, coupon & paid total!
-  if (existingOrdersToUpdate.length > 0) {
-    for (const order of existingOrdersToUpdate) {
-      const orderOriginal = Number(order.original_amount || order.amount) || subtotal || 0;
-      const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (discount || order.discount_amount || 0);
-      const orderPaid = Math.max(0, orderOriginal - orderDiscount);
-      const appliedCoupon = couponCode || order.coupon_code || null;
-
-      const { data: updatedOrder } = await supabase
-        .from('orders')
-        .update({
-          status: 'paid',
-          paid_at: order.paid_at || new Date().toISOString(),
-          original_amount: orderOriginal,
-          discount_amount: orderDiscount,
-          amount: orderPaid,
-          coupon_code: appliedCoupon,
-          ...(targetUserId ? { user_id: targetUserId } : {})
-        })
-        .eq('id', order.id)
-        .select()
-        .single();
-
-      const uid = order.user_id || targetUserId;
-      if (uid) {
-        await supabase.from('entitlements').upsert({ user_id: uid, product_id: order.product_id });
-      }
-      if (appliedCoupon) incrementCouponRedemption(appliedCoupon);
-
-      emailService.sendOrderReceiptEmail({
-        email: order.user_email || targetEmail,
-        name: session.customer_details?.name || 'Valued Buyer',
-        order: updatedOrder || order
-      }).catch(err => console.warn('[Fulfill] Receipt email error:', err.message));
-    }
-    return true;
-  }
-
-  // 2. Parse Items from metadata payload OR Stripe Session line items if no pre-existing orders exist in DB
+  // 1. Parse Items from metadata payload OR Stripe Session line items
   let itemsToFulfill = [];
 
   if (session.metadata?.items_payload) {
@@ -457,31 +399,67 @@ const fulfillStripeSession = async (session) => {
     }
   }
 
-  // 3. Save completed paid order records to Supabase & grant entitlements
+  // 2. Save/Update order record in Supabase & grant entitlements for EVERY item
   for (const item of itemsToFulfill) {
     const itemOriginal = item.original_amount || (subtotal / (itemsToFulfill.length || 1)) || 0;
     const itemDiscount = subtotal > 0 ? Math.round((itemOriginal / subtotal) * discount * 100) / 100 : Math.round((discount / (itemsToFulfill.length || 1)) * 100) / 100;
     const itemPaid = Math.max(0, itemOriginal - itemDiscount);
 
-    const newOrderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const newOrder = {
-      id: newOrderId,
-      user_id: targetUserId || null,
-      user_email: targetEmail,
-      product_id: item.product_id,
-      product_title: item.product_title,
-      original_amount: itemOriginal,
-      discount_amount: itemDiscount,
-      coupon_code: couponCode || null,
-      amount: itemPaid,
-      currency: 'USD',
-      status: 'paid',
-      paid_at: new Date().toISOString()
-    };
+    // Check if an existing order for this email/user and product_id is pending or present
+    let existingOrder = null;
+    if (targetEmail) {
+      const { data: matched } = await supabase
+        .from('orders')
+        .select('*')
+        .ilike('user_email', targetEmail.trim())
+        .eq('product_id', item.product_id)
+        .order('created_at', { ascending: false })
+        .maybeSingle();
 
-    const { data: savedOrder, error: insertErr } = await supabase.from('orders').insert([newOrder]).select().single();
-    if (insertErr) {
-      console.error('[Fulfill] Failed to insert paid order into Supabase:', insertErr.message);
+      if (matched) existingOrder = matched;
+    }
+
+    let finalOrderRecord = null;
+
+    if (existingOrder) {
+      const { data: updated } = await supabase
+        .from('orders')
+        .update({
+          status: 'paid',
+          paid_at: existingOrder.paid_at || new Date().toISOString(),
+          original_amount: itemOriginal,
+          discount_amount: itemDiscount,
+          amount: itemPaid,
+          coupon_code: couponCode || existingOrder.coupon_code || null,
+          ...(targetUserId ? { user_id: targetUserId } : {})
+        })
+        .eq('id', existingOrder.id)
+        .select()
+        .maybeSingle();
+
+      finalOrderRecord = updated || existingOrder;
+    } else {
+      const newOrderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const newOrder = {
+        id: newOrderId,
+        user_id: targetUserId || null,
+        user_email: targetEmail,
+        product_id: item.product_id,
+        product_title: item.product_title,
+        original_amount: itemOriginal,
+        discount_amount: itemDiscount,
+        coupon_code: couponCode || null,
+        amount: itemPaid,
+        currency: 'USD',
+        status: 'paid',
+        paid_at: new Date().toISOString()
+      };
+
+      const { data: savedOrder, error: insertErr } = await supabase.from('orders').insert([newOrder]).select().maybeSingle();
+      if (insertErr) {
+        console.error('[Fulfill] Failed to insert paid order into Supabase:', insertErr.message);
+      }
+      finalOrderRecord = savedOrder || newOrder;
     }
 
     if (targetUserId) {
@@ -498,7 +476,7 @@ const fulfillStripeSession = async (session) => {
     emailService.sendOrderReceiptEmail({
       email: targetEmail,
       name: session.customer_details?.name || 'Valued Buyer',
-      order: savedOrder || newOrder
+      order: finalOrderRecord
     }).catch(err => console.warn('[Fulfill] Receipt email error:', err.message));
   }
 
