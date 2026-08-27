@@ -250,12 +250,51 @@ exports.createMultiCheckoutSession = async (req, res) => {
   }
 };
 
+// Helper: Resolve human-readable promo code string from code/ID
+const resolvePromoCodeName = async (codeOrId) => {
+  if (!codeOrId) return null;
+  const clean = String(codeOrId).trim();
+  if (!clean) return null;
+
+  // If clean starts with "promo_" or "coupon_" or matches Stripe ID format, query DB
+  if (clean.toLowerCase().startsWith('promo_') || clean.toLowerCase().startsWith('coupon_') || clean.length > 20) {
+    try {
+      const { data: matched } = await supabase
+        .from('promotions')
+        .select('promo_code')
+        .or(`stripe_promo_id.eq.${clean},stripe_coupon_id.eq.${clean}`)
+        .maybeSingle();
+
+      if (matched && matched.promo_code) {
+        return matched.promo_code;
+      }
+    } catch (e) {
+      console.warn('[ResolvePromo] Error looking up promo code in DB:', e.message);
+    }
+  }
+
+  // Check if clean matches any promo_code in promotions table
+  try {
+    const { data: matchedByCode } = await supabase
+      .from('promotions')
+      .select('promo_code')
+      .ilike('promo_code', clean)
+      .maybeSingle();
+
+    if (matchedByCode && matchedByCode.promo_code) {
+      return matchedByCode.promo_code;
+    }
+  } catch (e) {}
+
+  return clean.toUpperCase();
+};
+
 // Helper: Recursively extract promo code string from Stripe discount objects
 const extractCouponCodeString = (d) => {
   if (!d) return null;
   if (d.promotion_code) {
-    if (typeof d.promotion_code === 'string') return d.promotion_code;
     if (typeof d.promotion_code === 'object') return d.promotion_code.code || d.promotion_code.id;
+    if (typeof d.promotion_code === 'string') return d.promotion_code;
   }
   if (d.coupon) {
     return d.coupon.name || d.coupon.id;
@@ -267,7 +306,7 @@ const extractCouponCodeString = (d) => {
 };
 
 // Helper: Extract Stripe Session Discounts and Payment Totals
-const extractStripeSessionDiscounts = (session) => {
+const extractStripeSessionDiscounts = async (session) => {
   const subtotalCents = session.amount_subtotal || session.amount_total || 0;
   const discountCents = session.total_details?.amount_discount || 0;
   const totalCents = session.amount_total || 0;
@@ -276,26 +315,31 @@ const extractStripeSessionDiscounts = (session) => {
   const discount = discountCents / 100;
   const paidTotal = totalCents / 100;
 
-  let couponCode = (session.metadata?.coupon_code && session.metadata.coupon_code.trim()) || null;
+  let rawCoupon = (session.metadata?.coupon_code && session.metadata.coupon_code.trim()) || null;
 
-  if (!couponCode && session.discounts && session.discounts.length > 0) {
+  if (!rawCoupon && session.discounts && session.discounts.length > 0) {
     for (const d of session.discounts) {
       const code = extractCouponCodeString(d);
       if (code) {
-        couponCode = code;
+        rawCoupon = code;
         break;
       }
     }
   }
 
-  if (!couponCode && session.total_details?.breakdown?.discounts && session.total_details.breakdown.discounts.length > 0) {
+  if (!rawCoupon && session.total_details?.breakdown?.discounts && session.total_details.breakdown.discounts.length > 0) {
     for (const d of session.total_details.breakdown.discounts) {
       const code = extractCouponCodeString(d);
       if (code) {
-        couponCode = code;
+        rawCoupon = code;
         break;
       }
     }
+  }
+
+  let couponCode = null;
+  if (rawCoupon) {
+    couponCode = await resolvePromoCodeName(rawCoupon);
   }
 
   if (!couponCode && discount > 0) {
@@ -330,7 +374,7 @@ const incrementCouponRedemption = async (couponCode) => {
 const fulfillStripeSession = async (session) => {
   if (!session || session.payment_status !== 'paid') return false;
 
-  const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
+  const { subtotal, discount, couponCode } = await extractStripeSessionDiscounts(session);
   let targetEmail = session.metadata?.user_email || session.customer_details?.email || session.customer_email || 'buyer@veritus.com';
   
   let rawUserId = session.metadata?.user_id || session.client_reference_id || null;
