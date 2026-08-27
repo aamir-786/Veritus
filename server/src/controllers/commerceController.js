@@ -329,7 +329,7 @@ const fulfillStripeSession = async (session) => {
     }
   }
 
-  // 1. Find matching existing orders in Supabase (by order_ids, stripe_payment_intent, or email)
+  // 1. Find matching existing orders in Supabase (by order_ids or email)
   const metadataOrderIds = session.metadata?.order_ids || session.metadata?.order_id;
   let existingOrdersToUpdate = [];
 
@@ -338,13 +338,6 @@ const fulfillStripeSession = async (session) => {
     const { data: matchedByIds } = await supabase.from('orders').select('*').in('id', orderIdList);
     if (matchedByIds && matchedByIds.length > 0) {
       existingOrdersToUpdate = matchedByIds;
-    }
-  }
-
-  if (existingOrdersToUpdate.length === 0 && paymentId) {
-    const { data: matchedByPi } = await supabase.from('orders').select('*').eq('stripe_payment_intent', paymentId);
-    if (matchedByPi && matchedByPi.length > 0) {
-      existingOrdersToUpdate = matchedByPi;
     }
   }
 
@@ -372,7 +365,6 @@ const fulfillStripeSession = async (session) => {
           discount_amount: orderDiscount,
           amount: orderPaid,
           coupon_code: appliedCoupon,
-          stripe_payment_intent: paymentId,
           ...(targetUserId ? { user_id: targetUserId } : {})
         })
         .eq('id', order.id)
@@ -460,8 +452,7 @@ const fulfillStripeSession = async (session) => {
       amount: itemPaid,
       currency: 'USD',
       status: 'paid',
-      paid_at: new Date().toISOString(),
-      stripe_payment_intent: paymentId
+      paid_at: new Date().toISOString()
     };
 
     const { data: savedOrder, error: insertErr } = await supabase.from('orders').insert([newOrder]).select().single();
@@ -488,6 +479,125 @@ const fulfillStripeSession = async (session) => {
   }
 
   return true;
+};
+
+// Helper: Resolve product title and price for auto-healing orders
+const resolveProductDetails = async (productId) => {
+  if (!productId) return { title: 'Purchased Resource', price: 0 };
+  
+  try {
+    const { data: course } = await supabase.from('courses').select('title, price').or(`id.eq.${productId},slug.eq.${productId}`).maybeSingle();
+    if (course) return { title: course.title, price: Number(course.price) || 0 };
+
+    const { data: tpl } = await supabase.from('templates').select('title, price').eq('id', productId).maybeSingle();
+    if (tpl) return { title: tpl.title, price: Number(tpl.price) || 0 };
+
+    const packs = getDomainPacks();
+    if (packs[productId]) return { title: packs[productId].title, price: Number(packs[productId].price) || 49 };
+  } catch (e) {
+    console.warn('[ResolveProduct] Error resolving product details:', e.message);
+  }
+
+  return { title: productId.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), price: 0 };
+};
+
+// Reconcile Orders Listing for User
+exports.getUserOrders = async (req, res) => {
+  const userId = req.user.id;
+  const userEmail = req.user.email;
+  
+  try {
+    // 1. Fetch user entitlements to see what products the user owns
+    const { data: userEntitlements } = await supabase
+      .from('entitlements')
+      .select('product_id, access_granted_at')
+      .eq('user_id', userId);
+      
+    const entitlementMap = new Map((userEntitlements || []).map(e => [e.product_id, e.access_granted_at]));
+
+    // 2. Fetch orders matching user_id OR user_email
+    let query = supabase.from('orders').select('*');
+    if (userEmail) {
+      query = query.or(`user_id.eq.${userId},user_email.ilike.${userEmail}`);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: userOrders, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const existingOrderMap = new Map();
+    (userOrders || []).forEach(o => {
+      if (o.product_id) existingOrderMap.set(o.product_id, o);
+    });
+
+    // 3. Auto-reconcile existing orders (e.g. pending -> paid)
+    const reconciledOrders = await Promise.all((userOrders || []).map(async (order) => {
+      let isUpdated = false;
+      const orderCopy = { ...order };
+
+      if (!orderCopy.user_id && userId) {
+        orderCopy.user_id = userId;
+        isUpdated = true;
+      }
+
+      if (orderCopy.status === 'pending' && entitlementMap.has(orderCopy.product_id)) {
+        orderCopy.status = 'paid';
+        orderCopy.paid_at = orderCopy.paid_at || orderCopy.created_at || new Date().toISOString();
+        isUpdated = true;
+      }
+
+      if (isUpdated) {
+        await supabase
+          .from('orders')
+          .update({
+            user_id: orderCopy.user_id,
+            status: orderCopy.status,
+            paid_at: orderCopy.paid_at
+          })
+          .eq('id', orderCopy.id);
+      }
+
+      return orderCopy;
+    }));
+
+    // 4. Auto-heal missing orders for entitled products
+    for (const [productId, grantedAt] of entitlementMap.entries()) {
+      if (!existingOrderMap.has(productId)) {
+        const prod = await resolveProductDetails(productId);
+        const newOrderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const autoOrder = {
+          id: newOrderId,
+          user_id: userId,
+          user_email: userEmail || 'buyer@veritus.com',
+          product_id: productId,
+          product_title: prod.title,
+          original_amount: prod.price,
+          discount_amount: 0,
+          amount: prod.price,
+          currency: 'USD',
+          status: 'paid',
+          paid_at: grantedAt || new Date().toISOString()
+        };
+
+        const { data: inserted } = await supabase.from('orders').insert([autoOrder]).select().maybeSingle();
+        if (inserted) {
+          reconciledOrders.unshift(inserted);
+        } else {
+          reconciledOrders.unshift(autoOrder);
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      orders: reconciledOrders
+    });
+  } catch (err) {
+    console.error('getUserOrders Error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch orders' });
+  }
 };
 
 // Verify Stripe Checkout Session (for Payment Verification page)
