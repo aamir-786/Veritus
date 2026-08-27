@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import EffectiveVeritusLogo from '../components/EffectiveVeritusLogo';
 import AdminQuestionModal from '../components/AdminQuestionModal';
 import VideoPlayer from '../components/VideoPlayer';
@@ -149,13 +149,28 @@ export default function AdminStudio() {
   };
 
   // Navigation State
-  const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('adminStudioActiveTab') || 'overview';
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const validAdminTabs = ['overview', 'courses', 'questions', 'templates', 'users', 'inquiries', 'orders', 'reviews', 'promotions'];
+  const tabFromUrl = searchParams.get('tab');
+  
+  const initialAdminTab = (tabFromUrl && validAdminTabs.includes(tabFromUrl))
+    ? tabFromUrl
+    : (localStorage.getItem('adminStudioActiveTab') || 'overview');
+
+  const [activeTab, setActiveTab] = useState(initialAdminTab);
+
+  const changeAdminTab = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams({ tab: newTab });
+    localStorage.setItem('adminStudioActiveTab', newTab);
+  };
 
   useEffect(() => {
-    localStorage.setItem('adminStudioActiveTab', activeTab);
-  }, [activeTab]);
+    const currentTab = searchParams.get('tab');
+    if (currentTab && validAdminTabs.includes(currentTab)) {
+      setActiveTab(currentTab);
+    }
+  }, [searchParams]);
 
   // Course Form State
   const [showCourseForm, setShowCourseForm] = usePersistedState('admin_showCourseForm', false);
@@ -1099,7 +1114,7 @@ export default function AdminStudio() {
 
         <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
           <button
-            onClick={() => { setActiveTab('overview'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('overview'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1107,7 +1122,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('courses'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('courses'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'courses' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1115,7 +1130,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('questions'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('questions'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'questions' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1123,7 +1138,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('templates'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('templates'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'templates' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1131,7 +1146,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('users'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('users'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'users' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1139,7 +1154,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('inquiries'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('inquiries'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'inquiries' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1147,7 +1162,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('orders'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('orders'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'orders' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1155,7 +1170,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('reviews'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('reviews'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'reviews' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1163,7 +1178,7 @@ export default function AdminStudio() {
           </button>
 
           <button
-            onClick={() => { setActiveTab('promotions'); setMobileNavOpen(false); }}
+            onClick={() => { changeAdminTab('promotions'); setMobileNavOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === 'promotions' ? 'bg-indigo-600 text-white shadow-md border border-indigo-500/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -1269,7 +1284,7 @@ export default function AdminStudio() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <h3 className="font-bold text-slate-800 text-sm">Recent Signups</h3>
-                <button onClick={() => setActiveTab('users')} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Manage Users &rarr;</button>
+                <button onClick={() => changeAdminTab('users')} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Manage Users &rarr;</button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
