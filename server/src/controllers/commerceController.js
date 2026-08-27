@@ -250,41 +250,41 @@ exports.createMultiCheckoutSession = async (req, res) => {
   }
 };
 
-// Helper: Resolve human-readable promo code string from code/ID
+// Helper: Resolve human-readable promo code string from code/ID across all promo types
 const resolvePromoCodeName = async (codeOrId) => {
   if (!codeOrId) return null;
   const clean = String(codeOrId).trim();
   if (!clean) return null;
 
-  // If clean starts with "promo_" or "coupon_" or matches Stripe ID format, query DB
-  if (clean.toLowerCase().startsWith('promo_') || clean.toLowerCase().startsWith('coupon_') || clean.length > 20) {
-    try {
-      const { data: matched } = await supabase
-        .from('promotions')
-        .select('promo_code')
-        .or(`stripe_promo_id.eq.${clean},stripe_coupon_id.eq.${clean}`)
-        .maybeSingle();
-
-      if (matched && matched.promo_code) {
-        return matched.promo_code;
-      }
-    } catch (e) {
-      console.warn('[ResolvePromo] Error looking up promo code in DB:', e.message);
-    }
-  }
-
-  // Check if clean matches any promo_code in promotions table
   try {
-    const { data: matchedByCode } = await supabase
+    const { data: matched } = await supabase
       .from('promotions')
       .select('promo_code')
-      .ilike('promo_code', clean)
+      .or(`stripe_promo_id.ilike.${clean},stripe_coupon_id.ilike.${clean},promo_code.ilike.${clean}`)
       .maybeSingle();
 
-    if (matchedByCode && matchedByCode.promo_code) {
-      return matchedByCode.promo_code;
+    if (matched && matched.promo_code) {
+      return matched.promo_code.toUpperCase();
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[ResolvePromo] Error looking up promo code in DB:', e.message);
+  }
+
+  // Fallback: Check without promo_ / coupon_ prefix if clean starts with it
+  if (clean.toLowerCase().startsWith('promo_') || clean.toLowerCase().startsWith('coupon_')) {
+    const stripped = clean.replace(/^(promo_|coupon_)/i, '');
+    try {
+      const { data: matchedStripped } = await supabase
+        .from('promotions')
+        .select('promo_code')
+        .or(`stripe_promo_id.ilike.${stripped},stripe_coupon_id.ilike.${stripped}`)
+        .maybeSingle();
+
+      if (matchedStripped && matchedStripped.promo_code) {
+        return matchedStripped.promo_code.toUpperCase();
+      }
+    } catch (e) {}
+  }
 
   return clean.toUpperCase();
 };
