@@ -9,11 +9,11 @@
   "license": "MIT",
   "author": "Veritus",
   "scripts": {
-    "start": "concurrently \"npm run server\" \"npm run client\"",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "node init && concurrently \"npm run server\" \"npm run client\"",
+    "dev": "node init && concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/src/server.js",
     "client": "npm run dev --prefix client",
-    "build": "cd client && npm install && npm run build",
+    "build": "node init && cd client && npm install && npm run build",
     "postinstall": "cd server && npm install && cd ../client && npm install && npm run build"
   },
   "dependencies": {
