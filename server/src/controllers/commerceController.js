@@ -533,19 +533,62 @@ exports.handleStripeWebhook = async (req, res) => {
 // Reconcile Orders Listing for User
 exports.getUserOrders = async (req, res) => {
   const userId = req.user.id;
+  const userEmail = req.user.email;
   
   try {
-    const { data: userOrders, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    // 1. Fetch user entitlements to see what products the user owns
+    const { data: userEntitlements } = await supabase
+      .from('entitlements')
+      .select('product_id')
+      .eq('user_id', userId);
+      
+    const entitledSet = new Set((userEntitlements || []).map(e => e.product_id));
+
+    // 2. Fetch orders matching user_id OR user_email
+    let query = supabase.from('orders').select('*');
+    if (userEmail) {
+      query = query.or(`user_id.eq.${userId},user_email.ilike.${userEmail}`);
+    } else {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: userOrders, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
 
+    // 3. Auto-reconcile: If any order is 'pending' BUT user has entitlement access to product, reconcile status to 'paid'!
+    const reconciledOrders = await Promise.all((userOrders || []).map(async (order) => {
+      let isUpdated = false;
+      const orderCopy = { ...order };
+
+      if (!orderCopy.user_id && userId) {
+        orderCopy.user_id = userId;
+        isUpdated = true;
+      }
+
+      if (orderCopy.status === 'pending' && entitledSet.has(orderCopy.product_id)) {
+        orderCopy.status = 'paid';
+        orderCopy.paid_at = orderCopy.paid_at || orderCopy.created_at || new Date().toISOString();
+        isUpdated = true;
+      }
+
+      if (isUpdated) {
+        await supabase
+          .from('orders')
+          .update({
+            user_id: orderCopy.user_id,
+            status: orderCopy.status,
+            paid_at: orderCopy.paid_at
+          })
+          .eq('id', orderCopy.id);
+      }
+
+      return orderCopy;
+    }));
+
     return res.json({
       success: true,
-      orders: userOrders
+      orders: reconciledOrders
     });
   } catch (err) {
     console.error('getUserOrders Error:', err);
