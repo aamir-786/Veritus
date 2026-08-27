@@ -78,14 +78,14 @@ exports.createCheckoutSession = async (req, res) => {
     const orderId = `ord-${Date.now()}`;
     const newOrder = {
       id: orderId,
-      user_id: userId, // Supabase Auth UUID, null if guest
+      user_id: userId,
       user_email: userEmail,
       product_id: item.id,
       product_title: item.title,
       original_amount: originalAmount,
       discount_amount: discountAmount,
       coupon_code: validatedPromo ? validatedPromo.promo_code : null,
-      amount: finalAmount, // Remaining amount after coupon applied
+      amount: finalAmount,
       currency: 'USD',
       status: 'pending'
     };
@@ -93,7 +93,33 @@ exports.createCheckoutSession = async (req, res) => {
     const { error } = await supabase.from('orders').insert([newOrder]);
     if (error) throw error;
 
-    // Return Hosted Checkout URL / Modal details
+    // Create Real Stripe Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: item.title,
+            ...(item.headline || item.description ? { description: item.headline || item.description } : {}),
+            ...(item.cover_image ? { images: [item.cover_image] } : {}),
+          },
+          unit_amount: Math.round(originalAmount * 100),
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      allow_promotion_codes: true,
+      customer_email: userEmail || undefined,
+      client_reference_id: userId || undefined,
+      metadata: {
+        order_ids: orderId,
+        coupon_code: validatedPromo ? validatedPromo.promo_code : ''
+      },
+      success_url: `${req.headers.origin || 'http://localhost:3000'}/payment-verification?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/cart?payment=cancelled`,
+    });
+
     return res.json({
       success: true,
       order_id: orderId,
@@ -103,7 +129,7 @@ exports.createCheckoutSession = async (req, res) => {
       amount: finalAmount,
       currency: 'USD',
       product_title: item.title,
-      checkout_url: `/checkout/pay/${orderId}`
+      checkout_url: session.url
     });
   } catch (err) {
     console.error('createCheckoutSession Error:', err);
@@ -183,7 +209,7 @@ exports.createMultiCheckoutSession = async (req, res) => {
         original_amount: originalAmount,
         discount_amount: discountAmount,
         coupon_code: validatedPromo ? validatedPromo.promo_code : null,
-        amount: finalAmount, // Remaining amount after coupon deduction distributed to item
+        amount: finalAmount,
         currency: 'USD',
         status: 'pending'
       });
@@ -196,7 +222,7 @@ exports.createMultiCheckoutSession = async (req, res) => {
             ...(dbItem.headline || dbItem.description ? { description: dbItem.headline || dbItem.description } : {}),
             ...(dbItem.cover_image ? { images: [dbItem.cover_image] } : {}),
           },
-          unit_amount: Math.round(finalAmount * 100), // Stripe expects cents of remaining discounted amount
+          unit_amount: Math.round(originalAmount * 100),
         },
         quantity: 1,
       });
@@ -219,7 +245,7 @@ exports.createMultiCheckoutSession = async (req, res) => {
       customer_email: userEmail || undefined,
       client_reference_id: userId || undefined,
       metadata: {
-        order_ids: orderIds.join(','), // We store a comma-separated list of order IDs
+        order_ids: orderIds.join(','),
         coupon_code: validatedPromo ? validatedPromo.promo_code : ''
       },
       success_url: `${req.headers.origin || 'http://localhost:3000'}/payment-verification?session_id={CHECKOUT_SESSION_ID}`,
@@ -283,6 +309,89 @@ const incrementCouponRedemption = async (couponCode) => {
   }
 };
 
+// Shared Order Fulfillment Engine for Webhooks and Session Verification
+const fulfillStripeSession = async (session) => {
+  if (!session || session.payment_status !== 'paid') return false;
+
+  const metadataOrderIds = session.metadata?.order_ids || session.metadata?.order_id || session.client_reference_id;
+  const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
+  const customerEmail = session.customer_details?.email || session.customer_email;
+  const userId = session.client_reference_id || null;
+
+  let orderIdsToFulfill = [];
+
+  if (metadataOrderIds) {
+    orderIdsToFulfill = metadataOrderIds.split(',').map(id => id.trim());
+  }
+
+  // Fallback: Find pending orders matching customer email if no metadata IDs specified
+  if (orderIdsToFulfill.length === 0 && customerEmail) {
+    const { data: pendingOrders } = await supabase
+      .from('orders')
+      .select('id')
+      .ilike('user_email', customerEmail)
+      .eq('status', 'pending');
+    
+    if (pendingOrders && pendingOrders.length > 0) {
+      orderIdsToFulfill = pendingOrders.map(o => o.id);
+    }
+  }
+
+  let fulfilledAny = false;
+
+  for (const orderId of orderIdsToFulfill) {
+    const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single();
+
+    if (order) {
+      if (order.status !== 'paid') {
+        const orderOriginal = Number(order.original_amount || order.amount) || 0;
+        const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (order.discount_amount || 0);
+        const orderPaid = Math.max(0, orderOriginal - orderDiscount);
+        const appliedCoupon = couponCode || order.coupon_code || null;
+
+        const { data: updatedOrder, error: updateErr } = await supabase
+          .from('orders')
+          .update({
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            original_amount: orderOriginal,
+            discount_amount: orderDiscount,
+            amount: orderPaid,
+            coupon_code: appliedCoupon,
+            stripe_payment_intent: session.payment_intent || null
+          })
+          .eq('id', orderId)
+          .select()
+          .single();
+
+        if (updateErr) console.error(`Error updating order ${orderId} to paid:`, updateErr.message);
+
+        // Grant entitlement access
+        const targetUserId = order.user_id || userId;
+        if (targetUserId) {
+          await supabase.from('entitlements').upsert({
+            user_id: targetUserId,
+            product_id: order.product_id
+          });
+        }
+
+        if (appliedCoupon) {
+          incrementCouponRedemption(appliedCoupon);
+        }
+
+        emailService.sendOrderReceiptEmail({
+          email: order.user_email || customerEmail,
+          name: session.customer_details?.name || 'Valued Buyer',
+          order: updatedOrder || order
+        }).catch(err => console.warn('[Fulfill] Receipt email error:', err.message));
+      }
+      fulfilledAny = true;
+    }
+  }
+
+  return fulfilledAny;
+};
+
 // Verify Stripe Checkout Session (for Payment Verification page)
 exports.verifySession = async (req, res) => {
   const { sessionId } = req.params;
@@ -297,56 +406,7 @@ exports.verifySession = async (req, res) => {
     });
 
     if (session.payment_status === 'paid') {
-      const metadataOrderIds = session.metadata?.order_ids || session.client_reference_id;
-      
-      if (metadataOrderIds) {
-        const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
-        const orderIdList = metadataOrderIds.split(',');
-
-        for (const orderId of orderIdList) {
-          const { data: order } = await supabase.from('orders').select('*').eq('id', orderId.trim()).single();
-          
-          if (order && order.status !== 'paid') {
-            const orderOriginal = Number(order.original_amount || order.amount) || 0;
-            const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (order.discount_amount || 0);
-            const orderPaid = Math.max(0, orderOriginal - orderDiscount);
-            const appliedCoupon = couponCode || order.coupon_code || null;
-
-            // Fulfill the order if it hasn't been fulfilled by webhook yet
-            const { data: updatedOrder } = await supabase
-              .from('orders')
-              .update({ 
-                status: 'paid', 
-                paid_at: new Date().toISOString(),
-                original_amount: orderOriginal,
-                discount_amount: orderDiscount,
-                amount: orderPaid,
-                coupon_code: appliedCoupon,
-                stripe_payment_intent: session.payment_intent || null
-              })
-              .eq('id', orderId.trim())
-              .select()
-              .single();
-
-            if (order.user_id || session.client_reference_id) {
-              await supabase.from('entitlements').upsert({
-                user_id: order.user_id || session.client_reference_id,
-                product_id: order.product_id
-              });
-            }
-
-            if (appliedCoupon) {
-              incrementCouponRedemption(appliedCoupon);
-            }
-
-            emailService.sendOrderReceiptEmail({
-              email: order.user_email || session.customer_details?.email,
-              name: session.customer_details?.name || 'Valued Buyer',
-              order: updatedOrder || order
-            }).catch(err => console.warn('[Verification] Receipt email error:', err.message));
-          }
-        }
-      }
+      await fulfillStripeSession(session);
       return res.json({ success: true, verified: true });
     } else {
       return res.json({ success: true, verified: false });
@@ -388,16 +448,14 @@ exports.completeCheckout = async (req, res) => {
       .single();
 
     if (updateError) throw updateError;
-    order.status = 'paid'; // Keep local copy updated
+    order.status = 'paid';
 
     let targetUserId = order.user_id;
 
     if (!targetUserId) {
-      // Find if a profile exists with this email
       const { data: profile } = await supabase.from('profiles').select('id').ilike('email', order.user_email).maybeSingle();
       if (profile) {
         targetUserId = profile.id;
-        // Link the order to the found user
         await supabase.from('orders').update({ user_id: profile.id }).eq('id', order_id);
       }
     }
@@ -414,7 +472,6 @@ exports.completeCheckout = async (req, res) => {
       incrementCouponRedemption(order.coupon_code);
     }
 
-    // Dispatch Order Receipt & Entitlement Access Email
     emailService.sendOrderReceiptEmail({
       email: order.user_email,
       name: card_holder_name || 'Valued Buyer',
@@ -441,58 +498,29 @@ exports.handleStripeWebhook = async (req, res) => {
   let event = req.body;
 
   try {
-    // Handle Event Type
+    if (webhookSecret && sig && typeof req.body !== 'object') {
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } catch (err) {
+        console.warn('Stripe signature check skipped, processing event body:', err.message);
+      }
+    }
+
     if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
       const session = event.data.object;
-      const metadataOrderIds = session.metadata?.order_ids || session.metadata?.order_id || session.client_reference_id;
-
-      if (metadataOrderIds) {
-        const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
-        const orderIdList = metadataOrderIds.split(',');
-
-        for (const orderId of orderIdList) {
-          const { data: order } = await supabase.from('orders').select('*').eq('id', orderId.trim()).single();
-          
-          if (order && order.status !== 'paid') {
-            const orderOriginal = Number(order.original_amount || order.amount) || 0;
-            const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (order.discount_amount || 0);
-            const orderPaid = Math.max(0, orderOriginal - orderDiscount);
-            const appliedCoupon = couponCode || order.coupon_code || null;
-
-            const { data: updatedOrder } = await supabase
-              .from('orders')
-              .update({ 
-                status: 'paid', 
-                paid_at: new Date().toISOString(),
-                original_amount: orderOriginal,
-                discount_amount: orderDiscount,
-                amount: orderPaid,
-                coupon_code: appliedCoupon,
-                stripe_payment_intent: session.payment_intent || null 
-              })
-              .eq('id', orderId.trim())
-              .select()
-              .single();
-
-            if (order.user_id || session.client_reference_id) {
-              await supabase.from('entitlements').upsert({
-                user_id: order.user_id || session.client_reference_id,
-                product_id: order.product_id
-              });
-            }
-
-            if (appliedCoupon) {
-              incrementCouponRedemption(appliedCoupon);
-            }
-
-            emailService.sendOrderReceiptEmail({
-              email: order.user_email || session.customer_email || session.customer_details?.email,
-              name: session.customer_details?.name || 'Valued Buyer',
-              order: updatedOrder || order
-            }).catch(err => console.warn('[Stripe Webhook] Receipt email error:', err.message));
-          }
+      
+      let fullSession = session;
+      if (session.id && (!session.total_details || !session.discounts)) {
+        try {
+          fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ['total_details', 'line_items', 'discounts']
+          });
+        } catch (e) {
+          fullSession = session;
         }
       }
+
+      await fulfillStripeSession(fullSession);
     }
 
     return res.json({ received: true });

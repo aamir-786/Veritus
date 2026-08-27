@@ -48,7 +48,7 @@ describe('commerceController', () => {
       const responseData = res._getJSONData();
       expect(res.statusCode).toBe(200);
       expect(responseData.success).toBe(true);
-      expect(responseData.checkout_url).toMatch(/^\/checkout\/pay\/ord-\d+$/);
+      expect(responseData.checkout_url).toBe('https://checkout.stripe.com/test_url');
     });
 
     it('should fail for an invalid pack ID', async () => {
