@@ -291,11 +291,24 @@ const fulfillStripeSession = async (session) => {
 
   const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
   let targetEmail = session.metadata?.user_email || session.customer_details?.email || session.customer_email || 'buyer@veritus.com';
-  let targetUserId = session.metadata?.user_id || session.client_reference_id || null;
+  
+  let rawUserId = session.metadata?.user_id || session.client_reference_id || null;
+  let targetUserId = null;
+  if (rawUserId) {
+    const cleanId = String(rawUserId).trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId)) {
+      targetUserId = cleanId;
+    }
+  }
 
   if (!targetUserId && targetEmail) {
-    const { data: profile } = await supabase.from('profiles').select('id').ilike('email', targetEmail).maybeSingle();
-    if (profile) targetUserId = profile.id;
+    const { data: profile } = await supabase.from('profiles').select('id').ilike('email', targetEmail.trim()).maybeSingle();
+    if (profile && profile.id) {
+      const cleanId = String(profile.id).trim();
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId)) {
+        targetUserId = cleanId;
+      }
+    }
   }
 
   // Handle pre-existing pending orders if metadata contains order_ids
@@ -319,7 +332,8 @@ const fulfillStripeSession = async (session) => {
             discount_amount: orderDiscount,
             amount: orderPaid,
             coupon_code: appliedCoupon,
-            stripe_payment_intent: paymentId
+            stripe_payment_intent: paymentId,
+            ...(targetUserId ? { user_id: targetUserId } : {})
           })
           .eq('id', orderId)
           .select()
@@ -397,7 +411,7 @@ const fulfillStripeSession = async (session) => {
     const newOrderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const newOrder = {
       id: newOrderId,
-      user_id: targetUserId,
+      user_id: targetUserId || null,
       user_email: targetEmail,
       product_id: item.product_id,
       product_title: item.product_title,
