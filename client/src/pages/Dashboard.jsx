@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PlayCircle, FileText, Download, Award, ShieldCheck, User, Lock, Key, CheckCircle2, AlertCircle, Save, Shield, Settings, Mail, UserCheck, ShoppingBag, Tag } from 'lucide-react';
 import { api, API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -51,8 +51,30 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [downloadingId, setDownloadingId] = useState(null);
-  const [activeTab, setActiveTab] = useState('mylearning');
+  
+  const tabFromUrl = searchParams.get('tab');
+  const validTabs = ['mylearning', 'assets', 'certificates', 'orders', 'profile'];
+  const initialTab = (tabFromUrl && validTabs.includes(tabFromUrl))
+    ? tabFromUrl
+    : (localStorage.getItem('veritus_dashboard_tab') || 'mylearning');
+
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setSearchParams({ tab: newTab });
+    localStorage.setItem('veritus_dashboard_tab', newTab);
+  };
+
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab && validTabs.includes(currentTab)) {
+      setActiveTab(currentTab);
+    }
+  }, [searchParams]);
+
   const [userOrders, setUserOrders] = useState([]);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewCourseId, setReviewCourseId] = useState(null);
@@ -291,28 +313,28 @@ export default function Dashboard() {
       {/* Tabs Navigation */}
       <div className="flex items-center gap-6 border-b border-slate-200 overflow-x-auto">
         <button
-          onClick={() => setActiveTab('mylearning')}
+          onClick={() => handleTabChange('mylearning')}
           className={`pb-4 text-sm font-bold transition-colors relative shrink-0 ${activeTab === 'mylearning' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           My Learning
           {activeTab === 'mylearning' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
         <button
-          onClick={() => setActiveTab('assets')}
+          onClick={() => handleTabChange('assets')}
           className={`pb-4 text-sm font-bold transition-colors relative shrink-0 ${activeTab === 'assets' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           Digital Assets
           {activeTab === 'assets' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
         <button
-          onClick={() => setActiveTab('certificates')}
+          onClick={() => handleTabChange('certificates')}
           className={`pb-4 text-sm font-bold transition-colors relative shrink-0 ${activeTab === 'certificates' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           My Certificates
           {activeTab === 'certificates' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
         <button
-          onClick={() => setActiveTab('orders')}
+          onClick={() => handleTabChange('orders')}
           className={`pb-4 text-sm font-bold transition-colors relative shrink-0 flex items-center gap-1.5 ${activeTab === 'orders' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           <ShoppingBag className="w-4 h-4" />
@@ -320,7 +342,7 @@ export default function Dashboard() {
           {activeTab === 'orders' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-900 rounded-t-full"></span>}
         </button>
         <button
-          onClick={() => setActiveTab('profile')}
+          onClick={() => handleTabChange('profile')}
           className={`pb-4 text-sm font-bold transition-colors relative shrink-0 flex items-center gap-1.5 ${activeTab === 'profile' ? 'text-blue-900' : 'text-slate-500 hover:text-slate-900'}`}
         >
           <Settings className="w-4 h-4" />
