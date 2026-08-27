@@ -226,6 +226,22 @@ exports.createMultiCheckoutSession = async (req, res) => {
   }
 };
 
+// Helper: Recursively extract promo code string from Stripe discount objects
+const extractCouponCodeString = (d) => {
+  if (!d) return null;
+  if (d.promotion_code) {
+    if (typeof d.promotion_code === 'string') return d.promotion_code;
+    if (typeof d.promotion_code === 'object') return d.promotion_code.code || d.promotion_code.id;
+  }
+  if (d.coupon) {
+    return d.coupon.name || d.coupon.id;
+  }
+  if (d.discount) {
+    return extractCouponCodeString(d.discount);
+  }
+  return null;
+};
+
 // Helper: Extract Stripe Session Discounts and Payment Totals
 const extractStripeSessionDiscounts = (session) => {
   const subtotalCents = session.amount_subtotal || session.amount_total || 0;
@@ -236,15 +252,28 @@ const extractStripeSessionDiscounts = (session) => {
   const discount = discountCents / 100;
   const paidTotal = totalCents / 100;
 
-  let couponCode = session.metadata?.coupon_code || null;
-  if (!couponCode && session.total_details?.breakdown?.discounts?.length > 0) {
-    const d = session.total_details.breakdown.discounts[0];
-    couponCode = d.discount?.coupon?.name || d.discount?.coupon?.id || d.discount?.promotion_code || null;
+  let couponCode = (session.metadata?.coupon_code && session.metadata.coupon_code.trim()) || null;
+
+  if (!couponCode && session.discounts && session.discounts.length > 0) {
+    for (const d of session.discounts) {
+      const code = extractCouponCodeString(d);
+      if (code) {
+        couponCode = code;
+        break;
+      }
+    }
   }
-  if (!couponCode && session.discounts?.length > 0) {
-    const d = session.discounts[0];
-    couponCode = d.promotion_code || d.coupon?.name || d.coupon?.id || null;
+
+  if (!couponCode && session.total_details?.breakdown?.discounts && session.total_details.breakdown.discounts.length > 0) {
+    for (const d of session.total_details.breakdown.discounts) {
+      const code = extractCouponCodeString(d);
+      if (code) {
+        couponCode = code;
+        break;
+      }
+    }
   }
+
   if (!couponCode && discount > 0) {
     couponCode = 'STRIPE_PROMO';
   }
@@ -278,17 +307,6 @@ const fulfillStripeSession = async (session) => {
   if (!session || session.payment_status !== 'paid') return false;
 
   const paymentId = session.payment_intent || session.id;
-
-  // 1. Prevent double fulfillment if order already saved in database
-  const { data: existingOrders } = await supabase
-    .from('orders')
-    .select('id')
-    .eq('stripe_payment_intent', paymentId);
-
-  if (existingOrders && existingOrders.length > 0) {
-    return true; // Already saved in Supabase
-  }
-
   const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
   let targetEmail = session.metadata?.user_email || session.customer_details?.email || session.customer_email || 'buyer@veritus.com';
   
@@ -311,51 +329,72 @@ const fulfillStripeSession = async (session) => {
     }
   }
 
-  // Handle pre-existing pending orders if metadata contains order_ids
+  // 1. Find matching existing orders in Supabase (by order_ids, stripe_payment_intent, or email)
   const metadataOrderIds = session.metadata?.order_ids || session.metadata?.order_id;
+  let existingOrdersToUpdate = [];
+
   if (metadataOrderIds) {
     const orderIdList = metadataOrderIds.split(',').map(id => id.trim());
-    for (const orderId of orderIdList) {
-      const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single();
-      if (order && order.status !== 'paid') {
-        const orderOriginal = Number(order.original_amount || order.amount) || 0;
-        const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (order.discount_amount || 0);
-        const orderPaid = Math.max(0, orderOriginal - orderDiscount);
-        const appliedCoupon = couponCode || order.coupon_code || null;
+    const { data: matchedByIds } = await supabase.from('orders').select('*').in('id', orderIdList);
+    if (matchedByIds && matchedByIds.length > 0) {
+      existingOrdersToUpdate = matchedByIds;
+    }
+  }
 
-        const { data: updatedOrder } = await supabase
-          .from('orders')
-          .update({
-            status: 'paid',
-            paid_at: new Date().toISOString(),
-            original_amount: orderOriginal,
-            discount_amount: orderDiscount,
-            amount: orderPaid,
-            coupon_code: appliedCoupon,
-            stripe_payment_intent: paymentId,
-            ...(targetUserId ? { user_id: targetUserId } : {})
-          })
-          .eq('id', orderId)
-          .select()
-          .single();
+  if (existingOrdersToUpdate.length === 0 && paymentId) {
+    const { data: matchedByPi } = await supabase.from('orders').select('*').eq('stripe_payment_intent', paymentId);
+    if (matchedByPi && matchedByPi.length > 0) {
+      existingOrdersToUpdate = matchedByPi;
+    }
+  }
 
-        const uid = order.user_id || targetUserId;
-        if (uid) {
-          await supabase.from('entitlements').upsert({ user_id: uid, product_id: order.product_id });
-        }
-        if (appliedCoupon) incrementCouponRedemption(appliedCoupon);
+  if (existingOrdersToUpdate.length === 0 && targetEmail) {
+    const { data: pendingByEmail } = await supabase.from('orders').select('*').ilike('user_email', targetEmail.trim()).eq('status', 'pending');
+    if (pendingByEmail && pendingByEmail.length > 0) {
+      existingOrdersToUpdate = pendingByEmail;
+    }
+  }
 
-        emailService.sendOrderReceiptEmail({
-          email: order.user_email || targetEmail,
-          name: session.customer_details?.name || 'Valued Buyer',
-          order: updatedOrder || order
-        }).catch(err => console.warn('[Fulfill] Receipt email error:', err.message));
+  // If matching existing orders exist, update every one with the exact Stripe discount, coupon & paid total!
+  if (existingOrdersToUpdate.length > 0) {
+    for (const order of existingOrdersToUpdate) {
+      const orderOriginal = Number(order.original_amount || order.amount) || subtotal || 0;
+      const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (discount || order.discount_amount || 0);
+      const orderPaid = Math.max(0, orderOriginal - orderDiscount);
+      const appliedCoupon = couponCode || order.coupon_code || null;
+
+      const { data: updatedOrder } = await supabase
+        .from('orders')
+        .update({
+          status: 'paid',
+          paid_at: order.paid_at || new Date().toISOString(),
+          original_amount: orderOriginal,
+          discount_amount: orderDiscount,
+          amount: orderPaid,
+          coupon_code: appliedCoupon,
+          stripe_payment_intent: paymentId,
+          ...(targetUserId ? { user_id: targetUserId } : {})
+        })
+        .eq('id', order.id)
+        .select()
+        .single();
+
+      const uid = order.user_id || targetUserId;
+      if (uid) {
+        await supabase.from('entitlements').upsert({ user_id: uid, product_id: order.product_id });
       }
+      if (appliedCoupon) incrementCouponRedemption(appliedCoupon);
+
+      emailService.sendOrderReceiptEmail({
+        email: order.user_email || targetEmail,
+        name: session.customer_details?.name || 'Valued Buyer',
+        order: updatedOrder || order
+      }).catch(err => console.warn('[Fulfill] Receipt email error:', err.message));
     }
     return true;
   }
 
-  // 2. Parse Items from metadata payload OR Stripe Session line items
+  // 2. Parse Items from metadata payload OR Stripe Session line items if no pre-existing orders exist in DB
   let itemsToFulfill = [];
 
   if (session.metadata?.items_payload) {
@@ -404,8 +443,8 @@ const fulfillStripeSession = async (session) => {
 
   // 3. Save completed paid order records to Supabase & grant entitlements
   for (const item of itemsToFulfill) {
-    const itemOriginal = item.original_amount || 0;
-    const itemDiscount = subtotal > 0 ? Math.round((itemOriginal / subtotal) * discount * 100) / 100 : 0;
+    const itemOriginal = item.original_amount || (subtotal / (itemsToFulfill.length || 1)) || 0;
+    const itemDiscount = subtotal > 0 ? Math.round((itemOriginal / subtotal) * discount * 100) / 100 : Math.round((discount / (itemsToFulfill.length || 1)) * 100) / 100;
     const itemPaid = Math.max(0, itemOriginal - itemDiscount);
 
     const newOrderId = `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
