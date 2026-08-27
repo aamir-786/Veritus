@@ -2644,32 +2644,35 @@ export default function AdminStudio() {
 
       {/* --- ORDER DETAILS MODAL --- */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setSelectedOrder(null)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col z-10 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200 border border-slate-200/80">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80 shrink-0">
               <div>
                 <h3 className="font-display font-bold text-lg text-slate-900">Order Details</h3>
                 <p className="text-xs text-slate-500 font-mono mt-0.5">{selectedOrder.id}</p>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors">
+              <button onClick={() => setSelectedOrder(null)} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+            {/* Content Body */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Customer Email</span>
-                  <span className="font-medium text-slate-900 text-sm">{selectedOrder.user_email || 'Guest'}</span>
+                  <span className="font-medium text-slate-900 text-xs sm:text-sm truncate block">{selectedOrder.user_email || 'Guest'}</span>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Order Date</span>
-                  <span className="font-medium text-slate-900 text-sm">{new Date(selectedOrder.created_at).toLocaleString()}</span>
+                  <span className="font-medium text-slate-900 text-xs sm:text-sm">{new Date(selectedOrder.created_at).toLocaleString()}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Product</span>
-                  <span className="font-bold text-indigo-600 text-sm">{selectedOrder.product_title || selectedOrder.product_id}</span>
+                  <span className="font-bold text-indigo-600 text-xs sm:text-sm">{selectedOrder.product_title || selectedOrder.product_id}</span>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Coupon Applied</span>
@@ -2683,21 +2686,21 @@ export default function AdminStudio() {
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Original Price</span>
-                  <span className="font-bold text-slate-600 text-sm">
-                    {selectedOrder.currency?.toUpperCase()} {selectedOrder.original_amount ? Number(selectedOrder.original_amount).toLocaleString() : Number(selectedOrder.amount).toLocaleString()}
+                  <span className="font-bold text-slate-600 text-xs sm:text-sm">
+                    {selectedOrder.currency?.toUpperCase() || 'USD'} {selectedOrder.original_amount ? Number(selectedOrder.original_amount).toFixed(2) : Number(selectedOrder.amount).toFixed(2)}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Discount Deducted</span>
-                  <span className="font-extrabold text-rose-600 text-sm">
-                    -{selectedOrder.currency?.toUpperCase()} {selectedOrder.discount_amount ? Number(selectedOrder.discount_amount).toLocaleString() : '0'}
+                  <span className="font-extrabold text-rose-600 text-xs sm:text-sm">
+                    -{selectedOrder.currency?.toUpperCase() || 'USD'} {selectedOrder.discount_amount ? Number(selectedOrder.discount_amount).toFixed(2) : '0.00'}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Remaining Paid Amount</span>
-                  <span className="font-extrabold text-emerald-700 text-xl">{selectedOrder.currency?.toUpperCase()} {selectedOrder.amount?.toLocaleString()}</span>
+                  <span className="font-extrabold text-emerald-700 text-lg sm:text-xl">{selectedOrder.currency?.toUpperCase() || 'USD'} {Number(selectedOrder.amount || 0).toFixed(2)}</span>
                 </div>
-                <div>
+                <div className="col-span-2 sm:col-span-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</span>
                   <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${selectedOrder.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
                       selectedOrder.status === 'refunded' ? 'bg-rose-100 text-rose-700' :
@@ -2746,7 +2749,7 @@ export default function AdminStudio() {
 
               {/* Pending Refund Request Decision Actions */}
               {selectedOrder.status === 'refund_requested' && (
-                <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="pt-3 border-t border-slate-100 space-y-3">
                   <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
                     <h4 className="text-xs font-bold text-purple-900 mb-1 flex items-center gap-1.5">
                       <ShieldAlert className="w-3.5 h-3.5 text-purple-700" /> Pending User Refund Request
@@ -2755,11 +2758,11 @@ export default function AdminStudio() {
                       Review the customer's request above. Approving will issue a refund via Stripe and revoke product access. Rejecting will keep the order active and send your reply note to the user.
                     </p>
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
                       <button
                         onClick={() => handleProcessRefundRequest(selectedOrder.id, 'reject')}
                         disabled={isUpdatingOrder === selectedOrder.id}
-                        className="flex-1 px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                        className="flex-1 px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer text-center"
                       >
                         Reject Refund Request
                       </button>
@@ -2767,7 +2770,7 @@ export default function AdminStudio() {
                       <button
                         onClick={() => handleProcessRefundRequest(selectedOrder.id, 'approve')}
                         disabled={isUpdatingOrder === selectedOrder.id}
-                        className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
                       >
                         {isUpdatingOrder === selectedOrder.id ? (
                           <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -2782,18 +2785,18 @@ export default function AdminStudio() {
 
               {/* Perpetual Admin Manual Actions for Paid Orders */}
               {selectedOrder.status === 'paid' && (
-                <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="pt-3 border-t border-slate-100 space-y-3">
                   <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
                     <h4 className="text-xs font-bold text-amber-900 mb-1 flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5" /> Administrative Override Actions</h4>
-                    <p className="text-[11px] text-amber-700/80 mb-4 leading-relaxed">
+                    <p className="text-[11px] text-amber-700/80 mb-3 leading-relaxed">
                       Admins can process a manual refund or cancellation for any order at any time (even after the 3-day user window).
                     </p>
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
                       <button
                         onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'cancelled')}
                         disabled={isUpdatingOrder === selectedOrder.id}
-                        className="flex-1 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                        className="flex-1 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer text-center"
                       >
                         Cancel Order (No Refund)
                       </button>
@@ -2801,7 +2804,7 @@ export default function AdminStudio() {
                       <button
                         onClick={() => handleRefundOrder(selectedOrder.id)}
                         disabled={isUpdatingOrder === selectedOrder.id}
-                        className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                        className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {isUpdatingOrder === selectedOrder.id ? (
                           <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -2815,14 +2818,20 @@ export default function AdminStudio() {
                 </div>
               )}
             </div>
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+
+            {/* Footer */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+              <div className="text-[11px] text-slate-400 font-mono">
+                Order ID: <span className="font-bold text-slate-700">{selectedOrder.id}</span>
+              </div>
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="px-5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors"
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 Close
               </button>
             </div>
+
           </div>
         </div>
       )}
