@@ -236,6 +236,32 @@ exports.createMultiCheckoutSession = async (req, res) => {
   }
 };
 
+// Helper: Extract Stripe Session Discounts and Payment Totals
+const extractStripeSessionDiscounts = (session) => {
+  const subtotalCents = session.amount_subtotal || session.amount_total || 0;
+  const discountCents = session.total_details?.amount_discount || 0;
+  const totalCents = session.amount_total || 0;
+
+  const subtotal = subtotalCents / 100;
+  const discount = discountCents / 100;
+  const paidTotal = totalCents / 100;
+
+  let couponCode = session.metadata?.coupon_code || null;
+  if (!couponCode && session.total_details?.breakdown?.discounts?.length > 0) {
+    const d = session.total_details.breakdown.discounts[0];
+    couponCode = d.discount?.coupon?.name || d.discount?.coupon?.id || d.discount?.promotion_code || null;
+  }
+  if (!couponCode && session.discounts?.length > 0) {
+    const d = session.discounts[0];
+    couponCode = d.promotion_code || d.coupon?.name || d.coupon?.id || null;
+  }
+  if (!couponCode && discount > 0) {
+    couponCode = 'STRIPE_PROMO';
+  }
+
+  return { subtotal, discount, paidTotal, couponCode };
+};
+
 // Helper: Increment redemption counter for used coupon
 const incrementCouponRedemption = async (couponCode) => {
   if (!couponCode) return;
@@ -266,21 +292,38 @@ exports.verifySession = async (req, res) => {
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['total_details', 'line_items', 'discounts']
+    });
 
     if (session.payment_status === 'paid') {
       const metadataOrderIds = session.metadata?.order_ids || session.client_reference_id;
       
       if (metadataOrderIds) {
+        const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
         const orderIdList = metadataOrderIds.split(',');
+
         for (const orderId of orderIdList) {
           const { data: order } = await supabase.from('orders').select('*').eq('id', orderId.trim()).single();
           
           if (order && order.status !== 'paid') {
+            const orderOriginal = Number(order.original_amount || order.amount) || 0;
+            const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (order.discount_amount || 0);
+            const orderPaid = Math.max(0, orderOriginal - orderDiscount);
+            const appliedCoupon = couponCode || order.coupon_code || null;
+
             // Fulfill the order if it hasn't been fulfilled by webhook yet
             const { data: updatedOrder } = await supabase
               .from('orders')
-              .update({ status: 'paid', paid_at: new Date().toISOString() })
+              .update({ 
+                status: 'paid', 
+                paid_at: new Date().toISOString(),
+                original_amount: orderOriginal,
+                discount_amount: orderDiscount,
+                amount: orderPaid,
+                coupon_code: appliedCoupon,
+                stripe_payment_intent: session.payment_intent || null
+              })
               .eq('id', orderId.trim())
               .select()
               .single();
@@ -292,8 +335,8 @@ exports.verifySession = async (req, res) => {
               });
             }
 
-            if (order.coupon_code) {
-              incrementCouponRedemption(order.coupon_code);
+            if (appliedCoupon) {
+              incrementCouponRedemption(appliedCoupon);
             }
 
             emailService.sendOrderReceiptEmail({
@@ -404,19 +447,29 @@ exports.handleStripeWebhook = async (req, res) => {
       const metadataOrderIds = session.metadata?.order_ids || session.metadata?.order_id || session.client_reference_id;
 
       if (metadataOrderIds) {
+        const { subtotal, discount, couponCode } = extractStripeSessionDiscounts(session);
         const orderIdList = metadataOrderIds.split(',');
 
         for (const orderId of orderIdList) {
           const { data: order } = await supabase.from('orders').select('*').eq('id', orderId.trim()).single();
           
-            if (order && order.status !== 'paid') {
-              const { data: updatedOrder } = await supabase
-                .from('orders')
-                .update({ 
-                  status: 'paid', 
-                  paid_at: new Date().toISOString(),
-                  stripe_payment_intent: session.payment_intent || null 
-                })
+          if (order && order.status !== 'paid') {
+            const orderOriginal = Number(order.original_amount || order.amount) || 0;
+            const orderDiscount = subtotal > 0 ? Math.round((orderOriginal / subtotal) * discount * 100) / 100 : (order.discount_amount || 0);
+            const orderPaid = Math.max(0, orderOriginal - orderDiscount);
+            const appliedCoupon = couponCode || order.coupon_code || null;
+
+            const { data: updatedOrder } = await supabase
+              .from('orders')
+              .update({ 
+                status: 'paid', 
+                paid_at: new Date().toISOString(),
+                original_amount: orderOriginal,
+                discount_amount: orderDiscount,
+                amount: orderPaid,
+                coupon_code: appliedCoupon,
+                stripe_payment_intent: session.payment_intent || null 
+              })
               .eq('id', orderId.trim())
               .select()
               .single();
@@ -428,8 +481,8 @@ exports.handleStripeWebhook = async (req, res) => {
               });
             }
 
-            if (order.coupon_code) {
-              incrementCouponRedemption(order.coupon_code);
+            if (appliedCoupon) {
+              incrementCouponRedemption(appliedCoupon);
             }
 
             emailService.sendOrderReceiptEmail({

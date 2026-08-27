@@ -150,66 +150,15 @@ export default function CartDrawer() {
         {cartItems.length > 0 && (
           <div className="p-5 bg-white border-t border-slate-100 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] shrink-0 space-y-4 relative z-10">
             
-            {/* Coupon Code Section */}
-            <div className="space-y-2 pt-1 border-b border-slate-100 pb-3">
-              {appliedCoupon ? (
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 text-xs font-semibold">
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-purple-600" />
-                    <span>Coupon: <strong>{appliedCoupon.code}</strong> ({appliedCoupon.discountPercent}% OFF)</span>
-                  </div>
-                  <button 
-                    onClick={handleRemoveCoupon} 
-                    className="text-[10px] text-rose-600 hover:text-rose-800 font-bold uppercase tracking-wider underline cursor-pointer"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Tag className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
-                      type="text" 
-                      placeholder="Enter Promo/Coupon Code" 
-                      value={couponCodeInput}
-                      onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
-                      className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs uppercase placeholder:normal-case focus:outline-none focus:border-blue-600 font-medium"
-                    />
-                  </div>
-                  <button 
-                    type="submit" 
-                    disabled={!couponCodeInput.trim() || isValidatingCoupon}
-                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold text-xs transition-colors shrink-0 cursor-pointer"
-                  >
-                    {isValidatingCoupon ? 'Validating...' : 'Apply'}
-                  </button>
-                </form>
-              )}
-
-              {couponError && (
-                <div className="text-[11px] text-rose-600 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {couponError}
-                </div>
-              )}
-            </div>
-
             {/* Total Breakdown */}
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between text-slate-500 font-medium">
-                <span>Subtotal</span>
+                <span>Subtotal ({cartItems.length} {cartItems.length === 1 ? 'item' : 'items'})</span>
                 <span>${cartTotal.toFixed(2)}</span>
               </div>
-              {appliedCoupon && (
-                <div className="flex items-center justify-between text-purple-700 font-semibold">
-                  <span className="flex items-center gap-1"><Tag className="w-3 h-3" /> Coupon Discount ({appliedCoupon.discountPercent}%)</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
-                </div>
-              )}
               <div className="flex items-center justify-between text-slate-900 font-bold text-base pt-2 border-t border-slate-100">
                 <span>Total Amount to Pay</span>
-                <span className="text-xl text-slate-900">${finalTotal.toFixed(2)}</span>
+                <span className="text-xl text-slate-900">${cartTotal.toFixed(2)}</span>
               </div>
             </div>
 
@@ -221,7 +170,12 @@ export default function CartDrawer() {
               {isCheckoutLoading ? 'Preparing Checkout...' : 'Checkout via Stripe'}
               <ArrowRight className={`w-4 h-4 transition-transform ${isCheckoutLoading ? 'animate-pulse' : 'group-hover:translate-x-1'}`} />
             </button>
-            <div className="text-center">
+
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+              <Tag className="w-3 h-3 text-blue-600" /> Have a promo code? Enter it directly on Stripe Checkout.
+            </div>
+
+            <div className="text-center pt-1">
               <button 
                 onClick={clearCart}
                 className="text-[11px] text-slate-400 hover:text-rose-500 font-bold uppercase tracking-widest transition-colors cursor-pointer"
